@@ -1,0 +1,117 @@
+name: Deploy Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+concurrency:
+  group: deploy-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event.action != 'closed'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Checkout gh-pages to staging
+        run: |
+          mkdir -p .gh-pages-staging
+          git fetch origin gh-pages:gh-pages 2>/dev/null && \
+            git worktree add .gh-pages-staging gh-pages || \
+            echo "gh-pages branch does not exist yet, starting fresh"
+
+      - name: Checkout PR branch content
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          path: .pr-branch-content
+
+      - name: Copy PR branch into staging directory
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          rm -rf ".gh-pages-staging/${BRANCH_NAME}"
+          mkdir -p ".gh-pages-staging/${BRANCH_NAME}"
+          cp -r .pr-branch-content/* ".gh-pages-staging/${BRANCH_NAME}/" 2>/dev/null || true
+          # Clean up checkout artifacts
+          rm -rf ".gh-pages-staging/${BRANCH_NAME}/.git"
+
+      - name: Build index site
+        run: npx nx build site
+        env:
+          PAGES_DIR: ${{ github.workspace }}/.gh-pages-staging
+
+      - name: Copy index site into staging
+        run: |
+          # Copy Vike build output into staging root
+          cp -r packages/site/dist/client/* .gh-pages-staging/ 2>/dev/null || true
+          # Add .nojekyll to prevent GitHub Pages from processing with Jekyll
+          touch .gh-pages-staging/.nojekyll
+
+      - name: Deploy to gh-pages
+        run: npx nx deploy site
+
+  cleanup:
+    runs-on: ubuntu-latest
+    if: github.event.action == 'closed'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Checkout gh-pages to staging
+        run: |
+          mkdir -p .gh-pages-staging
+          git fetch origin gh-pages:gh-pages 2>/dev/null || exit 0
+          git worktree add .gh-pages-staging gh-pages
+
+      - name: Remove closed PR's directory
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          rm -rf ".gh-pages-staging/${BRANCH_NAME}"
+
+      - name: Rebuild index site
+        run: npx nx build site
+        env:
+          PAGES_DIR: ${{ github.workspace }}/.gh-pages-staging
+
+      - name: Copy index site into staging
+        run: |
+          cp -r packages/site/dist/client/* .gh-pages-staging/ 2>/dev/null || true
+          touch .gh-pages-staging/.nojekyll
+
+      - name: Deploy to gh-pages
+        run: npx nx deploy site
