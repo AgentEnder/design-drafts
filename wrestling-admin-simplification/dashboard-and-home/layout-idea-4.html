@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Concept 4: Command Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50 text-slate-800">
+
+  <!-- LEGEND -->
+  <div class="bg-indigo-50 border-b border-indigo-200 px-6 py-3 text-sm text-indigo-900">
+    <strong>Concept 4: Command Center</strong> &mdash; A minimal, productivity-app-inspired dashboard. The focal point
+    is a large search/action bar (like Spotlight or Alfred) that lets the user quickly jump to any task. Below it, a
+    two-column layout shows recent activity and upcoming events. A quick-access grid at the bottom provides links to all
+    sections. Best for: power users who want speed and minimal clutter.
+  </div>
+
+  <div class="flex min-h-screen">
+    <!-- Sidebar placeholder -->
+    <aside class="w-16 bg-slate-800 flex flex-col items-center py-6 gap-6 shrink-0">
+      <div class="w-8 h-8 rounded bg-blue-500"></div>
+      <div class="w-8 h-1 bg-slate-600 rounded"></div>
+      <div class="w-6 h-6 rounded bg-slate-600"></div>
+      <div class="w-6 h-6 rounded bg-slate-600"></div>
+      <div class="w-6 h-6 rounded bg-slate-600"></div>
+      <div class="w-6 h-6 rounded bg-slate-600"></div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 p-8 max-w-4xl mx-auto">
+
+      <!-- Top bar with notification bell -->
+      <div class="flex items-center justify-between mb-10">
+        <div>
+          <p class="text-sm text-slate-400">Coastal Championship Wrestling</p>
+          <h1 class="text-xl font-bold text-slate-800">Command Center</h1>
+        </div>
+        <button class="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
+          <svg class="w-6 h-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          <span class="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">3</span>
+        </button>
+      </div>
+
+      <!-- Command bar -->
+      <div class="relative mb-12">
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-2">
+          <div class="flex items-center gap-3 px-4 py-3">
+            <svg class="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" placeholder="What do you want to do? Try &quot;edit Summer Slam&quot; or &quot;upload videos&quot;..." class="flex-1 text-lg text-slate-800 placeholder-slate-400 bg-transparent focus:outline-none">
+            <kbd class="hidden sm:block text-xs text-slate-400 bg-gray-100 border border-gray-200 rounded px-2 py-1 font-mono">/</kbd>
+          </div>
+        </div>
+
+        <!-- Suggestions dropdown (shown as if focused) -->
+        <div class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-200 p-3 z-10">
+          <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold px-3 mb-2">Suggested Actions</p>
+          <div class="space-y-0.5">
+            <button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-blue-50 text-left group transition-colors">
+              <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-sm font-medium text-slate-800">Assign staff to Summer Slam</p>
+                <p class="text-xs text-slate-400">2 roles unfilled &middot; Event in 5 days</p>
+              </div>
+              <span class="text-xs text-red-600 font-medium bg-red-50 px-2 py-0.5 rounded-full">Urgent</span>
+            </button>
+            <button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-blue-50 text-left group transition-colors">
+              <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-sm font-medium text-slate-800">Complete match card for Summer Slam</p>
+                <p class="text-xs text-slate-400">3 of 6 matches filled</p>
+              </div>
+            </button>
+            <button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-blue-50 text-left group transition-colors">
+              <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-sm font-medium text-slate-800">Upload videos for Spring Breakdown</p>
+                <p class="text-xs text-slate-400">3 match recordings ready</p>
+              </div>
+            </button>
+          </div>
+          <div class="border-t border-gray-100 mt-2 pt-2">
+            <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold px-3 mb-2">Recent</p>
+            <button class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-left">
+              <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span class="text-sm text-slate-600">Edited Fury: June match results</span>
+            </button>
+            <button class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-left">
+              <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span class="text-sm text-slate-600">Updated roster member "El Fuego"</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spacer for dropdown -->
+      <div class="h-64"></div>
+
+      <!-- Two-column layout -->
+      <div class="grid grid-cols-2 gap-8 mb-12">
+
+        <!-- Activity Feed -->
+        <div>
+          <h2 class="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-4">Activity Feed</h2>
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 divide-y divide-gray-100">
+            <div class="p-4 flex items-start gap-3">
+              <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              </div>
+              <div>
+                <p class="text-sm text-slate-800"><span class="font-medium">Fury: June results</span> recorded</p>
+                <p class="text-xs text-slate-400 mt-0.5">2 hours ago</p>
+              </div>
+            </div>
+            <div class="p-4 flex items-start gap-3">
+              <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+              </div>
+              <div>
+                <p class="text-sm text-slate-800"><span class="font-medium">5 photos</span> uploaded to Fury: June</p>
+                <p class="text-xs text-slate-400 mt-0.5">Yesterday at 3:15 PM</p>
+              </div>
+            </div>
+            <div class="p-4 flex items-start gap-3">
+              <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              </div>
+              <div>
+                <p class="text-sm text-slate-800"><span class="font-medium">"The Viper" Rex Stone</span> added to roster</p>
+                <p class="text-xs text-slate-400 mt-0.5">2 days ago</p>
+              </div>
+            </div>
+            <div class="p-4 flex items-start gap-3">
+              <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+              </div>
+              <div>
+                <p class="text-sm text-slate-800"><span class="font-medium">Heavyweight Championship</span> defended by Iron Mike</p>
+                <p class="text-xs text-slate-400 mt-0.5">Jun 14 at Fury: June</p>
+              </div>
+            </div>
+            <div class="p-4 flex items-start gap-3">
+              <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+              </div>
+              <div>
+                <p class="text-sm text-slate-800"><span class="font-medium">Summer Slam</span> event created</p>
+                <p class="text-xs text-slate-400 mt-0.5">3 days ago</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming Events -->
+        <div>
+          <h2 class="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-4">Upcoming Events</h2>
+          <div class="space-y-3">
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold text-slate-800">Summer Slam</h3>
+                <span class="text-xs font-semibold text-red-600">In 5 days</span>
+              </div>
+              <p class="text-xs text-slate-500 mb-3">Jul 15 &middot; Oceanside Arena &middot; 7:00 PM</p>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs text-slate-600">Match card</span>
+                  <span class="text-xs font-medium text-amber-600">3/6</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-1.5">
+                  <div class="bg-amber-500 h-1.5 rounded-full" style="width: 50%"></div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-xs text-slate-600">Staff</span>
+                  <span class="text-xs font-medium text-red-600">4/6</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-1.5">
+                  <div class="bg-red-500 h-1.5 rounded-full" style="width: 67%"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold text-slate-800">Fury: August</h3>
+                <span class="text-xs font-medium text-slate-400">In 30 days</span>
+              </div>
+              <p class="text-xs text-slate-500 mb-3">Aug 9 &middot; The Warehouse</p>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs text-slate-600">Match card</span>
+                  <span class="text-xs font-medium text-slate-400">0/5</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-1.5">
+                  <div class="bg-gray-300 h-1.5 rounded-full" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold text-slate-800">Fall Brawl</h3>
+                <span class="text-xs font-medium text-slate-400">In 72 days</span>
+              </div>
+              <p class="text-xs text-slate-500 mb-1">Sep 20 &middot; Venue TBD</p>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-slate-500 font-medium">Not started</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Access Grid -->
+      <h2 class="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-4">Quick Access</h2>
+      <div class="grid grid-cols-6 gap-3 mb-8">
+        <a href="#" class="flex flex-col items-center gap-2 p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:shadow-sm transition-all group">
+          <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+            <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+          <span class="text-xs font-medium text-slate-700">Events</span>
+        </a>
+        <a href="#" class="flex flex-col items-center gap-2 p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:shadow-sm transition-all group">
+          <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+            <svg class="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </div>
+          <span class="text-xs font-medium text-slate-700">Roster</span>
+        </a>
+        <a href="#" class="flex flex-col items-center gap-2 p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:shadow-sm transition-all group">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+            <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+          </div>
+          <span class="text-xs font-medium text-slate-700">Titles</span>
+        </a>
+        <a href="#" class="flex flex-col items-center gap-2 p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:shadow-sm transition-all group">
+          <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center group-hover:bg-green-200 transition-colors">
+            <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+          <span class="text-xs font-medium text-slate-700">Media</span>
+        </a>
+        <a href="#" class="flex flex-col items-center gap-2 p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:shadow-sm transition-all group">
+          <div class="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center group-hover:bg-red-200 transition-colors">
+            <svg class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          </div>
+          <span class="text-xs font-medium text-slate-700">Match Types</span>
+        </a>
+        <a href="#" class="flex flex-col items-center gap-2 p-4 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:shadow-sm transition-all group">
+          <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center group-hover:bg-slate-200 transition-colors">
+            <svg class="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </div>
+          <span class="text-xs font-medium text-slate-700">Settings</span>
+        </a>
+      </div>
+
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Layout Idea 2: Timeline View</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-slate-800 min-h-screen">
+
+  <!-- Legend -->
+  <div class="bg-blue-50 border-b border-blue-200 px-6 py-3 text-sm text-blue-800">
+    <strong>Layout Idea 2: Timeline View</strong> &mdash;
+    Event detail is structured as a vertical timeline of phases: Planning &rarr; Pre-Show &rarr; Show Day &rarr; Post-Event.
+    Each phase groups relevant sections. Past phases are collapsed; the active phase is expanded. Shown here: a <em>Completed</em> event with Post-Event active.
+  </div>
+
+  <!-- Top Nav -->
+  <nav class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="#" class="text-blue-500 hover:text-blue-700 text-sm font-medium">&larr; Events</a>
+      <span class="text-gray-300">|</span>
+      <h1 class="text-lg font-semibold">Summer Slam Spectacular</h1>
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>
+    </div>
+    <div class="text-sm text-slate-500">July 15, 2026 &bull; Civic Arena, Pittsburgh PA</div>
+  </nav>
+
+  <div class="max-w-3xl mx-auto py-8 px-6">
+
+    <!-- Timeline -->
+    <div class="relative">
+      <!-- Vertical line -->
+      <div class="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+
+      <!-- Phase 1: Planning (Collapsed / Complete) -->
+      <div class="relative mb-2">
+        <div class="flex items-start gap-4">
+          <div class="relative z-10 w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-200 flex-1 overflow-hidden">
+            <button onclick="this.nextElementSibling.classList.toggle('hidden')" class="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50">
+              <div>
+                <h3 class="font-semibold text-slate-800">Planning</h3>
+                <p class="text-sm text-slate-500 mt-0.5">Event info, venue, roster invitations</p>
+              </div>
+              <span class="text-xs text-green-600 bg-green-50 px-2.5 py-1 rounded-full font-medium">Complete</span>
+            </button>
+            <div class="hidden border-t border-gray-100 px-5 py-4 space-y-4">
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div><span class="text-slate-500">Event Name:</span><br><span class="font-medium">Summer Slam Spectacular</span></div>
+                <div><span class="text-slate-500">Date:</span><br><span class="font-medium">July 15, 2026</span></div>
+                <div><span class="text-slate-500">Venue:</span><br><span class="font-medium">Civic Arena, Pittsburgh PA</span></div>
+                <div><span class="text-slate-500">Expected Attendance:</span><br><span class="font-medium">450</span></div>
+              </div>
+              <div>
+                <h4 class="text-sm font-medium text-slate-700 mb-2">Roster (8 accepted)</h4>
+                <div class="flex flex-wrap gap-2">
+                  <span class="text-xs bg-gray-100 px-2 py-1 rounded-full">The Bruiser</span>
+                  <span class="text-xs bg-gray-100 px-2 py-1 rounded-full">Crimson Knight</span>
+                  <span class="text-xs bg-gray-100 px-2 py-1 rounded-full">Luna Storm</span>
+                  <span class="text-xs bg-gray-100 px-2 py-1 rounded-full">Viper X</span>
+                  <span class="text-xs bg-gray-100 px-2 py-1 rounded-full">Doc Magnus</span>
+                  <span class="text-xs bg-gray-100 px-2 py-1 rounded-full">Steel Reign</span>
+                  <span class="text-xs bg-gray-100 px-2 py-1 rounded-full">Ace Jordan</span>
+                  <span class="text-xs bg-gray-100 px-2 py-1 rounded-full">Nova Kane</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phase 2: Pre-Show (Collapsed / Complete) -->
+      <div class="relative mb-2">
+        <div class="flex items-start gap-4">
+          <div class="relative z-10 w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-200 flex-1 overflow-hidden">
+            <button onclick="this.nextElementSibling.classList.toggle('hidden')" class="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50">
+              <div>
+                <h3 class="font-semibold text-slate-800">Pre-Show</h3>
+                <p class="text-sm text-slate-500 mt-0.5">Match card, equipment, staff assignments</p>
+              </div>
+              <span class="text-xs text-green-600 bg-green-50 px-2.5 py-1 rounded-full font-medium">Complete</span>
+            </button>
+            <div class="hidden border-t border-gray-100 px-5 py-4 space-y-4">
+              <div>
+                <h4 class="text-sm font-medium text-slate-700 mb-2">Match Card (4 matches)</h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between p-2 bg-gray-50 rounded"><span>Ace Jordan vs. Nova Kane</span><span class="text-slate-400">Singles</span></div>
+                  <div class="flex justify-between p-2 bg-gray-50 rounded"><span>Bruiser & Reign vs. Viper X & Magnus</span><span class="text-slate-400">Tag Team</span></div>
+                  <div class="flex justify-between p-2 bg-gray-50 rounded"><span>Luna Storm vs. Crimson Knight</span><span class="text-slate-400">Cage</span></div>
+                  <div class="flex justify-between p-2 bg-gray-50 rounded"><span>The Bruiser (c) vs. Crimson Knight</span><span class="text-slate-400">Heavyweight Title</span></div>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div><span class="text-slate-500">Staff:</span> 5 assigned (Referee x2, Announcer, Cameraman x2)</div>
+                <div><span class="text-slate-500">Equipment:</span> Ring, Cage, 3 cameras, lighting rig</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phase 3: Show Day (Collapsed / Complete) -->
+      <div class="relative mb-2">
+        <div class="flex items-start gap-4">
+          <div class="relative z-10 w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-200 flex-1 overflow-hidden">
+            <button onclick="this.nextElementSibling.classList.toggle('hidden')" class="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50">
+              <div>
+                <h3 class="font-semibold text-slate-800">Show Day</h3>
+                <p class="text-sm text-slate-500 mt-0.5">Day-of operations dashboard</p>
+              </div>
+              <span class="text-xs text-green-600 bg-green-50 px-2.5 py-1 rounded-full font-medium">Complete</span>
+            </button>
+            <div class="hidden border-t border-gray-100 px-5 py-4">
+              <div class="text-sm text-slate-500 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                Event ran successfully. Actual attendance: 423.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phase 4: Post-Event (ACTIVE / Partially Complete) -->
+      <div class="relative mb-2">
+        <div class="flex items-start gap-4">
+          <div class="relative z-10 w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 ring-4 ring-blue-100">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div class="bg-white rounded-xl border-2 border-blue-200 flex-1 overflow-hidden shadow-sm">
+            <div class="px-5 py-4 bg-blue-50 border-b border-blue-100">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-semibold text-slate-800">Post-Event</h3>
+                  <p class="text-sm text-blue-600 mt-0.5">Current phase &mdash; Results, media, financials</p>
+                </div>
+                <span class="text-xs text-blue-600 bg-blue-100 px-2.5 py-1 rounded-full font-medium">In Progress</span>
+              </div>
+            </div>
+
+            <div class="px-5 py-5 space-y-6">
+              <!-- Results -->
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                    Results
+                  </h4>
+                  <button class="text-xs text-blue-500 hover:text-blue-700 font-medium">Edit Results</button>
+                </div>
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm">
+                    <span class="font-medium">Ace Jordan vs. Nova Kane</span>
+                    <span class="text-green-600">Ace Jordan via Pinfall (12:34)</span>
+                  </div>
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm">
+                    <span class="font-medium">Bruiser & Reign vs. Viper X & Magnus</span>
+                    <span class="text-green-600">Bruiser & Reign via Submission (18:45)</span>
+                  </div>
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm">
+                    <span class="font-medium">Luna Storm vs. Crimson Knight</span>
+                    <span class="text-green-600">Luna Storm via Escape (22:10)</span>
+                  </div>
+                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm">
+                    <span class="font-medium">The Bruiser (c) vs. Crimson Knight</span>
+                    <span class="text-green-600">The Bruiser via Pinfall (28:02)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Media Upload (Prominent) -->
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="5"/></svg>
+                    Media
+                  </h4>
+                  <span class="text-xs text-slate-500">3 videos, 12 photos uploaded</span>
+                </div>
+                <div class="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center bg-blue-50/50 hover:bg-blue-50 transition cursor-pointer">
+                  <svg class="w-12 h-12 mx-auto text-blue-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                  <p class="text-sm font-medium text-blue-600">Upload More Media</p>
+                  <p class="text-xs text-blue-500 mt-1">Drag & drop videos or photos, or click to browse</p>
+                </div>
+                <div class="grid grid-cols-4 gap-2 mt-3">
+                  <div class="aspect-video bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500">Video 1</div>
+                  <div class="aspect-video bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500">Video 2</div>
+                  <div class="aspect-video bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500">Video 3</div>
+                  <div class="aspect-video bg-gray-100 rounded-lg flex items-center justify-center text-xs text-gray-400 border-2 border-dashed border-gray-300">+ Add</div>
+                </div>
+              </div>
+
+              <!-- Financials -->
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="5"/></svg>
+                    Financials
+                  </h4>
+                  <button class="text-xs text-blue-500 hover:text-blue-700 font-medium">Enter Financials</button>
+                </div>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
+                  <p class="font-medium">Financial details not yet recorded.</p>
+                  <p class="text-yellow-600 mt-1">Add ticket revenue, merchandise sales, and expenses to complete this event.</p>
+                </div>
+              </div>
+
+              <!-- Social Preview -->
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                    Social Preview
+                  </h4>
+                  <button class="text-xs text-blue-500 hover:text-blue-700 font-medium">Edit</button>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3 text-sm text-slate-600">
+                  Preview card configured. Sharing title: "Summer Slam Spectacular Results"
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

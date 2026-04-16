@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Layout Idea 5: Sidebar Sections (Single Page)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html { scroll-behavior: smooth; }
+    .toc-link.active { background-color: rgb(239 246 255); color: rgb(59 130 246); border-left-color: rgb(59 130 246); }
+  </style>
+</head>
+<body class="bg-gray-50 text-slate-800 min-h-screen">
+
+  <!-- Legend -->
+  <div class="bg-blue-50 border-b border-blue-200 px-6 py-3 text-sm text-blue-800">
+    <strong>Layout Idea 5: Sidebar Sections (Single Page)</strong> &mdash;
+    Everything on one scrollable page with a sticky left sidebar TOC. Active section highlighted as you scroll. Yellow dots indicate sections needing attention. Floating "Quick Actions" button in bottom-right. Shown: <em>partially-complete upcoming event</em>.
+  </div>
+
+  <!-- Top Nav -->
+  <nav class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-30">
+    <div class="flex items-center gap-3">
+      <a href="#" class="text-blue-500 hover:text-blue-700 text-sm font-medium">&larr; Events</a>
+      <span class="text-gray-300">|</span>
+      <h1 class="text-lg font-semibold">Summer Slam Spectacular</h1>
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Scheduled</span>
+    </div>
+    <div class="text-sm text-slate-500">July 15, 2026 &bull; 90 days away</div>
+  </nav>
+
+  <div class="flex max-w-7xl mx-auto">
+
+    <!-- Sticky Sidebar TOC -->
+    <aside class="w-56 flex-shrink-0 sticky top-[53px] h-[calc(100vh-53px)] overflow-y-auto border-r border-gray-200 bg-white py-4 hidden lg:block">
+      <nav class="space-y-0.5 px-2">
+        <a href="#overview" class="toc-link active block px-3 py-2 text-sm font-medium rounded-r border-l-2 border-transparent hover:bg-gray-50 transition">
+          Overview
+        </a>
+        <a href="#venue" class="toc-link block px-3 py-2 text-sm font-medium rounded-r border-l-2 border-transparent hover:bg-gray-50 transition">
+          Venue & Time
+        </a>
+        <a href="#roster" class="toc-link block px-3 py-2 text-sm font-medium rounded-r border-l-2 border-transparent hover:bg-gray-50 transition">
+          Roster
+        </a>
+        <a href="#matchcard" class="toc-link block px-3 py-2 text-sm font-medium rounded-r border-l-2 border-transparent hover:bg-gray-50 transition flex items-center justify-between">
+          Match Card
+          <span class="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0"></span>
+        </a>
+        <a href="#staff" class="toc-link block px-3 py-2 text-sm font-medium rounded-r border-l-2 border-transparent hover:bg-gray-50 transition flex items-center justify-between">
+          Staff
+          <span class="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0"></span>
+        </a>
+        <a href="#equipment" class="toc-link block px-3 py-2 text-sm font-medium rounded-r border-l-2 border-transparent hover:bg-gray-50 transition">
+          Equipment
+        </a>
+        <a href="#financials" class="toc-link block px-3 py-2 text-sm font-medium rounded-r border-l-2 border-transparent hover:bg-gray-50 transition flex items-center justify-between">
+          Financials
+          <span class="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0"></span>
+        </a>
+        <a href="#media" class="toc-link block px-3 py-2 text-sm font-medium rounded-r border-l-2 border-transparent hover:bg-gray-50 transition">
+          Media
+        </a>
+        <a href="#results" class="toc-link block px-3 py-2 text-sm font-medium rounded-r border-l-2 border-transparent hover:bg-gray-50 transition text-slate-400">
+          Results
+          <span class="text-[10px] text-slate-400 ml-1">(post-event)</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 py-8 px-8 space-y-8 max-w-4xl">
+
+      <!-- Overview -->
+      <section id="overview" class="bg-white rounded-xl border border-gray-200 p-6 scroll-mt-16">
+        <h2 class="font-semibold text-lg mb-4">Overview</h2>
+        <div class="grid grid-cols-4 gap-4">
+          <div class="bg-blue-50 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-blue-600">4</div>
+            <div class="text-xs text-slate-500 mt-1">Matches</div>
+          </div>
+          <div class="bg-green-50 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-green-600">8</div>
+            <div class="text-xs text-slate-500 mt-1">Wrestlers</div>
+          </div>
+          <div class="bg-yellow-50 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-yellow-600">5/7</div>
+            <div class="text-xs text-slate-500 mt-1">Staff Filled</div>
+          </div>
+          <div class="bg-purple-50 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-purple-600">75%</div>
+            <div class="text-xs text-slate-500 mt-1">Ready</div>
+          </div>
+        </div>
+        <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+          <strong>Needs attention:</strong> 2 staff positions unfilled, main event opponent TBD, budget not entered.
+        </div>
+      </section>
+
+      <!-- Venue & Time -->
+      <section id="venue" class="bg-white rounded-xl border border-gray-200 p-6 scroll-mt-16">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-lg">Venue & Time</h2>
+          <button class="text-sm text-blue-500 hover:text-blue-700 font-medium">Edit</button>
+        </div>
+        <div class="grid grid-cols-2 gap-6 text-sm">
+          <div>
+            <div class="text-slate-500 mb-1">Venue</div>
+            <div class="font-medium text-lg">Civic Arena</div>
+            <div class="text-slate-500">1001 Fifth Avenue, Pittsburgh, PA 15219</div>
+            <div class="text-slate-500 mt-2">Capacity: 500 (general admission)</div>
+          </div>
+          <div class="space-y-3">
+            <div><span class="text-slate-500">Date:</span> <span class="font-medium">July 15, 2026 (Wednesday)</span></div>
+            <div><span class="text-slate-500">Load-in:</span> <span class="font-medium">2:00 PM</span></div>
+            <div><span class="text-slate-500">Doors Open:</span> <span class="font-medium">6:00 PM</span></div>
+            <div><span class="text-slate-500">Bell Time:</span> <span class="font-medium">7:00 PM</span></div>
+            <div><span class="text-slate-500">Est. End:</span> <span class="font-medium">10:00 PM</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Roster -->
+      <section id="roster" class="bg-white rounded-xl border border-gray-200 p-6 scroll-mt-16">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-lg">Roster <span class="text-sm font-normal text-slate-500">(8 wrestlers)</span></h2>
+          <button class="text-sm text-blue-500 hover:text-blue-700 font-medium">Manage Roster</button>
+        </div>
+        <div class="grid grid-cols-4 gap-3">
+          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div class="w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center text-sm font-bold text-blue-700">TB</div>
+            <div><div class="text-sm font-medium">The Bruiser</div><div class="text-xs text-slate-400">Heavyweight</div></div>
+          </div>
+          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div class="w-10 h-10 rounded-full bg-red-200 flex items-center justify-center text-sm font-bold text-red-700">CK</div>
+            <div><div class="text-sm font-medium">Crimson Knight</div><div class="text-xs text-slate-400">Heavyweight</div></div>
+          </div>
+          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div class="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center text-sm font-bold text-green-700">LS</div>
+            <div><div class="text-sm font-medium">Luna Storm</div><div class="text-xs text-slate-400">Women's</div></div>
+          </div>
+          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div class="w-10 h-10 rounded-full bg-purple-200 flex items-center justify-center text-sm font-bold text-purple-700">VX</div>
+            <div><div class="text-sm font-medium">Viper X</div><div class="text-xs text-slate-400">Cruiserweight</div></div>
+          </div>
+          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div class="w-10 h-10 rounded-full bg-yellow-200 flex items-center justify-center text-sm font-bold text-yellow-700">DM</div>
+            <div><div class="text-sm font-medium">Doc Magnus</div><div class="text-xs text-slate-400">Heavyweight</div></div>
+          </div>
+          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div class="w-10 h-10 rounded-full bg-pink-200 flex items-center justify-center text-sm font-bold text-pink-700">SR</div>
+            <div><div class="text-sm font-medium">Steel Reign</div><div class="text-xs text-slate-400">Heavyweight</div></div>
+          </div>
+          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div class="w-10 h-10 rounded-full bg-indigo-200 flex items-center justify-center text-sm font-bold text-indigo-700">AJ</div>
+            <div><div class="text-sm font-medium">Ace Jordan</div><div class="text-xs text-slate-400">Cruiserweight</div></div>
+          </div>
+          <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div class="w-10 h-10 rounded-full bg-orange-200 flex items-center justify-center text-sm font-bold text-orange-700">NK</div>
+            <div><div class="text-sm font-medium">Nova Kane</div><div class="text-xs text-slate-400">Women's</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Match Card (needs attention) -->
+      <section id="matchcard" class="bg-white rounded-xl border border-yellow-200 p-6 scroll-mt-16">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-lg flex items-center gap-2">
+            Match Card
+            <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">1 match needs attention</span>
+          </h2>
+          <button class="text-sm text-blue-500 hover:text-blue-700 font-medium">Edit Card</button>
+        </div>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div>
+              <div class="text-xs text-slate-400 font-medium">MATCH 1 &bull; SINGLES</div>
+              <div class="font-medium mt-1">Ace Jordan vs. Nova Kane</div>
+            </div>
+            <span class="text-xs text-green-600 bg-green-50 px-2.5 py-1 rounded-full">Ready</span>
+          </div>
+          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div>
+              <div class="text-xs text-slate-400 font-medium">MATCH 2 &bull; TAG TEAM</div>
+              <div class="font-medium mt-1">The Bruiser & Steel Reign vs. Viper X & Doc Magnus</div>
+            </div>
+            <span class="text-xs text-green-600 bg-green-50 px-2.5 py-1 rounded-full">Ready</span>
+          </div>
+          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div>
+              <div class="text-xs text-slate-400 font-medium">MATCH 3 &bull; CAGE MATCH</div>
+              <div class="font-medium mt-1">Luna Storm vs. Crimson Knight</div>
+            </div>
+            <span class="text-xs text-green-600 bg-green-50 px-2.5 py-1 rounded-full">Ready</span>
+          </div>
+          <div class="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div>
+              <div class="text-xs text-yellow-600 font-medium">MAIN EVENT &bull; HEAVYWEIGHT CHAMPIONSHIP</div>
+              <div class="font-medium mt-1">The Bruiser (c) vs. <span class="text-yellow-600 italic">TBD</span></div>
+            </div>
+            <button class="text-xs text-blue-500 hover:text-blue-700 font-medium bg-white border border-blue-200 px-3 py-1.5 rounded-lg">Assign Opponent</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Staff (needs attention) -->
+      <section id="staff" class="bg-white rounded-xl border border-yellow-200 p-6 scroll-mt-16">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-lg flex items-center gap-2">
+            Staff
+            <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">2 unfilled</span>
+          </h2>
+          <button class="text-sm text-blue-500 hover:text-blue-700 font-medium">Manage Staff</button>
+        </div>
+        <div class="divide-y divide-gray-100">
+          <div class="flex items-center justify-between py-3"><span class="text-sm">Lead Referee</span><span class="text-sm text-green-600 font-medium">Mike Thompson</span></div>
+          <div class="flex items-center justify-between py-3"><span class="text-sm">Second Referee</span><span class="text-sm text-green-600 font-medium">Sarah Chen</span></div>
+          <div class="flex items-center justify-between py-3"><span class="text-sm">Ring Announcer</span><span class="text-sm text-green-600 font-medium">Dave "The Voice" Miller</span></div>
+          <div class="flex items-center justify-between py-3"><span class="text-sm">Cameraman 1</span><span class="text-sm text-green-600 font-medium">Tony Rizzo</span></div>
+          <div class="flex items-center justify-between py-3"><span class="text-sm">Cameraman 2</span><span class="text-sm text-green-600 font-medium">Alex Park</span></div>
+          <div class="flex items-center justify-between py-3">
+            <span class="text-sm">Sound Tech</span>
+            <button class="text-xs text-blue-500 font-medium bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-lg border border-blue-200">Assign</button>
+          </div>
+          <div class="flex items-center justify-between py-3">
+            <span class="text-sm">Event Medic</span>
+            <button class="text-xs text-blue-500 font-medium bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-lg border border-blue-200">Assign</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Equipment -->
+      <section id="equipment" class="bg-white rounded-xl border border-gray-200 p-6 scroll-mt-16">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-lg flex items-center gap-2">
+            Equipment
+            <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          </h2>
+          <button class="text-sm text-blue-500 hover:text-blue-700 font-medium">Edit</button>
+        </div>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          <div class="p-3 bg-gray-50 rounded-lg flex items-center gap-2">
+            <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+            Wrestling Ring (20x20)
+          </div>
+          <div class="p-3 bg-gray-50 rounded-lg flex items-center gap-2">
+            <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+            Steel Cage Kit
+          </div>
+          <div class="p-3 bg-gray-50 rounded-lg flex items-center gap-2">
+            <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+            3x Camera Kits
+          </div>
+          <div class="p-3 bg-gray-50 rounded-lg flex items-center gap-2">
+            <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+            PA System + Lighting Rig
+          </div>
+        </div>
+      </section>
+
+      <!-- Financials (needs attention) -->
+      <section id="financials" class="bg-white rounded-xl border border-yellow-200 p-6 scroll-mt-16">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-lg flex items-center gap-2">
+            Financials
+            <span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Not started</span>
+          </h2>
+          <button class="text-sm text-blue-500 hover:text-blue-700 font-medium">Set Budget</button>
+        </div>
+        <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
+          <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <p class="text-sm text-slate-500 mb-3">No budget or financial data entered yet.</p>
+          <button class="text-sm bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium">Set Up Budget</button>
+        </div>
+      </section>
+
+      <!-- Media -->
+      <section id="media" class="bg-white rounded-xl border border-gray-200 p-6 scroll-mt-16">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-lg">Media</h2>
+          <span class="text-sm text-slate-500">No media yet (pre-event)</span>
+        </div>
+        <div class="border-2 border-dashed border-blue-300 rounded-xl p-10 text-center bg-blue-50/40 hover:bg-blue-50 transition cursor-pointer">
+          <svg class="w-14 h-14 mx-auto text-blue-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          <p class="text-base font-medium text-blue-600 mb-1">Upload Event Media</p>
+          <p class="text-sm text-blue-500">Promo images, posters, or pre-event content</p>
+        </div>
+      </section>
+
+      <!-- Results (post-event, disabled) -->
+      <section id="results" class="bg-white rounded-xl border border-gray-200 p-6 scroll-mt-16 opacity-60">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-semibold text-lg text-slate-400">Results</h2>
+          <span class="text-xs bg-gray-100 text-slate-400 px-2 py-0.5 rounded-full">Available after event</span>
+        </div>
+        <p class="text-sm text-slate-400">Match results can be recorded after the event takes place.</p>
+      </section>
+
+      <!-- Spacer for scroll -->
+      <div class="h-32"></div>
+    </main>
+  </div>
+
+  <!-- Floating Quick Actions -->
+  <div class="fixed bottom-6 right-6 z-40">
+    <div id="quick-menu" class="hidden mb-3 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden w-56">
+      <button class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100">
+        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+        Upload Media
+      </button>
+      <button class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100">
+        <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/></svg>
+        Record Results
+      </button>
+      <button class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100">
+        <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Add Wrestler
+      </button>
+      <button class="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-2">
+        <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Duplicate Event
+      </button>
+    </div>
+    <button onclick="document.getElementById('quick-menu').classList.toggle('hidden')" class="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+    </button>
+  </div>
+
+  <script>
+    // Intersection Observer for active TOC highlighting
+    const sections = document.querySelectorAll('section[id]');
+    const tocLinks = document.querySelectorAll('.toc-link');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          tocLinks.forEach(link => link.classList.remove('active'));
+          const active = document.querySelector('.toc-link[href="#' + entry.target.id + '"]');
+          if (active) active.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-80px 0px -60% 0px', threshold: 0.1 });
+    sections.forEach(s => observer.observe(s));
+  </script>
+</body>
+</html>

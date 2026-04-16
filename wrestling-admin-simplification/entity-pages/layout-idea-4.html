@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Layout Idea 4: Slide-Over Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .avatar-placeholder {
+      background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; color: #64748b;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-slate-800 min-h-screen overflow-hidden">
+
+  <!-- Legend -->
+  <div class="bg-blue-50 border-b border-blue-200 px-6 py-3 relative z-30">
+    <h1 class="text-sm font-bold text-blue-800 uppercase tracking-wide">Layout Idea 4: Slide-Over Panel</h1>
+    <p class="text-xs text-blue-700 mt-1">Full-width roster list remains visible. Clicking an item opens a slide-over panel from the right (60% width) showing full details. List is dimmed but accessible behind it.</p>
+  </div>
+
+  <div class="relative h-[calc(100vh-52px)]">
+
+    <!-- BACKGROUND: Full-Width List (dimmed when panel open) -->
+    <div class="absolute inset-0 overflow-y-auto">
+      <div class="max-w-6xl mx-auto py-6 px-6 opacity-40 pointer-events-none">
+
+        <!-- Page Header -->
+        <div class="flex items-center justify-between mb-4">
+          <h1 class="text-2xl font-bold text-slate-800">Roster</h1>
+          <button class="bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-md flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add New
+          </button>
+        </div>
+
+        <!-- Search -->
+        <div class="bg-white rounded-lg border border-gray-200 p-3 mb-4 flex gap-3">
+          <div class="relative flex-1">
+            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" placeholder="Search roster..." class="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-md">
+          </div>
+          <select class="text-sm border border-gray-300 rounded-md px-3 py-2"><option>All Statuses</option></select>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-gray-200 bg-gray-50">
+                <th class="text-left text-xs font-medium text-gray-500 uppercase px-5 py-3">Roster Member</th>
+                <th class="text-left text-xs font-medium text-gray-500 uppercase px-5 py-3">Height / Weight</th>
+                <th class="text-left text-xs font-medium text-gray-500 uppercase px-5 py-3">Status</th>
+                <th class="text-left text-xs font-medium text-gray-500 uppercase px-5 py-3">Debut</th>
+                <th class="text-left text-xs font-medium text-gray-500 uppercase px-5 py-3">Record</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-gray-100 bg-blue-50">
+                <td class="px-5 py-3"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full avatar-placeholder text-xs flex-shrink-0">ID</div><div><div class="font-medium text-sm">The Iron Duke</div><div class="text-xs text-gray-500">Marcus Thompson</div></div></div></td>
+                <td class="px-5 py-3 text-sm text-gray-600">6'4" / 265 lbs</td>
+                <td class="px-5 py-3"><span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Active</span></td>
+                <td class="px-5 py-3 text-sm text-gray-600">2019</td>
+                <td class="px-5 py-3 text-sm text-gray-600">47-12-3</td>
+              </tr>
+              <tr class="border-b border-gray-100">
+                <td class="px-5 py-3"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full avatar-placeholder text-xs flex-shrink-0">SS</div><div><div class="font-medium text-sm">Silver Storm</div><div class="text-xs text-gray-500">Jessica Reyes</div></div></div></td>
+                <td class="px-5 py-3 text-sm text-gray-600">5'8" / 145 lbs</td>
+                <td class="px-5 py-3"><span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Active</span></td>
+                <td class="px-5 py-3 text-sm text-gray-600">2021</td>
+                <td class="px-5 py-3 text-sm text-gray-600">32-8-1</td>
+              </tr>
+              <tr class="border-b border-gray-100">
+                <td class="px-5 py-3"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full avatar-placeholder text-xs flex-shrink-0">VK</div><div><div class="font-medium text-sm">Viktor Krauss</div><div class="text-xs text-gray-500">Viktor Petrov</div></div></div></td>
+                <td class="px-5 py-3 text-sm text-gray-600">6'6" / 290 lbs</td>
+                <td class="px-5 py-3"><span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Active</span></td>
+                <td class="px-5 py-3 text-sm text-gray-600">2018</td>
+                <td class="px-5 py-3 text-sm text-gray-600">55-15-2</td>
+              </tr>
+              <tr class="border-b border-gray-100">
+                <td class="px-5 py-3"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full avatar-placeholder text-xs flex-shrink-0">LV</div><div><div class="font-medium text-sm">La Vibora</div><div class="text-xs text-gray-500">Carlos Mendez</div></div></div></td>
+                <td class="px-5 py-3 text-sm text-gray-600">5'10" / 215 lbs</td>
+                <td class="px-5 py-3"><span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Active</span></td>
+                <td class="px-5 py-3 text-sm text-gray-600">2020</td>
+                <td class="px-5 py-3 text-sm text-gray-600">38-10-4</td>
+              </tr>
+              <tr class="border-b border-gray-100">
+                <td class="px-5 py-3"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full avatar-placeholder text-xs flex-shrink-0">MN</div><div><div class="font-medium text-sm">Midnight Nova</div><div class="text-xs text-gray-500">Keisha Williams</div></div></div></td>
+                <td class="px-5 py-3 text-sm text-gray-600">5'6" / 130 lbs</td>
+                <td class="px-5 py-3"><span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">Guest</span></td>
+                <td class="px-5 py-3 text-sm text-gray-600">2022</td>
+                <td class="px-5 py-3 text-sm text-gray-600">12-3-0</td>
+              </tr>
+              <tr class="border-b border-gray-100">
+                <td class="px-5 py-3"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full avatar-placeholder text-xs flex-shrink-0">TH</div><div><div class="font-medium text-sm">Tommy "The Hammer" Hayes</div><div class="text-xs text-gray-500">Thomas Hayes</div></div></div></td>
+                <td class="px-5 py-3 text-sm text-gray-600">6'1" / 235 lbs</td>
+                <td class="px-5 py-3"><span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">Alumni</span></td>
+                <td class="px-5 py-3 text-sm text-gray-600">2015</td>
+                <td class="px-5 py-3 text-sm text-gray-600">88-24-6</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay backdrop -->
+    <div class="absolute inset-0 bg-black/20 z-10"></div>
+
+    <!-- SLIDE-OVER PANEL -->
+    <div class="absolute right-0 top-0 bottom-0 w-3/5 bg-white shadow-2xl z-20 flex flex-col">
+
+      <!-- Panel Sticky Header -->
+      <div class="px-6 py-4 border-b border-gray-200 flex items-center gap-4 bg-white sticky top-0 z-10">
+        <button class="text-gray-400 hover:text-gray-600 p-1 -ml-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+        <div class="flex items-center gap-3 flex-1">
+          <div class="w-12 h-12 rounded-full avatar-placeholder text-lg">ID</div>
+          <div>
+            <h2 class="text-lg font-bold text-slate-800">The Iron Duke</h2>
+            <p class="text-sm text-gray-500">Marcus Thompson</p>
+          </div>
+        </div>
+        <span class="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-medium">Active</span>
+        <button class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-md flex items-center gap-2 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          Edit
+        </button>
+      </div>
+
+      <!-- Panel Scrollable Content -->
+      <div class="flex-1 overflow-y-auto p-6 space-y-6">
+
+        <!-- Photo & Quick Stats -->
+        <div class="flex gap-6">
+          <div class="w-40 h-48 rounded-lg avatar-placeholder text-4xl flex-shrink-0">ID</div>
+          <div class="flex-1">
+            <div class="grid grid-cols-3 gap-3">
+              <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-2xl font-bold text-slate-800">47</div>
+                <div class="text-xs text-gray-500">Wins</div>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-2xl font-bold text-slate-800">12</div>
+                <div class="text-xs text-gray-500">Losses</div>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-3 text-center">
+                <div class="text-2xl font-bold text-slate-800">3</div>
+                <div class="text-xs text-gray-500">Draws</div>
+              </div>
+            </div>
+            <div class="mt-3 flex gap-2">
+              <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">Heavyweight</span>
+              <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">Iron Legion</span>
+              <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-medium">World Champion</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Personal Info Section -->
+        <div class="border border-gray-200 rounded-lg">
+          <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+            <h3 class="text-sm font-semibold text-gray-700">Personal Information</h3>
+          </div>
+          <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
+            <div>
+              <dt class="text-xs text-gray-500 font-medium">Real Name</dt>
+              <dd class="text-sm text-slate-800 mt-0.5">Marcus Thompson</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-gray-500 font-medium">Ring Name</dt>
+              <dd class="text-sm text-slate-800 mt-0.5">The Iron Duke</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-gray-500 font-medium">Height</dt>
+              <dd class="text-sm text-slate-800 mt-0.5">6'4" (193 cm)</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-gray-500 font-medium">Weight</dt>
+              <dd class="text-sm text-slate-800 mt-0.5">265 lbs (120 kg)</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-gray-500 font-medium">Hometown</dt>
+              <dd class="text-sm text-slate-800 mt-0.5">Pittsburgh, PA</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-gray-500 font-medium">Debut</dt>
+              <dd class="text-sm text-slate-800 mt-0.5">March 2019</dd>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ring Stats Section -->
+        <div class="border border-gray-200 rounded-lg">
+          <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+            <h3 class="text-sm font-semibold text-gray-700">Ring Stats</h3>
+          </div>
+          <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
+            <div>
+              <dt class="text-xs text-gray-500 font-medium">Weight Class</dt>
+              <dd class="text-sm text-slate-800 mt-0.5">Heavyweight</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-gray-500 font-medium">Style</dt>
+              <dd class="text-sm text-slate-800 mt-0.5">Power / Brawler</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-gray-500 font-medium">Alignment</dt>
+              <dd class="text-sm text-slate-800 mt-0.5">Heel</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-gray-500 font-medium">Stable</dt>
+              <dd class="text-sm text-slate-800 mt-0.5">Iron Legion</dd>
+            </div>
+          </div>
+        </div>
+
+        <!-- Signature Moves Section -->
+        <div class="border border-gray-200 rounded-lg">
+          <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+            <h3 class="text-sm font-semibold text-gray-700">Signature Moves</h3>
+          </div>
+          <div class="p-4 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                <span class="text-sm font-medium text-slate-800">Iron Curtain</span>
+              </div>
+              <span class="text-xs text-gray-500">Running Lariat (Finisher)</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                <span class="text-sm font-medium text-slate-800">Duke's Decree</span>
+              </div>
+              <span class="text-xs text-gray-500">Powerbomb into Armbar</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 bg-gray-300 rounded-full"></span>
+                <span class="text-sm font-medium text-slate-800">Steel Reign</span>
+              </div>
+              <span class="text-xs text-gray-500">Spinning Backfist</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Media Gallery Section -->
+        <div class="border border-gray-200 rounded-lg">
+          <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+            <h3 class="text-sm font-semibold text-gray-700">Media Gallery</h3>
+          </div>
+          <div class="p-4">
+            <div class="grid grid-cols-4 gap-2">
+              <div class="aspect-square rounded-lg avatar-placeholder text-xs">1</div>
+              <div class="aspect-square rounded-lg avatar-placeholder text-xs">2</div>
+              <div class="aspect-square rounded-lg avatar-placeholder text-xs">3</div>
+              <div class="aspect-square rounded-lg avatar-placeholder text-xs">4</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Full Page Link -->
+        <div class="text-center pb-4">
+          <a href="#" class="text-sm text-blue-500 hover:text-blue-600 font-medium inline-flex items-center gap-1">
+            Open Full Page View
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

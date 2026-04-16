@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Layout 4: Quick Actions Grid</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #f1f5f9; }
+    .phone-frame {
+      max-width: 375px;
+      margin: 0 auto;
+      background: #000;
+      border-radius: 40px;
+      padding: 12px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+    }
+    .phone-screen {
+      border-radius: 30px;
+      overflow: hidden;
+      position: relative;
+      height: 812px;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+    }
+    .grid-item {
+      transition: transform 0.1s ease;
+    }
+    .grid-item:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body class="py-6 px-4">
+
+  <!-- Legend -->
+  <div class="max-w-md mx-auto mb-6 bg-white rounded-lg p-4 shadow-sm">
+    <h1 class="text-lg font-bold text-slate-800 mb-1">Layout 4: Quick Actions Grid</h1>
+    <p class="text-sm text-slate-500">App launcher style with large tap targets in a 2-column grid. Next event always visible at top. Search bar at bottom replaces Cmd+K. Optimized for quick, one-handed use.</p>
+    <div class="flex gap-2 mt-2 flex-wrap">
+      <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Grid Layout</span>
+      <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Large Targets</span>
+      <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">App Launcher</span>
+    </div>
+  </div>
+
+  <!-- Phone Frame -->
+  <div class="phone-frame">
+    <div class="phone-screen">
+
+      <!-- Status Bar -->
+      <div class="bg-white px-6 pt-3 pb-1 flex justify-between items-center text-xs font-semibold text-slate-800">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.34C7 21.4 7.6 22 8.33 22h7.34c.73 0 1.33-.6 1.33-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+        </div>
+      </div>
+
+      <!-- Top Bar -->
+      <div class="bg-white px-4 py-3 flex items-center justify-between border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+            <span class="text-white font-bold text-sm">IW</span>
+          </div>
+          <span class="font-bold text-slate-800">Ironclad</span>
+        </div>
+        <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">CC</div>
+      </div>
+
+      <!-- Content -->
+      <div class="flex-1 overflow-y-auto">
+
+        <!-- Next Event Summary -->
+        <div class="m-4 bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs text-blue-500 font-semibold uppercase tracking-wide">Next Event &middot; 12 days</p>
+              <h2 class="text-base font-bold text-slate-800 mt-0.5">Summer Slam Showdown</h2>
+              <p class="text-sm text-slate-400">Apr 28 &middot; Riverside Arena</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+              <div class="text-center">
+                <div class="text-lg font-bold text-blue-500 leading-none">28</div>
+                <div class="text-[9px] text-blue-400 uppercase">Apr</div>
+              </div>
+            </div>
+          </div>
+          <div class="flex gap-3 mt-3 text-xs text-slate-400">
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              16 wrestlers
+            </span>
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2"/></svg>
+              8 matches
+            </span>
+            <span class="flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+              7 staff
+            </span>
+          </div>
+        </div>
+
+        <!-- Actions Grid -->
+        <div class="px-4 pb-4">
+          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Quick Actions</h3>
+          <div class="grid grid-cols-2 gap-3">
+
+            <button class="grid-item bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col items-center gap-3">
+              <div class="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center">
+                <svg class="w-7 h-7 text-green-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
+              <span class="text-sm font-semibold text-slate-700">Upload Photos</span>
+            </button>
+
+            <button class="grid-item bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col items-center gap-3">
+              <div class="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center">
+                <svg class="w-7 h-7 text-purple-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+              </div>
+              <span class="text-sm font-semibold text-slate-700">Upload Videos</span>
+            </button>
+
+            <button class="grid-item bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col items-center gap-3">
+              <div class="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center">
+                <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 9 7 12 7s5-3 7.5-3a2.5 2.5 0 0 1 0 5H18"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+              </div>
+              <span class="text-sm font-semibold text-slate-700">Record Results</span>
+            </button>
+
+            <button class="grid-item bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col items-center gap-3">
+              <div class="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center">
+                <svg class="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </div>
+              <span class="text-sm font-semibold text-slate-700">Edit Event</span>
+            </button>
+
+            <button class="grid-item bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col items-center gap-3">
+              <div class="w-14 h-14 bg-teal-50 rounded-2xl flex items-center justify-center">
+                <svg class="w-7 h-7 text-teal-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              </div>
+              <span class="text-sm font-semibold text-slate-700">Check-In Staff</span>
+            </button>
+
+            <button class="grid-item bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col items-center gap-3">
+              <div class="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center">
+                <svg class="w-7 h-7 text-indigo-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <span class="text-sm font-semibold text-slate-700">View Roster</span>
+            </button>
+
+            <button class="grid-item bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col items-center gap-3">
+              <div class="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center">
+                <svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </div>
+              <span class="text-sm font-semibold text-slate-700">Day-of Mode</span>
+            </button>
+
+            <button class="grid-item bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col items-center gap-3">
+              <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center">
+                <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              </div>
+              <span class="text-sm font-semibold text-slate-400">More...</span>
+            </button>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Search Bar -->
+      <div class="bg-white border-t border-slate-200 px-4 pb-8 pt-3">
+        <div class="bg-slate-100 rounded-xl px-4 py-3 flex items-center gap-3">
+          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <span class="text-sm text-slate-400">Search events, roster, media...</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

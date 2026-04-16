@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Concept 5: Role-Aware Panels</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .panel { transition: box-shadow 0.2s; }
+    .panel:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .drag-handle { cursor: grab; }
+    .drag-handle:active { cursor: grabbing; }
+  </style>
+</head>
+<body class="bg-gray-100 text-slate-800">
+
+  <!-- LEGEND -->
+  <div class="bg-indigo-50 border-b border-indigo-200 px-6 py-3 text-sm text-indigo-900">
+    <strong>Concept 5: Role-Aware Panels</strong> &mdash; A configurable widget dashboard where users can add, remove,
+    and rearrange panels to suit their workflow. Default panel layouts differ by role (owner sees everything, a
+    photographer might default to the upload panel, a booker sees events and roster). Each panel is collapsible and has
+    an options menu. Best for: teams with different roles, or solo operators who want to customize their view.
+  </div>
+
+  <div class="flex min-h-screen">
+    <!-- Sidebar placeholder -->
+    <aside class="w-16 bg-slate-800 flex flex-col items-center py-6 gap-6 shrink-0">
+      <div class="w-8 h-8 rounded bg-blue-500"></div>
+      <div class="w-8 h-1 bg-slate-600 rounded"></div>
+      <div class="w-6 h-6 rounded bg-slate-600"></div>
+      <div class="w-6 h-6 rounded bg-slate-600"></div>
+      <div class="w-6 h-6 rounded bg-slate-600"></div>
+      <div class="w-6 h-6 rounded bg-slate-600"></div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="flex-1 p-6">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-xl font-bold text-slate-800">Dashboard</h1>
+          <p class="text-sm text-slate-400">Coastal Championship Wrestling &middot; Owner View</p>
+        </div>
+        <button class="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-slate-700 shadow-sm">
+          <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+          Customize Dashboard
+        </button>
+      </div>
+
+      <!-- Note about roles -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2.5 mb-6 text-sm text-blue-800">
+        Different users see different default panels based on their role. This is the <strong>Owner</strong> view with all panels visible.
+      </div>
+
+      <!-- Panel Grid -->
+      <div class="grid grid-cols-3 gap-5">
+
+        <!-- Panel 1: My Events -->
+        <div class="panel bg-white rounded-xl border border-gray-200 col-span-2">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+              <div class="drag-handle text-slate-300 hover:text-slate-500">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
+              </div>
+              <h2 class="text-sm font-semibold text-slate-700">My Events</h2>
+            </div>
+            <div class="flex items-center gap-1">
+              <button class="p-1 rounded hover:bg-gray-100 text-slate-400" title="Collapse">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 12H6"/></svg>
+              </button>
+              <button class="p-1 rounded hover:bg-gray-100 text-slate-400" title="Options">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="p-5">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between p-3 rounded-lg bg-red-50 border border-red-100">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                    <span class="text-xs font-bold text-red-600">5d</span>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-semibold text-slate-800">Summer Slam</h3>
+                    <p class="text-xs text-slate-500">Jul 15 &middot; Oceanside Arena</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">2 staff missing</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">Card 3/6</span>
+                  <button class="text-xs px-3 py-1.5 bg-blue-500 text-white rounded-md font-medium hover:bg-blue-600">Edit</button>
+                </div>
+              </div>
+              <div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <span class="text-xs font-bold text-slate-500">30d</span>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-semibold text-slate-800">Fury: August</h3>
+                    <p class="text-xs text-slate-500">Aug 9 &middot; The Warehouse</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">No card</span>
+                  <button class="text-xs px-3 py-1.5 bg-white border border-gray-200 text-slate-600 rounded-md font-medium hover:bg-gray-50">Edit</button>
+                </div>
+              </div>
+              <div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <span class="text-xs font-bold text-slate-400">72d</span>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-semibold text-slate-800">Fall Brawl</h3>
+                    <p class="text-xs text-slate-500">Sep 20 &middot; Venue TBD</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-slate-500 font-medium">Not started</span>
+                  <button class="text-xs px-3 py-1.5 bg-white border border-gray-200 text-slate-600 rounded-md font-medium hover:bg-gray-50">Edit</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 2: Action Items -->
+        <div class="panel bg-white rounded-xl border border-gray-200">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+              <div class="drag-handle text-slate-300 hover:text-slate-500">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
+              </div>
+              <h2 class="text-sm font-semibold text-slate-700">Action Items</h2>
+              <span class="text-[10px] bg-red-100 text-red-600 font-bold rounded-full px-2 py-0.5">4</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <button class="p-1 rounded hover:bg-gray-100 text-slate-400"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 12H6"/></svg></button>
+              <button class="p-1 rounded hover:bg-gray-100 text-slate-400"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01"/></svg></button>
+            </div>
+          </div>
+          <div class="p-4">
+            <div class="space-y-2">
+              <div class="flex items-start gap-2 p-2 rounded-lg bg-red-50">
+                <div class="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0"></div>
+                <div class="flex-1">
+                  <p class="text-xs font-medium text-slate-800">Assign 2 staff roles</p>
+                  <p class="text-[10px] text-slate-500">Summer Slam &middot; 5 days</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-2 p-2 rounded-lg bg-amber-50">
+                <div class="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0"></div>
+                <div class="flex-1">
+                  <p class="text-xs font-medium text-slate-800">Complete match card</p>
+                  <p class="text-[10px] text-slate-500">Summer Slam &middot; 3/6 filled</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-2 p-2 rounded-lg bg-blue-50">
+                <div class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
+                <div class="flex-1">
+                  <p class="text-xs font-medium text-slate-800">Upload 3 match videos</p>
+                  <p class="text-[10px] text-slate-500">Spring Breakdown</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-2 p-2 rounded-lg">
+                <div class="w-2 h-2 rounded-full bg-gray-400 mt-1.5 shrink-0"></div>
+                <div class="flex-1">
+                  <p class="text-xs font-medium text-slate-800">Review sponsorship request</p>
+                  <p class="text-[10px] text-slate-500">Local Gym Co.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 3: Quick Upload -->
+        <div class="panel bg-white rounded-xl border border-gray-200">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+              <div class="drag-handle text-slate-300 hover:text-slate-500">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
+              </div>
+              <h2 class="text-sm font-semibold text-slate-700">Quick Upload</h2>
+            </div>
+            <div class="flex items-center gap-1">
+              <button class="p-1 rounded hover:bg-gray-100 text-slate-400"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 12H6"/></svg></button>
+              <button class="p-1 rounded hover:bg-gray-100 text-slate-400"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01"/></svg></button>
+            </div>
+          </div>
+          <div class="p-5">
+            <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer">
+              <svg class="w-10 h-10 text-slate-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+              <p class="text-sm font-medium text-slate-600 mb-1">Drag and drop files here</p>
+              <p class="text-xs text-slate-400">or click to browse</p>
+            </div>
+            <div class="mt-3">
+              <select class="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 text-slate-600 bg-white">
+                <option>Upload to: Spring Breakdown (3 pending)</option>
+                <option>Upload to: Fury: June</option>
+                <option>Upload to: Summer Slam</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 4: Recent Activity -->
+        <div class="panel bg-white rounded-xl border border-gray-200">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+              <div class="drag-handle text-slate-300 hover:text-slate-500">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
+              </div>
+              <h2 class="text-sm font-semibold text-slate-700">Recent Activity</h2>
+            </div>
+            <div class="flex items-center gap-1">
+              <button class="p-1 rounded hover:bg-gray-100 text-slate-400"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 12H6"/></svg></button>
+              <button class="p-1 rounded hover:bg-gray-100 text-slate-400"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01"/></svg></button>
+            </div>
+          </div>
+          <div class="p-4 space-y-3">
+            <div class="flex items-start gap-2.5">
+              <div class="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-3 h-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              </div>
+              <div>
+                <p class="text-xs text-slate-800">Fury: June results recorded</p>
+                <p class="text-[10px] text-slate-400">2 hours ago</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-2.5">
+              <div class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-3 h-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"/></svg>
+              </div>
+              <div>
+                <p class="text-xs text-slate-800">5 photos uploaded to Fury: June</p>
+                <p class="text-[10px] text-slate-400">Yesterday</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-2.5">
+              <div class="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-3 h-3 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+              </div>
+              <div>
+                <p class="text-xs text-slate-800">"The Viper" Rex Stone added</p>
+                <p class="text-[10px] text-slate-400">2 days ago</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-2.5">
+              <div class="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-3 h-3 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+              </div>
+              <div>
+                <p class="text-xs text-slate-800">Summer Slam event created</p>
+                <p class="text-[10px] text-slate-400">3 days ago</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 5: Championships -->
+        <div class="panel bg-white rounded-xl border border-gray-200">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+              <div class="drag-handle text-slate-300 hover:text-slate-500">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
+              </div>
+              <h2 class="text-sm font-semibold text-slate-700">Championships</h2>
+            </div>
+            <div class="flex items-center gap-1">
+              <button class="p-1 rounded hover:bg-gray-100 text-slate-400"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 12H6"/></svg></button>
+              <button class="p-1 rounded hover:bg-gray-100 text-slate-400"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01"/></svg></button>
+            </div>
+          </div>
+          <div class="p-4 space-y-3">
+            <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+              <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-xs font-semibold text-slate-800">Heavyweight Championship</p>
+                <p class="text-[10px] text-slate-500">Iron Mike &middot; 3 defenses</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+              <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-xs font-semibold text-slate-800">Tag Team Championship</p>
+                <p class="text-[10px] text-slate-500">The Wrecking Crew &middot; 1 defense</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+              <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-xs font-semibold text-slate-800">Cruiserweight Championship</p>
+                <p class="text-[10px] text-slate-500">"Lightning" Liz Torres &middot; New champion</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel 6: Roster Spotlight -->
+        <div class="panel bg-white rounded-xl border border-gray-200">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+              <div class="drag-handle text-slate-300 hover:text-slate-500">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
+              </div>
+              <h2 class="text-sm font-semibold text-slate-700">Roster Spotlight</h2>
+            </div>
+            <div class="flex items-center gap-1">
+              <button class="p-1 rounded hover:bg-gray-100 text-slate-400"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 12H6"/></svg></button>
+              <button class="p-1 rounded hover:bg-gray-100 text-slate-400"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01"/></svg></button>
+            </div>
+          </div>
+          <div class="p-5 text-center">
+            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 mx-auto mb-3 flex items-center justify-center">
+              <span class="text-xl font-bold text-white">IM</span>
+            </div>
+            <h3 class="text-sm font-bold text-slate-800">"Iron" Mike Steele</h3>
+            <p class="text-xs text-slate-500 mb-3">Heavyweight Champion</p>
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div>
+                <p class="text-lg font-bold text-slate-800">47</p>
+                <p class="text-[10px] text-slate-400">Matches</p>
+              </div>
+              <div>
+                <p class="text-lg font-bold text-green-600">38</p>
+                <p class="text-[10px] text-slate-400">Wins</p>
+              </div>
+              <div>
+                <p class="text-lg font-bold text-slate-800">3</p>
+                <p class="text-[10px] text-slate-400">Title Defenses</p>
+              </div>
+            </div>
+            <button class="mt-3 text-xs text-blue-500 hover:text-blue-600 font-medium">View Profile</button>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>

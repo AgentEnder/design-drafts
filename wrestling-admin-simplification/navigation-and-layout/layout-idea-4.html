@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Layout 4: Hub &amp; Spoke</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+  <!-- Legend -->
+  <div class="bg-amber-50 border-b border-amber-200 px-4 py-2 text-sm text-amber-800">
+    <strong>Layout 4: Hub &amp; Spoke</strong> — Minimal chrome, dashboard-centric. Very thin top bar with search and profile.
+    No persistent sidebar. Dashboard is "home" with large section cards. Shows a "spoke" page (Events list) with breadcrumbs and back button.
+    <button onclick="toggleView()" class="ml-2 underline font-medium">Toggle Hub/Spoke view</button>
+  </div>
+
+  <!-- Thin Top Bar -->
+  <header class="bg-slate-800 h-12 flex items-center px-4 border-b border-slate-700">
+    <!-- Logo -->
+    <div class="flex items-center gap-2 mr-6">
+      <div class="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">PW</div>
+      <span class="font-semibold text-white text-sm">ProWrestling HQ</span>
+    </div>
+
+    <div class="flex-1"></div>
+
+    <!-- Cmd+K Search -->
+    <button class="flex items-center gap-2 px-3 py-1.5 text-sm bg-slate-700 rounded-lg text-slate-400 hover:bg-slate-600 hover:text-slate-200 mr-4">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-width="2" d="m21 21-4.35-4.35"/></svg>
+      <span>Search anything...</span>
+      <kbd class="text-xs bg-slate-600 px-1.5 py-0.5 rounded ml-6">&#8984;K</kbd>
+    </button>
+
+    <!-- Notifications -->
+    <button class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-700 relative mr-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+    </button>
+
+    <!-- Profile -->
+    <div class="flex items-center gap-2 cursor-pointer">
+      <div class="w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">JD</div>
+      <span class="text-sm text-slate-300">Jake</span>
+    </div>
+  </header>
+
+  <!-- HUB VIEW (Dashboard) -->
+  <div id="hub-view" class="hidden">
+    <div class="max-w-6xl mx-auto px-8 py-8">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Good evening, Jake</h1>
+        <p class="text-gray-500 mt-1">Here's an overview of your promotion</p>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="grid grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <p class="text-sm text-gray-500">Next Event</p>
+          <p class="text-lg font-semibold mt-1">Jul 19</p>
+          <p class="text-sm text-blue-500">Summer Slam Spectacular</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <p class="text-sm text-gray-500">Active Roster</p>
+          <p class="text-lg font-semibold mt-1">28</p>
+          <p class="text-sm text-gray-400">2 injured</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <p class="text-sm text-gray-500">Championships</p>
+          <p class="text-lg font-semibold mt-1">5 Active</p>
+          <p class="text-sm text-gray-400">2 defended this month</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <p class="text-sm text-gray-500">Upcoming Events</p>
+          <p class="text-lg font-semibold mt-1">4</p>
+          <p class="text-sm text-gray-400">Next 30 days</p>
+        </div>
+      </div>
+
+      <!-- Section Cards Grid -->
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Jump to section</h2>
+      <div class="grid grid-cols-3 gap-4">
+        <a href="#" onclick="showSpoke(); return false;" class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all group cursor-pointer">
+          <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors">
+            <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"/><path stroke-width="2" d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-1">Events</h3>
+          <p class="text-sm text-gray-500">Plan shows, manage match cards, track results</p>
+          <p class="text-xs text-blue-500 mt-3 font-medium">4 upcoming &rarr;</p>
+        </a>
+
+        <a href="#" class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all group cursor-pointer">
+          <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-purple-100 transition-colors">
+            <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4" stroke-width="2"/><path stroke-width="2" d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-1">Roster</h3>
+          <p class="text-sm text-gray-500">Manage wrestling personas, alignments, stats</p>
+          <p class="text-xs text-purple-500 mt-3 font-medium">28 active &rarr;</p>
+        </a>
+
+        <a href="#" class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all group cursor-pointer">
+          <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-100 transition-colors">
+            <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4" stroke-width="2"/></svg>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-1">Personnel</h3>
+          <p class="text-sm text-gray-500">Real people, contact info, availability</p>
+          <p class="text-xs text-green-500 mt-3 font-medium">34 people &rarr;</p>
+        </a>
+
+        <a href="#" class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all group cursor-pointer">
+          <div class="w-12 h-12 bg-yellow-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-yellow-100 transition-colors">
+            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6" stroke-width="2"/><path stroke-width="2" d="M12 14v8M9 18h6"/></svg>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-1">Championships</h3>
+          <p class="text-sm text-gray-500">Title belts, current holders, reign history</p>
+          <p class="text-xs text-yellow-600 mt-3 font-medium">5 active titles &rarr;</p>
+        </a>
+
+        <a href="#" class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all group cursor-pointer">
+          <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mb-4 group-hover:bg-red-100 transition-colors">
+            <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3" stroke-width="2"/></svg>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-1">Venues</h3>
+          <p class="text-sm text-gray-500">Locations, capacity, equipment needs</p>
+          <p class="text-xs text-red-500 mt-3 font-medium">6 venues &rarr;</p>
+        </a>
+
+        <a href="#" class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all group cursor-pointer">
+          <div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-slate-200 transition-colors">
+            <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-1">Equipment</h3>
+          <p class="text-sm text-gray-500">Ring gear, props, production equipment</p>
+          <p class="text-xs text-slate-500 mt-3 font-medium">Manage inventory &rarr;</p>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPOKE VIEW (Events List) -->
+  <div id="spoke-view">
+    <div class="max-w-6xl mx-auto px-8 py-6">
+      <!-- Breadcrumbs + Back -->
+      <div class="flex items-center gap-3 mb-6">
+        <button onclick="showHub()" class="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <nav class="text-sm text-gray-500">
+          <a href="#" onclick="showHub(); return false;" class="hover:text-blue-500">Home</a>
+          <span class="mx-1">/</span>
+          <span class="text-gray-900 font-medium">Events</span>
+        </nav>
+      </div>
+
+      <!-- Page Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Events</h1>
+          <p class="text-sm text-gray-500 mt-1">Plan and manage your wrestling shows</p>
+        </div>
+        <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="M12 5v14m-7-7h14"/></svg>
+          New Event
+        </button>
+      </div>
+
+      <!-- Quick Filter Tabs -->
+      <div class="flex items-center gap-3 mb-6">
+        <div class="flex bg-gray-100 rounded-lg p-1">
+          <button class="px-3 py-1.5 text-sm font-medium bg-white rounded-md shadow-sm">Upcoming</button>
+          <button class="px-3 py-1.5 text-sm text-gray-500">Past</button>
+          <button class="px-3 py-1.5 text-sm text-gray-500">All</button>
+        </div>
+      </div>
+
+      <!-- Events as Cards (not table, fits hub & spoke feel) -->
+      <div class="space-y-3">
+        <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow cursor-pointer">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 bg-blue-50 rounded-xl flex flex-col items-center justify-center">
+                <span class="text-xs font-semibold text-blue-500 uppercase">Jul</span>
+                <span class="text-lg font-bold text-blue-700">19</span>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900">Summer Slam Spectacular</h3>
+                <p class="text-sm text-gray-500">Metro Arena, Charlotte &middot; 8 matches</p>
+              </div>
+            </div>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Published</span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow cursor-pointer">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 bg-yellow-50 rounded-xl flex flex-col items-center justify-center">
+                <span class="text-xs font-semibold text-yellow-600 uppercase">Aug</span>
+                <span class="text-lg font-bold text-yellow-700">02</span>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900">Championship Chaos</h3>
+                <p class="text-sm text-gray-500">Civic Center, Atlanta &middot; 6 matches</p>
+              </div>
+            </div>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">Draft</span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow cursor-pointer">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 bg-blue-50 rounded-xl flex flex-col items-center justify-center">
+                <span class="text-xs font-semibold text-blue-500 uppercase">Aug</span>
+                <span class="text-lg font-bold text-blue-700">08</span>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900">Friday Night Fury #47</h3>
+                <p class="text-sm text-gray-500">The Warehouse, Raleigh &middot; 5 matches</p>
+              </div>
+            </div>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Planning</span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow cursor-pointer">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 bg-gray-50 rounded-xl flex flex-col items-center justify-center">
+                <span class="text-xs font-semibold text-gray-500 uppercase">Aug</span>
+                <span class="text-lg font-bold text-gray-700">15</span>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900">Proving Ground: Tag Wars</h3>
+                <p class="text-sm text-gray-500">Fairgrounds, Richmond &middot; 4 matches</p>
+              </div>
+            </div>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Tentative</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showHub() {
+      document.getElementById('hub-view').classList.remove('hidden');
+      document.getElementById('spoke-view').classList.add('hidden');
+    }
+    function showSpoke() {
+      document.getElementById('hub-view').classList.add('hidden');
+      document.getElementById('spoke-view').classList.remove('hidden');
+    }
+    function toggleView() {
+      const hub = document.getElementById('hub-view');
+      const spoke = document.getElementById('spoke-view');
+      if (hub.classList.contains('hidden')) {
+        showHub();
+      } else {
+        showSpoke();
+      }
+    }
+  </script>
+</body>
+</html>
