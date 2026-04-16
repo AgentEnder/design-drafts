@@ -99,11 +99,6 @@ const app = cli('design-drafts', {
       exec(`git push --force origin ${siteName}`, tmpDir);
 
       console.log(`\nPushed "${siteName}" to ${repo}`);
-      console.log('Opening PR creation...\n');
-
-      execSync(`gh pr create --web --repo ${repo} --head ${siteName}`, {
-        stdio: 'inherit',
-      });
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }
