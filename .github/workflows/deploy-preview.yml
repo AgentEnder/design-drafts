@@ -82,7 +82,7 @@ jobs:
           touch .gh-pages-staging/.nojekyll
 
       - name: Deploy to gh-pages
-        run: npx nx deploy site
+        run: npx nx deploy site --directory=.gh-pages-staging
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -136,6 +136,6 @@ jobs:
           touch .gh-pages-staging/.nojekyll
 
       - name: Deploy to gh-pages
-        run: npx nx deploy site
+        run: npx nx deploy site --directory=.gh-pages-staging
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
