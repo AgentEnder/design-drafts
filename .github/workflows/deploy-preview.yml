@@ -6,6 +6,12 @@ on:
       - main
       - gh-pages
   delete:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy a preview for'
+        required: true
+        type: string
 
 concurrency:
   group: deploy-preview
@@ -14,7 +20,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
     steps:
@@ -45,12 +51,12 @@ jobs:
       - name: Checkout pushed branch content
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ inputs.branch || github.ref_name }}
           path: .pr-branch-content
 
       - name: Copy branch into staging directory
         run: |
-          BRANCH_NAME="${{ github.ref_name }}"
+          BRANCH_NAME="${{ inputs.branch || github.ref_name }}"
           rm -rf ".gh-pages-staging/${BRANCH_NAME}"
           mkdir -p ".gh-pages-staging/${BRANCH_NAME}"
           cp -r .pr-branch-content/* ".gh-pages-staging/${BRANCH_NAME}/" 2>/dev/null || true
