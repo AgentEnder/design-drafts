@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Layout Idea 1: Wizard + Summary</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    [data-section].collapsed .section-body { display: none; }
+    [data-section]:not(.collapsed) .chevron { transform: rotate(90deg); }
+  </style>
+</head>
+<body class="bg-gray-50 text-slate-800 min-h-screen">
+
+  <!-- Legend -->
+  <div class="bg-blue-50 border-b border-blue-200 px-6 py-3 text-sm text-blue-800">
+    <strong>Layout Idea 1: Wizard + Summary</strong> &mdash;
+    New events use a step-by-step wizard. Existing events show a single summary page with collapsible sections, each editable inline.
+    A completion indicator shows what's filled vs. empty. Shown here: <em>Edit mode</em> for an existing completed event.
+  </div>
+
+  <!-- Top Nav Bar -->
+  <nav class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="#" class="text-blue-500 hover:text-blue-700 text-sm font-medium">&larr; All Events</a>
+      <span class="text-gray-300">|</span>
+      <h1 class="text-lg font-semibold text-slate-800">Summer Slam Spectacular</h1>
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium">Upload Media</button>
+      <button class="bg-white border border-gray-300 hover:bg-gray-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium">Record Results</button>
+    </div>
+  </nav>
+
+  <div class="max-w-4xl mx-auto py-8 px-6">
+
+    <!-- Completion Indicator -->
+    <div class="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-slate-700">Event Completion</h2>
+        <span class="text-sm text-slate-500">7 of 8 sections complete</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-2.5 mb-3">
+        <div class="bg-blue-500 h-2.5 rounded-full" style="width: 87.5%"></div>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-700">
+          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          Event Info
+        </span>
+        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-700">
+          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          Roster
+        </span>
+        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-700">
+          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          Match Card
+        </span>
+        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-700">
+          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          Staff
+        </span>
+        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-700">
+          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          Equipment
+        </span>
+        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-700">
+          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          Results
+        </span>
+        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-700">
+          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          Media
+        </span>
+        <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-yellow-50 text-yellow-700">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"/></svg>
+          Financials
+        </span>
+      </div>
+    </div>
+
+    <!-- Section: Event Info (Collapsed) -->
+    <div data-section="info" class="collapsed bg-white rounded-xl border border-gray-200 mb-4 overflow-hidden">
+      <button onclick="this.closest('[data-section]').classList.toggle('collapsed')" class="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition">
+        <div class="flex items-center gap-3">
+          <svg class="w-4 h-4 text-gray-400 chevron transition-transform" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+          <h3 class="font-semibold text-slate-800">Event Info</h3>
+        </div>
+        <div class="flex items-center gap-3 text-sm text-slate-500">
+          <span>July 15, 2026 &bull; Civic Arena, Pittsburgh PA &bull; Doors 6:00 PM</span>
+          <span class="text-blue-500 hover:text-blue-700 font-medium text-xs">Edit</span>
+        </div>
+      </button>
+      <div class="section-body px-5 pb-5 border-t border-gray-100">
+        <div class="grid grid-cols-2 gap-4 pt-4">
+          <div><label class="block text-xs font-medium text-slate-500 mb-1">Event Name</label><input type="text" value="Summer Slam Spectacular" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></div>
+          <div><label class="block text-xs font-medium text-slate-500 mb-1">Date</label><input type="date" value="2026-07-15" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></div>
+          <div><label class="block text-xs font-medium text-slate-500 mb-1">Venue</label><input type="text" value="Civic Arena, Pittsburgh PA" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></div>
+          <div><label class="block text-xs font-medium text-slate-500 mb-1">Doors Open</label><input type="time" value="18:00" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></div>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <button class="text-sm text-slate-500 hover:text-slate-700 px-3 py-1.5">Cancel</button>
+          <button class="text-sm bg-blue-500 text-white px-4 py-1.5 rounded-lg hover:bg-blue-600">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Roster (Collapsed) -->
+    <div data-section="roster" class="collapsed bg-white rounded-xl border border-gray-200 mb-4 overflow-hidden">
+      <button onclick="this.closest('[data-section]').classList.toggle('collapsed')" class="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition">
+        <div class="flex items-center gap-3">
+          <svg class="w-4 h-4 text-gray-400 chevron transition-transform" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+          <h3 class="font-semibold text-slate-800">Roster</h3>
+        </div>
+        <div class="flex items-center gap-3 text-sm text-slate-500">
+          <span>8 wrestlers assigned</span>
+          <span class="text-blue-500 hover:text-blue-700 font-medium text-xs">Edit</span>
+        </div>
+      </button>
+      <div class="section-body px-5 pb-5 border-t border-gray-100">
+        <div class="grid grid-cols-4 gap-3 pt-4">
+          <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"><div class="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-xs font-bold text-blue-700">TB</div><span class="text-sm">The Bruiser</span></div>
+          <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"><div class="w-8 h-8 rounded-full bg-red-200 flex items-center justify-center text-xs font-bold text-red-700">CK</div><span class="text-sm">Crimson Knight</span></div>
+          <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"><div class="w-8 h-8 rounded-full bg-green-200 flex items-center justify-center text-xs font-bold text-green-700">LS</div><span class="text-sm">Luna Storm</span></div>
+          <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"><div class="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center text-xs font-bold text-purple-700">VX</div><span class="text-sm">Viper X</span></div>
+          <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"><div class="w-8 h-8 rounded-full bg-yellow-200 flex items-center justify-center text-xs font-bold text-yellow-700">DM</div><span class="text-sm">Doc Magnus</span></div>
+          <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"><div class="w-8 h-8 rounded-full bg-pink-200 flex items-center justify-center text-xs font-bold text-pink-700">SR</div><span class="text-sm">Steel Reign</span></div>
+          <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"><div class="w-8 h-8 rounded-full bg-indigo-200 flex items-center justify-center text-xs font-bold text-indigo-700">AJ</div><span class="text-sm">Ace Jordan</span></div>
+          <div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"><div class="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center text-xs font-bold text-orange-700">NK</div><span class="text-sm">Nova Kane</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Match Card (Expanded) -->
+    <div data-section="matches" class="bg-white rounded-xl border border-blue-200 mb-4 overflow-hidden ring-1 ring-blue-100">
+      <button onclick="this.closest('[data-section]').classList.toggle('collapsed')" class="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition">
+        <div class="flex items-center gap-3">
+          <svg class="w-4 h-4 text-blue-500 chevron transition-transform" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+          <h3 class="font-semibold text-slate-800">Match Card</h3>
+        </div>
+        <div class="flex items-center gap-3 text-sm">
+          <span class="text-slate-500">4 matches</span>
+          <span class="text-blue-500 hover:text-blue-700 font-medium text-xs">Edit</span>
+        </div>
+      </button>
+      <div class="section-body px-5 pb-5 border-t border-gray-100">
+        <div class="space-y-3 pt-4">
+          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+            <div>
+              <div class="text-xs text-slate-400 font-medium mb-1">OPENING MATCH &bull; Singles</div>
+              <div class="font-semibold">Ace Jordan vs. Nova Kane</div>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">Winner: Ace Jordan</span>
+              <div class="text-xs text-slate-400 mt-1">Pinfall &bull; 12:34</div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+            <div>
+              <div class="text-xs text-slate-400 font-medium mb-1">TAG TEAM &bull; Tag Team Match</div>
+              <div class="font-semibold">The Bruiser & Steel Reign vs. Viper X & Doc Magnus</div>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">Winners: Bruiser & Reign</span>
+              <div class="text-xs text-slate-400 mt-1">Submission &bull; 18:45</div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+            <div>
+              <div class="text-xs text-slate-400 font-medium mb-1">SPECIAL ATTRACTION &bull; Cage Match</div>
+              <div class="font-semibold">Luna Storm vs. Crimson Knight</div>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">Winner: Luna Storm</span>
+              <div class="text-xs text-slate-400 mt-1">Escape &bull; 22:10</div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div>
+              <div class="text-xs text-yellow-600 font-medium mb-1">MAIN EVENT &bull; Championship &bull; Heavyweight Title</div>
+              <div class="font-semibold">The Bruiser (c) vs. Crimson Knight</div>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">Winner: The Bruiser</span>
+              <div class="text-xs text-slate-400 mt-1">Pinfall &bull; 28:02</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Media (Collapsed) -->
+    <div data-section="media" class="collapsed bg-white rounded-xl border border-gray-200 mb-4 overflow-hidden">
+      <button onclick="this.closest('[data-section]').classList.toggle('collapsed')" class="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition">
+        <div class="flex items-center gap-3">
+          <svg class="w-4 h-4 text-gray-400 chevron transition-transform" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+          <h3 class="font-semibold text-slate-800">Media</h3>
+        </div>
+        <div class="flex items-center gap-3 text-sm text-slate-500">
+          <span>3 videos, 12 photos</span>
+          <span class="text-blue-500 hover:text-blue-700 font-medium text-xs">Edit</span>
+        </div>
+      </button>
+      <div class="section-body px-5 pb-5 border-t border-gray-100">
+        <div class="pt-4">
+          <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition cursor-pointer">
+            <svg class="w-10 h-10 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            <p class="text-sm text-slate-500">Drop files here or <span class="text-blue-500 font-medium">browse</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Staff (Collapsed) -->
+    <div data-section="staff" class="collapsed bg-white rounded-xl border border-gray-200 mb-4 overflow-hidden">
+      <button onclick="this.closest('[data-section]').classList.toggle('collapsed')" class="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition">
+        <div class="flex items-center gap-3">
+          <svg class="w-4 h-4 text-gray-400 chevron transition-transform" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+          <h3 class="font-semibold text-slate-800">Staff & Equipment</h3>
+        </div>
+        <div class="flex items-center gap-3 text-sm text-slate-500">
+          <span>5 staff &bull; All equipment assigned</span>
+          <span class="text-blue-500 hover:text-blue-700 font-medium text-xs">Edit</span>
+        </div>
+      </button>
+      <div class="section-body px-5 pb-5 border-t border-gray-100"><div class="pt-4 text-sm text-slate-500">Staff and equipment details here...</div></div>
+    </div>
+
+    <!-- Section: Financials (Collapsed, incomplete) -->
+    <div data-section="financials" class="collapsed bg-white rounded-xl border border-yellow-200 mb-4 overflow-hidden">
+      <button onclick="this.closest('[data-section]').classList.toggle('collapsed')" class="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition">
+        <div class="flex items-center gap-3">
+          <svg class="w-4 h-4 text-gray-400 chevron transition-transform" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+          <h3 class="font-semibold text-slate-800">Financials</h3>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Incomplete</span>
+        </div>
+        <div class="flex items-center gap-3 text-sm text-slate-500">
+          <span>Revenue not recorded</span>
+          <span class="text-blue-500 hover:text-blue-700 font-medium text-xs">Edit</span>
+        </div>
+      </button>
+      <div class="section-body px-5 pb-5 border-t border-gray-100"><div class="pt-4 text-sm text-slate-500">Financial details here...</div></div>
+    </div>
+
+    <!-- Section: Results (Collapsed) -->
+    <div data-section="results" class="collapsed bg-white rounded-xl border border-gray-200 mb-4 overflow-hidden">
+      <button onclick="this.closest('[data-section]').classList.toggle('collapsed')" class="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition">
+        <div class="flex items-center gap-3">
+          <svg class="w-4 h-4 text-gray-400 chevron transition-transform" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+          <h3 class="font-semibold text-slate-800">Results & Social</h3>
+        </div>
+        <div class="flex items-center gap-3 text-sm text-slate-500">
+          <span>All results recorded &bull; Social preview configured</span>
+          <span class="text-blue-500 hover:text-blue-700 font-medium text-xs">Edit</span>
+        </div>
+      </button>
+      <div class="section-body px-5 pb-5 border-t border-gray-100"><div class="pt-4 text-sm text-slate-500">Results and social preview details here...</div></div>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Simplification — Idea Browser</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; height: 100vh; display: flex; flex-direction: column; }
+
+    header { background: #1e293b; border-bottom: 1px solid #334155; padding: 12px 20px; display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
+    header h1 { font-size: 14px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+
+    .controls { display: flex; gap: 12px; align-items: center; flex: 1; }
+
+    .picker-group { display: flex; align-items: center; gap: 8px; }
+    .picker-group label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; }
+
+    select {
+      background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px;
+      padding: 6px 28px 6px 10px; font-size: 13px; cursor: pointer;
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center;
+    }
+    select:hover { border-color: #3b82f6; }
+    select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
+
+    .variant-pills { display: flex; gap: 4px; margin-left: 8px; }
+    .variant-pill {
+      width: 28px; height: 28px; border-radius: 6px; border: 1px solid #334155;
+      background: #0f172a; color: #94a3b8; font-size: 12px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s ease;
+    }
+    .variant-pill:hover { border-color: #3b82f6; color: #e2e8f0; }
+    .variant-pill.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+
+    .spacer { flex: 1; }
+
+    .current-label { font-size: 12px; color: #64748b; }
+    .current-label strong { color: #e2e8f0; }
+
+    .iframe-container { flex: 1; position: relative; }
+    iframe { width: 100%; height: 100%; border: none; background: #fff; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Idea Browser</h1>
+  <div class="controls">
+    <div class="picker-group">
+      <label>Area</label>
+      <select id="area-picker">
+        <option value="navigation-and-layout">Navigation &amp; Layout</option>
+        <option value="event-workflow">Event Workflow</option>
+        <option value="mobile-experience">Mobile Experience</option>
+        <option value="dashboard-and-home">Dashboard &amp; Home</option>
+        <option value="entity-pages">Entity Pages</option>
+      </select>
+    </div>
+    <div class="picker-group">
+      <label>Variant</label>
+      <div class="variant-pills" id="variant-pills">
+        <button class="variant-pill active" data-variant="1">1</button>
+        <button class="variant-pill" data-variant="2">2</button>
+        <button class="variant-pill" data-variant="3">3</button>
+        <button class="variant-pill" data-variant="4">4</button>
+        <button class="variant-pill" data-variant="5">5</button>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="current-label" id="current-label"></div>
+  </div>
+</header>
+
+<div class="iframe-container">
+  <iframe id="preview" src=""></iframe>
+</div>
+
+<script>
+  const areaPicker = document.getElementById('area-picker');
+  const pills = document.querySelectorAll('.variant-pill');
+  const iframe = document.getElementById('preview');
+  const label = document.getElementById('current-label');
+
+  const descriptions = {
+    'navigation-and-layout': ['Collapsible Sidebar', 'Activity Rail + Flyout', 'Top Nav + Contextual Sidebar', 'Hub & Spoke', 'Tabbed Workspace'],
+    'event-workflow': ['Wizard + Summary', 'Timeline View', 'Card Dashboard', 'Consolidated 3 Tabs', 'Sidebar Sections'],
+    'mobile-experience': ['Bottom Tab Bar', 'Card Stack Home', 'Context-Aware Mode', 'Quick Actions Grid', 'Split Experience'],
+    'dashboard-and-home': ['Task-Driven Home', 'Event-Centric Timeline', 'Kanban Overview', 'Command Center', 'Role-Aware Panels'],
+    'entity-pages': ['Master-Detail Split', 'Inline Expansion', 'Grouped Hub', 'Slide-Over Panel', 'Card Grid + Quick Edit'],
+  };
+
+  let currentArea = 'navigation-and-layout';
+  let currentVariant = 1;
+
+  function update() {
+    const path = `${currentArea}/layout-idea-${currentVariant}.html`;
+    iframe.src = path;
+    const desc = descriptions[currentArea]?.[currentVariant - 1] || '';
+    label.innerHTML = `<strong>${desc}</strong>`;
+    pills.forEach(p => p.classList.toggle('active', +p.dataset.variant === currentVariant));
+  }
+
+  areaPicker.addEventListener('change', () => {
+    currentArea = areaPicker.value;
+    update();
+  });
+
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      currentVariant = +pill.dataset.variant;
+      update();
+    });
+  });
+
+  // Keyboard navigation: left/right for variant, up/down for area
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') {
+      currentVariant = currentVariant < 5 ? currentVariant + 1 : 1;
+      update();
+    } else if (e.key === 'ArrowLeft') {
+      currentVariant = currentVariant > 1 ? currentVariant - 1 : 5;
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const idx = areaPicker.selectedIndex;
+      areaPicker.selectedIndex = idx < areaPicker.options.length - 1 ? idx + 1 : 0;
+      currentArea = areaPicker.value;
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const idx = areaPicker.selectedIndex;
+      areaPicker.selectedIndex = idx > 0 ? idx - 1 : areaPicker.options.length - 1;
+      currentArea = areaPicker.value;
+    } else {
+      return;
+    }
+    update();
+  });
+
+  update();
+</script>
+
+</body>
+</html>
