@@ -27,9 +27,20 @@ const SESSION_HIDDEN_KEY = 'design-drafts.toolbar.hidden';
  *   3. sessionStorage flag set by the bar's hide button → hidden.
  *   4. Otherwise → visible.
  */
+// Auto-tuck state machine. The toolbar peeks back into view when the
+// mouse hits the bottom edge of the viewport, then commits to staying
+// once the user actually enters the bar. Once committed, leaving the bar
+// re-tucks. The `armed` flag prevents the X-click → instant-re-reveal
+// race when dismiss happens while the cursor is still in the edge zone.
+type TuckState = 'tucked' | 'revealed-uncommitted' | 'revealed-committed';
+
+const EDGE_REVEAL_PX = 6;
+
 export class DesignDraftsToolbar extends HTMLElement {
   private handles: ToolbarHandles | null = null;
-  private hideObserver: MutationObserver | null = null;
+  private tuckObserver: MutationObserver | null = null;
+  private state: TuckState = 'revealed-uncommitted';
+  private armed = true;
 
   async connectedCallback(): Promise<void> {
     if (this.handles) return;
@@ -41,34 +52,101 @@ export class DesignDraftsToolbar extends HTMLElement {
     // Element may have been disconnected while awaiting the fetch.
     if (!this.isConnected) return;
 
+    const initialTucked = computeInitialTuckState();
     this.handles = populateToolbar(
       this,
       resolved.manifest,
       resolved.manifestUrl,
-      computeInitialVisibility()
+      initialTucked
     );
+    this.state = initialTucked ? 'tucked' : 'revealed-uncommitted';
 
     registerToggleShortcut(() => {
       if (!this.handles) return;
-      const visible = this.handles.toggleVisible();
-      persistHiddenPreference(!visible);
+      const tucked = this.handles.toggleTucked();
+      persistTuckedPreference(tucked);
+      this.state = tucked ? 'tucked' : 'revealed-uncommitted';
+      // After explicit toggle, disarm so the cursor's current position
+      // (likely still inside or near the bar) doesn't immediately flip
+      // the state machine back.
+      this.armed = false;
     });
 
-    this.hideObserver = new MutationObserver(() => {
-      persistHiddenPreference(this.hasAttribute('hidden'));
+    this.tuckObserver = new MutationObserver(() => {
+      const tucked = this.hasAttribute('data-tucked');
+      persistTuckedPreference(tucked);
+      // The hide button writes the attribute directly — keep our state
+      // model in sync and disarm to prevent the immediate re-reveal.
+      if (tucked) {
+        this.state = 'tucked';
+        this.armed = false;
+      } else if (this.state === 'tucked') {
+        this.state = 'revealed-uncommitted';
+      }
     });
-    this.hideObserver.observe(this, {
+    this.tuckObserver.observe(this, {
       attributes: true,
-      attributeFilter: ['hidden'],
+      attributeFilter: ['data-tucked'],
     });
+
+    document.addEventListener('pointermove', this.onPointerMove, true);
   }
 
   disconnectedCallback(): void {
-    this.hideObserver?.disconnect();
-    this.hideObserver = null;
+    this.tuckObserver?.disconnect();
+    this.tuckObserver = null;
+    document.removeEventListener('pointermove', this.onPointerMove, true);
     // Note: we don't tear down the shadow root or null out handles here,
     // because connectedCallback can fire again if the node is moved
     // around the tree. populateToolbar is idempotent.
+  }
+
+  private onPointerMove = (event: PointerEvent): void => {
+    if (!this.handles) return;
+    const inEdge = event.clientY >= window.innerHeight - EDGE_REVEAL_PX;
+    if (!inEdge) this.armed = true;
+
+    const barRect = this.getBarRect();
+    const inBar =
+      !!barRect &&
+      event.clientX >= barRect.left &&
+      event.clientX <= barRect.right &&
+      event.clientY >= barRect.top &&
+      event.clientY <= barRect.bottom;
+
+    if (this.state === 'tucked') {
+      if (inEdge && this.armed) {
+        this.handles.setTucked(false);
+        this.state = 'revealed-uncommitted';
+      }
+    } else if (this.state === 'revealed-uncommitted') {
+      if (inBar) this.state = 'revealed-committed';
+    } else if (this.state === 'revealed-committed') {
+      if (!inBar) {
+        this.handles.setTucked(true);
+        this.state = 'tucked';
+        this.armed = false;
+      }
+    }
+  };
+
+  private getBarRect(): DOMRect | null {
+    const bar =
+      this.shadowRoot?.querySelector<HTMLElement>('.bar') ?? null;
+    if (!bar) return null;
+    if (this.hasAttribute('data-tucked')) {
+      // Tucked bar is translated below the viewport. For hit testing we
+      // want the rect the bar would occupy when visible, so synthesize
+      // it from the host's content box.
+      const hostRect = this.getBoundingClientRect();
+      return new DOMRect(
+        hostRect.left,
+        hostRect.top,
+        hostRect.width,
+        hostRect.height
+      );
+    }
+    return bar.getBoundingClientRect();
   }
 }
 
@@ -76,18 +154,18 @@ if (typeof customElements !== 'undefined' && !customElements.get(TAG)) {
   customElements.define(TAG, DesignDraftsToolbar);
 }
 
-function computeInitialVisibility(): boolean {
+function computeInitialTuckState(): boolean {
   const params = new URLSearchParams(window.location.search);
   const param = params.get('toolbar');
-  if (param === '0') return false;
+  if (param === '0') return true; // start tucked
   if (param === '1') {
-    clearHiddenPreference();
-    return true;
+    clearTuckedPreference();
+    return false;
   }
-  return !readHiddenPreference();
+  return readTuckedPreference();
 }
 
-function readHiddenPreference(): boolean {
+function readTuckedPreference(): boolean {
   try {
     return window.sessionStorage.getItem(SESSION_HIDDEN_KEY) === '1';
   } catch {
@@ -95,16 +173,16 @@ function readHiddenPreference(): boolean {
   }
 }
 
-function persistHiddenPreference(hidden: boolean): void {
+function persistTuckedPreference(tucked: boolean): void {
   try {
-    if (hidden) window.sessionStorage.setItem(SESSION_HIDDEN_KEY, '1');
+    if (tucked) window.sessionStorage.setItem(SESSION_HIDDEN_KEY, '1');
     else window.sessionStorage.removeItem(SESSION_HIDDEN_KEY);
   } catch {
     // sessionStorage can throw in privacy modes; ignore.
   }
 }
 
-function clearHiddenPreference(): void {
+function clearTuckedPreference(): void {
   try {
     window.sessionStorage.removeItem(SESSION_HIDDEN_KEY);
   } catch {
