@@ -10,7 +10,7 @@
     "./draft-manifest.schema.json": "./schemas/draft-manifest.schema.json"
   },
   "scripts": {
-    "build": "tsx scripts/emit-schema.ts",
+    "build": "tsc -p tsconfig.lib.json && tsx scripts/emit-schema.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
