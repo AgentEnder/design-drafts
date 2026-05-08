@@ -162,7 +162,7 @@ class AnnotateOverlay {
   private onPointerMove = (event: PointerEvent): void => {
     if (!this.active) return;
     if (this.composing) return;
-    if (this.isInsideOverlay(event.target)) {
+    if (this.eventCrossesOverlay(event)) {
       this.hovered = null;
       this.hideOutline();
       return;
@@ -179,7 +179,7 @@ class AnnotateOverlay {
 
   private onClick = (event: MouseEvent): void => {
     if (!this.active) return;
-    if (this.isInsideOverlay(event.target)) return;
+    if (this.eventCrossesOverlay(event)) return;
     if (this.composing) return;
     const pick = pickAtPoint(event.clientX, event.clientY, this.host);
     if (!pick) return;
@@ -443,7 +443,11 @@ class AnnotateOverlay {
     close.type = 'button';
     close.className = 'btn ghost';
     close.textContent = 'Hide';
-    close.addEventListener('click', () => this.deactivate());
+    close.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.deactivate();
+    });
     head.appendChild(close);
 
     const body = document.createElement('div');
@@ -650,6 +654,17 @@ class AnnotateOverlay {
     if (!this.host) return false;
     if (!(target instanceof Node)) return false;
     return this.host.contains(target) || this.host === target;
+  }
+
+  // Robust shadow-DOM-aware overlay check using composedPath, which
+  // includes nodes inside the shadow tree even when event.target has been
+  // retargeted at the boundary.
+  private eventCrossesOverlay(event: Event): boolean {
+    if (!this.host) return false;
+    const path =
+      typeof event.composedPath === 'function' ? event.composedPath() : [];
+    if (path.includes(this.host)) return true;
+    return this.isInsideOverlay(event.target);
   }
 }
 
