@@ -47,6 +47,44 @@ function exec(command: string, cwd: string): void {
   execSync(command, { cwd, stdio: 'inherit' });
 }
 
+const SITE_NAME_PATTERN = /^[a-z0-9][a-z0-9-_]{0,62}$/;
+
+function slugifySiteName(input: string): string {
+  const lowered = input.toLowerCase();
+  const replaced = lowered.replace(/[^a-z0-9_-]+/g, '-');
+  const trimmed = replaced.replace(/^-+/, '').replace(/-+$/, '');
+  // Ensure first character is alphanumeric (the regex allows _ or - normally,
+  // but our pattern requires the leading char to be [a-z0-9]).
+  const leading = trimmed.replace(/^[-_]+/, '');
+  return leading.slice(0, 63);
+}
+
+function validateSiteName(
+  name: string
+): { ok: true } | { ok: false; reason: string; suggestion?: string } {
+  if (!name || !name.trim()) {
+    return { ok: false, reason: 'site-name must not be empty' };
+  }
+  if (name.length > 63) {
+    const suggestion = slugifySiteName(name);
+    return {
+      ok: false,
+      reason: 'site-name must be 63 characters or fewer',
+      suggestion: suggestion || undefined,
+    };
+  }
+  if (!SITE_NAME_PATTERN.test(name)) {
+    const suggestion = slugifySiteName(name);
+    return {
+      ok: false,
+      reason:
+        'site-name must start with a lowercase letter or digit and contain only lowercase letters, digits, hyphens, or underscores',
+      suggestion: suggestion || undefined,
+    };
+  }
+  return { ok: true };
+}
+
 const app = cli('design-drafts', {
   description: 'Push static site previews as branches to a design-drafts repo',
   builder: (args) =>
@@ -81,6 +119,15 @@ const app = cli('design-drafts', {
     const repo: string = args.repo ?? homeConfig.repo;
     const siteName: string = args['site-name'] ?? localConfig['site-name'];
     const sourcePath = resolve(args.path);
+
+    const validation = validateSiteName(siteName);
+    if (!validation.ok) {
+      console.error(`Invalid site-name "${siteName}": ${validation.reason}`);
+      if (validation.suggestion) {
+        console.error(`Try: ${validation.suggestion}`);
+      }
+      process.exit(1);
+    }
 
     if (!existsSync(sourcePath)) {
       console.error(`Path does not exist: ${sourcePath}`);
