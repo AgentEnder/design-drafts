@@ -66,6 +66,23 @@ button:focus-visible {
   opacity: 1;
 }
 
+.flash {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(249, 115, 22, 0.22);
+  border: 2px solid ${ACCENT};
+  border-radius: 2px;
+  animation: dd-flash 1100ms ease-out;
+  z-index: 1;
+}
+@keyframes dd-flash {
+  0%   { opacity: 0; }
+  12%  { opacity: 1; }
+  35%  { opacity: 0; }
+  55%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 .outline-label {
   position: absolute;
   pointer-events: none;

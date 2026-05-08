@@ -580,12 +580,12 @@ class AnnotateOverlay {
       reveal.disabled = stale;
       reveal.addEventListener('click', () => {
         const pin = this.pins.find((p) => p.annotation.id === annotation.id);
-        if (pin?.element) {
-          pin.element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-          });
-        }
+        if (!pin?.element) return;
+        const target = pin.element;
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Brief delay so the smooth scroll has settled before the flash
+        // overlay locks onto the element's final on-screen position.
+        setTimeout(() => this.flashElement(target), 220);
       });
 
       const edit = document.createElement('button');
@@ -649,6 +649,36 @@ class AnnotateOverlay {
   }
 
   // ---- helpers ----
+
+  // Briefly flash a translucent overlay over the given element to draw the
+  // eye after a Reveal scroll. Repositions every animation frame for the
+  // flash duration so user scrolling during the flash doesn't desync the
+  // overlay from its target.
+  private flashElement(element: Element): void {
+    if (!this.root) return;
+    const initial = element.getBoundingClientRect();
+    if (initial.width === 0 && initial.height === 0) return;
+
+    const flash = document.createElement('div');
+    flash.className = 'flash';
+    this.root.appendChild(flash);
+
+    const FLASH_MS = 1100;
+    const start = performance.now();
+    const tick = (): void => {
+      const r = element.getBoundingClientRect();
+      flash.style.left = `${r.left}px`;
+      flash.style.top = `${r.top}px`;
+      flash.style.width = `${r.width}px`;
+      flash.style.height = `${r.height}px`;
+      if (performance.now() - start < FLASH_MS) {
+        requestAnimationFrame(tick);
+      } else {
+        flash.remove();
+      }
+    };
+    requestAnimationFrame(tick);
+  }
 
   private isInsideOverlay(target: EventTarget | null): boolean {
     if (!this.host) return false;
