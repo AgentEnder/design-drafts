@@ -138,6 +138,7 @@ const app = cli('design-drafts', {
         description:
           'Branch prefix used when pushing previews (default: "drafts/"). Pass an empty string to push without a prefix.',
       })
+      .env({ prefix: 'DESIGN_DRAFTS' })
       .config(homeJsonProvider)
       .config(ConfigurationProviders.JsonFile(CONFIG_FILENAME)),
 
