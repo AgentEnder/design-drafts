@@ -221,6 +221,17 @@ button:focus-visible {
   z-index: 2;
 }
 
+/* In integrated mode the panel anchors above the toolbar (which lives at
+   the bottom of the viewport) instead of floating at the top-right.
+   Standalone-mode toggle is suppressed; the toolbar's slot button drives
+   activation. */
+.panel.integrated {
+  top: auto;
+  right: 16px;
+  bottom: 76px;
+  max-height: calc(100vh - 100px);
+}
+
 .panel-head {
   display: flex;
   align-items: center;

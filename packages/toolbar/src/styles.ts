@@ -82,6 +82,17 @@ export const TOOLBAR_STYLES = /* css */ `
     min-width: 0;
   }
 
+  /* Plugin slot — children of <dd-toolbar> appear here, between the
+     axis groups and the hide button. Each child is responsible for its
+     own visual treatment; we only ensure they're interactive and
+     inherit the bar's stretch alignment. */
+  ::slotted(*) {
+    pointer-events: auto;
+    display: flex;
+    align-items: stretch;
+    border-left: 1px solid var(--dd-border);
+  }
+
   .group:last-of-type {
     border-right: none;
   }
