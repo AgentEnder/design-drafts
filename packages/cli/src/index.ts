@@ -7,6 +7,7 @@ import { text } from '@clack/prompts';
 import { cli, ConfigurationProviders } from 'cli-forge';
 
 const CONFIG_FILENAME = 'design-drafts.config.json';
+const DEFAULT_PREFIX = 'drafts/';
 
 const homeConfigPath = join(homedir(), CONFIG_FILENAME);
 const localConfigPath = join(process.cwd(), CONFIG_FILENAME);
@@ -46,6 +47,31 @@ async function promptAndPersist(
     JSON.stringify({ ...previousFile, [argKey]: value }, null, 2) + '\n'
   );
   return value;
+}
+
+function resolvePrefix(existing: string | undefined): string {
+  // Treat undefined as "no value configured" -> use default and persist it so the
+  // home config visibly records the value for users who want to edit it later.
+  // Treat an explicit empty string as a deliberate opt-out (no prefix); honor it
+  // and persist it so the choice is durable.
+  if (typeof existing === 'string') {
+    persistHomeConfigValue('prefix', existing);
+    return existing;
+  }
+
+  persistHomeConfigValue('prefix', DEFAULT_PREFIX);
+  return DEFAULT_PREFIX;
+}
+
+function persistHomeConfigValue(key: string, value: string): void {
+  const previousFile = existsSync(homeConfigPath)
+    ? JSON.parse(readFileSync(homeConfigPath, 'utf-8'))
+    : {};
+  if (previousFile[key] === value) return;
+  writeFileSync(
+    homeConfigPath,
+    JSON.stringify({ ...previousFile, [key]: value }, null, 2) + '\n'
+  );
 }
 
 function exec(command: string, cwd: string): void {
@@ -107,6 +133,11 @@ const app = cli('design-drafts', {
         type: 'string',
         description: 'Name for this site preview (becomes the branch name)',
       })
+      .option('prefix', {
+        type: 'string',
+        description:
+          'Branch prefix used when pushing previews (default: "drafts/"). Pass an empty string to push without a prefix.',
+      })
       .config(homeJsonProvider)
       .config(ConfigurationProviders.JsonFile(CONFIG_FILENAME)),
 
@@ -123,6 +154,7 @@ const app = cli('design-drafts', {
       localConfigPath,
       'Site name for this preview:'
     );
+    const prefix = resolvePrefix(args.prefix);
     const sourcePath = resolve(args.path);
 
     const validation = validateSiteName(siteName);
@@ -139,18 +171,19 @@ const app = cli('design-drafts', {
       process.exit(1);
     }
 
+    const branchName = `${prefix}${siteName}`;
     const tmpDir = mkdtempSync(join(tmpdir(), 'design-drafts-'));
 
     try {
       cpSync(sourcePath, tmpDir, { recursive: true });
       exec('git init', tmpDir);
-      exec(`git checkout -b ${siteName}`, tmpDir);
+      exec(`git checkout -b ${branchName}`, tmpDir);
       exec(`git remote add origin git@github.com:${repo}.git`, tmpDir);
       exec('git add .', tmpDir);
       exec('git commit -m "push site preview"', tmpDir);
-      exec(`git push --force origin ${siteName}`, tmpDir);
+      exec(`git push --force origin ${branchName}`, tmpDir);
 
-      console.log(`\nPushed "${siteName}" to ${repo}`);
+      console.log(`\nPushed "${branchName}" to ${repo}`);
     } finally {
       rmSync(tmpDir, { recursive: true, force: true });
     }
