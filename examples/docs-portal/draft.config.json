@@ -1,0 +1,53 @@
+{
+  "$schema": "../../packages/conventions/schemas/draft-manifest.schema.json",
+  "name": "Tinderbox Docs Portal",
+  "description": "Developer documentation portal for the Tinderbox CLI. Compares a text-first reading experience against a playground-first try-it-now layout, across single-column and three-pane layouts.",
+  "axes": [
+    {
+      "name": "page",
+      "description": "Top-level destinations in the docs.",
+      "choices": [
+        { "name": "home", "description": "Landing — what Tinderbox is and why." },
+        { "name": "quickstart", "description": "Five-minute install-to-first-burn walkthrough." },
+        { "name": "api", "description": "Command-by-command reference." }
+      ]
+    },
+    {
+      "name": "variant",
+      "description": "Content stance. Only meaningful on home and quickstart; the API reference uses 'none'.",
+      "choices": [
+        { "name": "none", "description": "No variant treatment; used for pages where the stance is fixed." },
+        { "name": "text-first", "description": "Long-form prose lead. Code samples inline. Designed for readers who learn by reading." },
+        { "name": "playground-first", "description": "Editable code sample on top, explanation below. Designed for readers who learn by tinkering." }
+      ]
+    },
+    {
+      "name": "theme",
+      "description": "Color palette and body typeface.",
+      "choices": [
+        { "name": "paper", "description": "Warm off-white background with a serif body face. Reading-optimized." },
+        { "name": "console", "description": "Dark terminal-adjacent palette with a mono body face for code-heavy pages." }
+      ]
+    },
+    {
+      "name": "layout",
+      "description": "Page chrome.",
+      "choices": [
+        { "name": "single-column", "description": "Centered prose, no sidebars. Optimal line length, minimal chrome." },
+        { "name": "three-pane", "description": "Left TOC, center content, right on-page outline. Reference-style." }
+      ]
+    }
+  ],
+  "pages": [
+    { "coordinates": { "page": "home",       "variant": "text-first",       "theme": "paper",   "layout": "single-column" }, "path": "pages/home/text-first-paper-single-column.html",            "description": "The default landing experience." },
+    { "coordinates": { "page": "home",       "variant": "playground-first", "theme": "paper",   "layout": "single-column" }, "path": "pages/home/playground-first-paper-single-column.html",      "description": "Same landing copy reframed as 'try it now' with editable command blocks." },
+    { "coordinates": { "page": "home",       "variant": "text-first",       "theme": "console", "layout": "single-column" }, "path": "pages/home/text-first-console-single-column.html",          "description": "Reading mode in console palette — useful pressure test for the serif/mono swap." },
+    { "coordinates": { "page": "quickstart", "variant": "text-first",       "theme": "paper",   "layout": "single-column" }, "path": "pages/quickstart/text-first-paper-single-column.html" },
+    { "coordinates": { "page": "quickstart", "variant": "playground-first", "theme": "paper",   "layout": "single-column" }, "path": "pages/quickstart/playground-first-paper-single-column.html" },
+    { "coordinates": { "page": "api",        "variant": "none",             "theme": "paper",   "layout": "three-pane" },    "path": "pages/api/none-paper-three-pane.html" },
+    { "coordinates": { "page": "api",        "variant": "none",             "theme": "console", "layout": "three-pane" },    "path": "pages/api/none-console-three-pane.html" },
+    { "coordinates": { "page": "api",        "variant": "none",             "theme": "paper",   "layout": "single-column" }, "path": "pages/api/none-paper-single-column.html",                   "description": "Reference content forced into the reading layout — included to show why it doesn't work." }
+  ],
+  "prompt": "references/brief.md",
+  "createdAt": "2026-05-03T11:15:00.000Z"
+}
