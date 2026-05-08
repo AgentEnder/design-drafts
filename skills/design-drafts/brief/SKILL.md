@@ -1,6 +1,6 @@
 ---
 name: design-drafts:brief
-description: Interview the user about a draft they want to create — audience, intent, must-include / must-not-look-likes, voice, and visual references — and write a structured brief to `references/brief.md` in the draft directory. Use when starting a new design draft, when the user asks for help shaping what a draft should be, when a draft directory is missing `references/brief.md`, or any time another draft-producing skill (e.g. `design-drafts:variants`, `frontend-design`) needs a brief to consume. Triggers include "start a new draft", "brief me on this draft", "I need help shaping this draft", "write the brief", or being invoked from inside a directory that contains a `draft.config.json` but no `references/brief.md`.
+description: Interview the user about a draft they want to create — audience, intent, must-include / must-not-look-likes, voice, and visual references — and write a structured brief to `references/brief.md` in the draft directory. If `references/explore.md` exists (from `design-drafts:explore`), use it to seed the interview instead of cold-asking. Use when starting a new design draft from a clear premise, when an explore session has already produced concept picks, when a draft directory is missing `references/brief.md`, or any time another draft-producing skill (e.g. `design-drafts:variants`, `frontend-design`) needs a brief to consume. Triggers include "start a new draft", "brief me on this draft", "I need help shaping this draft", "write the brief", "we finished exploring, write the brief", or being invoked from inside a directory that contains a `draft.config.json` but no `references/brief.md`.
 ---
 
 # design-drafts:brief
@@ -17,15 +17,29 @@ The second most important rule: **one question at a time.** Do not list five que
 
 2. **Check whether a brief already exists.** If `references/brief.md` is already present in the draft directory, stop and ask: "There's already a brief here. Do you want to start over, edit specific sections, or just inspect what's there?" Do not overwrite without explicit confirmation.
 
-3. **Read the supporting docs once, silently.** Before asking the first question, make sure you've read:
+3. **Check for an exploration document.** If `references/explore.md` is present, read it before asking the first question. It contains: a premise in the user's words, axes with concept picks (marked `[picked]`), captured quotes, and a list of references already saved into `references/links.md` and `references/inspiration/`. The interview shifts when this file exists — see "Interview order with explore.md present" below.
+
+4. **Read the supporting docs once, silently.** Before asking the first question, make sure you've read:
    - `docs/anti-patterns.md` — the catalog of defaults to steer away from. You will reference this by entry number when asking about must-not-look-likes.
-   - `docs/conventions/references-protocol.md` — the four-file convention for `references/`. You will point the user at this when asking about reference material.
+   - `docs/conventions/references-protocol.md` — the four-file convention for `references/`. The `design-drafts ref add` CLI command is the canonical way to add links/screenshots; you will use it during the interview when the user mentions URLs or screenshots, instead of telling them to drop files into folders.
 
    You do not need to recite these to the user. Just have them loaded so you can cite specific entries when relevant.
 
-4. **Set expectations.** Tell the user: "This is going to be six to eight short questions. I'll repeat back each answer to confirm I got the nuance right before moving on. The output is a structured brief at `references/brief.md` that the variants skill (and `frontend-design`) will read before generating anything."
+5. **Set expectations.** Tell the user: "This is going to be six to eight short questions. I'll repeat back each answer to confirm I got the nuance right before moving on. If you mention or paste a URL or screenshot, I'll save it as a reference on the fly. The output is a structured brief at `references/brief.md` that the variants skill (and `frontend-design`) will read before generating anything." If `explore.md` exists, add: "I've already read your exploration doc — I'll start by recapping what you picked there, then drill into the open threads instead of asking everything from scratch."
 
-## Interview order
+## Interview order with explore.md present
+
+When `references/explore.md` exists, do not run the cold interview below. Instead:
+
+1. **Recap and confirm.** Read aloud (in your own words, brief) the premise, the axes, and which concepts were picked. End with: "Did I read that right, or did you change your mind on anything?" Wait for confirmation. Edit picks if the user has updated views.
+2. **Promote picks into draft brief answers.** A `[picked]` concept's keywords and anti-direction usually answer most of the `Constraints` and `Voice` sections. Draft those answers tentatively and ask the user to confirm or correct rather than asking from scratch. For example, if the picked theme is "Quiet Instrument" with keywords `editorial, restrained, dense`, the `Density` answer is almost certainly "dense" — confirm rather than ask.
+3. **Drill into open threads.** Each entry under `## Open threads` in the explore doc is an unresolved question. Walk them one at a time, treating them like the cold interview's questions: ask, listen, repeat back, confirm. These are usually the highest-signal questions because the user already knows they don't have an answer.
+4. **Cover the sections explore.md does not.** The explore doc usually contains nothing about Audience, Intent, or Must-include — those are interview questions, not brainstorm questions. Run the relevant numbered sections below for the parts the explore doc doesn't already cover.
+5. **Carry over captured quotes.** The explore doc's `## Notes captured` are verbatim quotes from the user. They are gold for the brief's Voice section and for the `Reference copy` field — do not rephrase them.
+
+Skip nothing because explore.md "covered it" — confirm. The user may have changed their mind between sessions.
+
+## Interview order (cold — no explore.md)
 
 The order matters. Audience and intent come first because every later answer depends on them. References come after constraints because looking at inspiration before naming constraints tends to anchor the user on whatever they saw last instead of what they actually need.
 
@@ -61,13 +75,32 @@ After each, repeat back. Where the user says "I don't know," accept it and write
 
 ### 4. Reference inspiration
 
-Now that constraints exist, references make sense. Reference the protocol explicitly:
+Now that constraints exist, references make sense. The user does not need to manually drop files into folders — capture inline as the conversation produces them.
 
-1. "Drop URLs and screenshots into `references/inspiration/` and `references/links.md`. The convention is in `docs/conventions/references-protocol.md` — the short version is: filename is the citation (`linear-density.png`, not `inspiration-1.png`), and each link in `links.md` gets one sentence saying what's being cited. Negative annotations are useful too — 'NOT the color palette' tells the next skill what not to borrow."
-2. "What are two or three sites or images you want this to feel like — and for what specific reason? Typography? Density? Mood? Information hierarchy?"
-3. "Anything you actively want it not to look like? Real example, not a category."
+1. "What are two or three sites or images you want this to feel like — and for what specific reason? Typography? Density? Mood? Information hierarchy?"
+2. "Anything you actively want it *not* to look like? Real example, not a category."
 
-If the user pastes URLs or describes screenshots they're going to add, capture them verbatim and the reason they cited them. Do not embellish the annotation.
+When the user names a URL, asks "have you seen X", or pastes/attaches anything, run the CLI immediately:
+
+```
+design-drafts ref add <url-or-path> --note "<what is being cited and what is NOT being cited>"
+```
+
+The CLI handles three cases automatically:
+
+- **A homepage / blog post / docs URL** — appended to `references/links.md` with the annotation.
+- **A direct image URL** (`.png`, `.webp`, `.jpg`) — downloaded into `references/inspiration/` and cross-referenced from `links.md`.
+- **A local screenshot path** — copied into `references/inspiration/`. Pass `--name <descriptive>` because the filename **is** the citation per the protocol; `linear-empty-state-density.png` is good and `screenshot-2026-05-08.png` is not.
+
+A few rules of thumb on the annotation:
+
+- Be specific. "Typography pairing" beats "this site is cool."
+- Negative annotations are valuable. `--note "the rhythm of the long list, NOT the indigo accent"` saves the next skill from over-borrowing.
+- Capture verbatim what the user said about the reference. Do not embellish.
+
+After saving, briefly confirm: "Saved Linear's changelog page to `references/links.md` — annotation: 'rhythm of a long list, NOT the indigo accent.' Sound right?"
+
+If the user pastes URLs without context, ask the obvious question: "What about it are we citing? Typography, density, mood?" A naked URL teaches the variants skill nothing.
 
 ### 5. Must-not-look-likes (anti-references)
 
@@ -167,7 +200,7 @@ Rules for filling this in:
 
 1. Show the user the file path and a one-line summary of what was captured. Do not paste the whole file back at them — they were just on the phone with you.
 2. Print the next step exactly as: `Next: hand this brief to the variants skill (\`design-drafts:variants\`) once it lands. In the meantime, \`frontend-design\` will read \`references/brief.md\` directly.`
-3. If the user mentioned reference URLs or screenshots they were going to add, remind them to drop them into `references/inspiration/` and `references/links.md` before running the next skill — the brief points at those files but doesn't contain them.
+3. If the user mentioned references during the interview that you did not capture inline (because they spoke faster than you could run the CLI), list them now and ask: "Want me to run `design-drafts ref add` for these now? URLs need a `--note`; screenshots need a descriptive `--name`." Do not finish the session with references stranded in the conversation.
 
 ## Anti-patterns for this skill itself
 
@@ -179,9 +212,12 @@ Things that make the skill worse:
 - **Pulling from training-data clichés.** Words flagged in `docs/anti-patterns.md` (#10–#16) — "modern", "powerful", "intuitive", "delightful", "magical", "empower", "supercharge" — should not appear in your questions or in the written brief unless the user used them and defended them. If you catch yourself drafting one, delete it.
 - **Promising integration with skills that do not exist.** The variants skill is in flight. Reference it as "once it lands" — do not pretend it's callable today.
 - **Generating the brief without an interview.** If the user says "just write me a brief," refuse and explain why: "The whole point of this skill is to extract things only you know. Otherwise the output is the median landing page in my training set." Then ask the first question.
+- **Ignoring `references/explore.md`.** If the file is present and you cold-interview the user anyway, you are wasting their time and asking them to relitigate decisions they already made. Always check pre-flight; if it exists, recap and confirm rather than restart.
+- **Telling the user to drop files into folders.** The `design-drafts ref add` CLI exists exactly so you can capture references inline. If you find yourself saying "after the interview, drop your screenshots into `references/inspiration/`," stop and run the CLI yourself with the URL or path the user just gave you.
 
 ## See also
 
+- `skills/design-drafts/explore/SKILL.md` — the upstream brainstorming skill. If `references/explore.md` exists, this skill seeds the interview from it instead of cold-asking.
 - `docs/anti-patterns.md` — cited by entry number in the must-not-look-likes section.
-- `docs/conventions/references-protocol.md` — the four-file convention this skill is one half of.
-- `skills/design-drafts/brief/example-brief.md` — a sample of the deterministic output for a fictional product.
+- `docs/conventions/references-protocol.md` — the four-file convention this skill is one half of. The `design-drafts ref add` CLI is the canonical way to add links/screenshots.
+- `skills/design-drafts/brief/example-brief.md` — a sample of the deterministic output for a fictional product. The matching exploration document at `skills/design-drafts/explore/example-explore.md` shows what the input looks like one stage upstream.
