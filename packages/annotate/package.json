@@ -1,0 +1,24 @@
+{
+  "name": "@design-drafts/annotate",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/annotate.js",
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsdown": "^0.21.7",
+    "typescript": "catalog:"
+  },
+  "nx": {
+    "name": "annotate",
+    "targets": {
+      "build": {
+        "outputs": ["{projectRoot}/dist"]
+      }
+    }
+  }
+}
