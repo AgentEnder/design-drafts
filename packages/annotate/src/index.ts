@@ -366,12 +366,18 @@ class AnnotateOverlay {
     // Pin's CSS uses transform: translate(-50%, -100%), so the (left, top)
     // we set is the bottom-center of the pin's bounding box.
     //
-    // Layout rules:
-    // - Anchor at the top-right of the visible portion of the element.
-    // - Sit just above the element (outside) when there's room; clamp
-    //   inside when the element runs off the top of the viewport.
-    // - Hide entirely when the element doesn't intersect the viewport at
-    //   all, so we don't render pins floating in nowhere.
+    // Default placement: the pin's bottom-LEFT vertex (which is also the
+    // squared border-radius corner — the visual "tail") sits at the
+    // element's top-right corner. The pin hangs up-and-to-the-right of
+    // the element, with its tail pointing down-left into the element.
+    //
+    //   pin.bottomLeft = (rect.right, rect.top)
+    //   pin.center.x   = rect.right + halfPin
+    //   pin.bottom.y   = rect.top
+    //
+    // Clamp into the viewport so the pin stays visible whenever any part
+    // of the element is on-screen. Hide entirely only when the element
+    // doesn't intersect the viewport at all.
     const PIN_SIZE = 22;
     const MARGIN = 4;
     const vw = window.innerWidth;
@@ -396,27 +402,20 @@ class AnnotateOverlay {
         continue;
       }
 
-      // X: just inside the right edge of the visible portion.
-      const visibleRight = Math.min(vw, rect.right);
-      let x = visibleRight - MARGIN - halfPin;
-      // Don't let the pin escape the left side of the viewport when the
-      // element is mostly off-screen to the left.
+      let x = rect.right + halfPin;
+      let y = rect.top;
+
+      // Pin's bounding box after the translate:
+      //   x range: [x - halfPin, x + halfPin]
+      //   y range: [y - PIN_SIZE, y]
       const minX = MARGIN + halfPin;
-      if (x < minX) x = minX;
-      // Or the right side, with a symmetric margin.
       const maxX = vw - MARGIN - halfPin;
+      if (x < minX) x = minX;
       if (x > maxX) x = maxX;
 
-      // Y: prefer pin sitting *above* the element (bottom edge at rect.top
-      // minus a hair). If that runs above the viewport, clamp the pin
-      // inside the element near its visible top edge.
-      const visibleTop = Math.max(0, rect.top);
-      let y = rect.top - MARGIN;
-      if (y - PIN_SIZE < MARGIN) {
-        y = visibleTop + MARGIN + PIN_SIZE;
-      }
-      // Don't let the pin escape the bottom of the viewport.
+      const minY = MARGIN + PIN_SIZE;
       const maxY = vh - MARGIN;
+      if (y < minY) y = minY;
       if (y > maxY) y = maxY;
 
       pin.pinNode.style.display = '';
