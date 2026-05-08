@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Fleet Ops — acme-prod / Overview / dark · sidebar · data-dense</title>
+  <link rel="stylesheet" href="../../shared/styles/tokens.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <h1>Fleet Ops</h1>
+      <nav>
+        <a href="./" aria-current="page">Overview</a>
+        <a href="../alerts/none-light-sidebar.html">Alerts</a>
+        <a href="../settings/none-light-sidebar.html">Settings</a>
+      </nav>
+      <div class="rail-meta">
+        <div class="rail-label">Tenant</div>
+        <div class="mono">acme-prod</div>
+        <div class="rail-label">Region</div>
+        <div class="mono">us-east-1</div>
+      </div>
+    </aside>
+    <main>
+      <div class="crumbs"><span>acme-prod</span><span>Overview</span><span>dark · sidebar · data-dense</span></div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="label">Hosts up</div><div class="value">412 / 418</div></div>
+        <div class="kpi"><div class="label">Open incidents</div><div class="value">3</div></div>
+        <div class="kpi"><div class="label">P50 build time</div><div class="value">2m04s</div></div>
+        <div class="kpi"><div class="label">Deploys today</div><div class="value">27</div></div>
+      </div>
+      <div class="filters">
+        <span>filter:</span>
+        <code>region:us-east-1</code>
+        <code>status:!healthy</code>
+        <code>role:api</code>
+      </div>
+      <table class="fleet">
+        <thead>
+          <tr>
+            <th>Host</th><th>Region</th><th>Role</th><th>Status</th>
+            <th>CPU</th><th>Mem</th><th>Disk</th>
+            <th>Build</th><th>Deploy</th><th>Uptime</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">api-iad-12</td><td>us-east-1</td><td>api</td><td><span class="dot dot--ok"></span>ok</td><td class="mono">38%</td><td class="mono">61%</td><td class="mono">22%</td><td class="mono">2.4.1</td><td class="mono">14m</td><td class="mono">12d</td></tr>
+          <tr><td class="mono">api-iad-13</td><td>us-east-1</td><td>api</td><td><span class="dot dot--warn"></span>deg</td><td class="mono">71%</td><td class="mono">82%</td><td class="mono">24%</td><td class="mono">2.4.1</td><td class="mono">14m</td><td class="mono">12d</td></tr>
+          <tr><td class="mono">api-iad-14</td><td>us-east-1</td><td>api</td><td><span class="dot dot--ok"></span>ok</td><td class="mono">42%</td><td class="mono">58%</td><td class="mono">23%</td><td class="mono">2.4.1</td><td class="mono">14m</td><td class="mono">12d</td></tr>
+          <tr><td class="mono">api-iad-15</td><td>us-east-1</td><td>api</td><td><span class="dot dot--ok"></span>ok</td><td class="mono">36%</td><td class="mono">59%</td><td class="mono">22%</td><td class="mono">2.4.1</td><td class="mono">14m</td><td class="mono">12d</td></tr>
+          <tr><td class="mono">worker-pdx-04</td><td>us-west-2</td><td>worker</td><td><span class="dot dot--ok"></span>ok</td><td class="mono">22%</td><td class="mono">44%</td><td class="mono">61%</td><td class="mono">2.4.0</td><td class="mono">2h</td><td class="mono">12d</td></tr>
+          <tr><td class="mono">worker-pdx-05</td><td>us-west-2</td><td>worker</td><td><span class="dot dot--crit"></span>down</td><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td class="mono">2.4.0</td><td class="mono">2h</td><td class="mono">0</td></tr>
+          <tr><td class="mono">cache-fra-01</td><td>eu-central-1</td><td>cache</td><td><span class="dot dot--ok"></span>ok</td><td class="mono">12%</td><td class="mono">71%</td><td class="mono">38%</td><td class="mono">1.9.4</td><td class="mono">3d</td><td class="mono">31d</td></tr>
+        </tbody>
+      </table>
+    </main>
+  </div>
+</body>
+</html>

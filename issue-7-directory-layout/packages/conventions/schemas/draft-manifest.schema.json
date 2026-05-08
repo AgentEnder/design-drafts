@@ -2,11 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://design-drafts.dev/schemas/draft-manifest.schema.json",
   "title": "DraftManifest",
-  "description": "Machine-readable description of a design draft. Lives at the root of a draft directory as draft.config.json. Themes, layouts, pages, and variants are all distinct HTML files; the manifest is a routing table consumed by the toolbar, the index site, and the annotate package.",
+  "description": "Machine-readable description of a design draft. Lives at the root of a draft directory as draft.config.json. A draft is a proposal made up of one or more axes; each page is a specific combination of axis choices realised as an HTML file.",
   "additionalProperties": false,
   "type": "object",
   "required": [
     "name",
+    "pages",
     "createdAt"
   ],
   "properties": {
@@ -23,46 +24,76 @@
       "description": "Longer explanation of what the draft is exploring.",
       "type": "string"
     },
+    "axes": {
+      "description": "Design dimensions explored by this draft. Optional — a draft with no axes is a single-page proposal.",
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "description": "A single design dimension (e.g. theme, layout, density). Pages combine choices across axes; switching an axis in the toolbar navigates to the page that holds the corresponding combination.",
+        "type": "object",
+        "required": [
+          "name",
+          "choices"
+        ],
+        "properties": {
+          "name": {
+            "pattern": "^[a-z][a-z0-9_-]*$",
+            "minLength": 1,
+            "description": "Lowercase identifier used as a key in page coordinates and a query param in the toolbar URL.",
+            "type": "string"
+          },
+          "description": {
+            "description": "Optional longer description of what this axis represents.",
+            "type": "string"
+          },
+          "choices": {
+            "minItems": 1,
+            "description": "The set of values this axis can take.",
+            "type": "array",
+            "items": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "pattern": "^[a-z0-9][a-z0-9_-]*$",
+                  "minLength": 1,
+                  "description": "Identifier for this choice on its axis. Used in page coordinates and visible in the toolbar.",
+                  "type": "string"
+                },
+                "description": {
+                  "description": "Optional longer description shown in the toolbar switcher.",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "pages": {
-      "description": "Distinct pages (e.g. landing, pricing) that exist in this draft. Each path points at an HTML file relative to the draft root.",
+      "minItems": 1,
+      "description": "Concrete files in the draft. Each page records the axis coordinates it represents and the relative path to its HTML. Sparse coverage is allowed; toolbar disables choices with no matching neighbour from the current coordinate.",
       "type": "array",
       "items": {
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "name",
+          "coordinates",
           "path"
         ],
         "properties": {
-          "name": {
-            "minLength": 1,
-            "description": "Human-readable label for the page.",
-            "type": "string"
-          },
-          "path": {
-            "pattern": "^(?!\\/)(?!.*\\.\\.(\\/|$)).+$",
-            "minLength": 1,
-            "description": "Path to an HTML file, relative to the draft root. Must not be empty or absolute and must not escape the draft root.",
-            "type": "string"
-          }
-        }
-      }
-    },
-    "variants": {
-      "description": "Alternative HTML files representing different variants of the design.",
-      "type": "array",
-      "items": {
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "name",
-          "path"
-        ],
-        "properties": {
-          "name": {
-            "minLength": 1,
-            "description": "Human-readable label for the entry.",
-            "type": "string"
+          "coordinates": {
+            "description": "Choice name per axis, identifying which point in the proposal this file represents. Keys must match an axis name; values must match a choice name within that axis.",
+            "type": "object",
+            "patternProperties": {
+              "^[a-z][a-z0-9_-]*$": {
+                "minLength": 1,
+                "type": "string"
+              }
+            }
           },
           "path": {
             "pattern": "^(?!\\/)(?!.*\\.\\.(\\/|$)).+$",
@@ -71,65 +102,7 @@
             "type": "string"
           },
           "description": {
-            "description": "Optional longer description shown in switchers.",
-            "type": "string"
-          }
-        }
-      }
-    },
-    "themes": {
-      "description": "Theme variations, each as a distinct HTML file.",
-      "type": "array",
-      "items": {
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "name",
-          "path"
-        ],
-        "properties": {
-          "name": {
-            "minLength": 1,
-            "description": "Human-readable label for the entry.",
-            "type": "string"
-          },
-          "path": {
-            "pattern": "^(?!\\/)(?!.*\\.\\.(\\/|$)).+$",
-            "minLength": 1,
-            "description": "Path to an HTML file, relative to the draft root. Must not be empty or absolute and must not escape the draft root.",
-            "type": "string"
-          },
-          "description": {
-            "description": "Optional longer description shown in switchers.",
-            "type": "string"
-          }
-        }
-      }
-    },
-    "layouts": {
-      "description": "Layout variations, each as a distinct HTML file.",
-      "type": "array",
-      "items": {
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "name",
-          "path"
-        ],
-        "properties": {
-          "name": {
-            "minLength": 1,
-            "description": "Human-readable label for the entry.",
-            "type": "string"
-          },
-          "path": {
-            "pattern": "^(?!\\/)(?!.*\\.\\.(\\/|$)).+$",
-            "minLength": 1,
-            "description": "Path to an HTML file, relative to the draft root. Must not be empty or absolute and must not escape the draft root.",
-            "type": "string"
-          },
-          "description": {
-            "description": "Optional longer description shown in switchers.",
+            "description": "Optional note about what this specific combination demonstrates.",
             "type": "string"
           }
         }

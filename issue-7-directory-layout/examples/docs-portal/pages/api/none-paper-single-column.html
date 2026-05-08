@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Tinderbox — api · paper · single-column</title>
+  <link rel="stylesheet" href="../../shared/styles/tokens.css">
+</head>
+<body>
+  <div class="docs-shell">
+    <header class="brand">
+      <span class="brand-mark">tinderbox</span>
+      <span class="brand-tag">api · paper · single-column</span>
+    </header>
+
+      <h1>API reference</h1>
+      <p>Three commands. All flags are listed below; each command also prints <code>--help</code>.</p>
+
+      <h2 id="spark">spark</h2>
+      <code class="signature">tinderbox spark &lt;name&gt; [--ttl=&lt;days&gt;] [--from=&lt;ref&gt;]</code>
+      <p>Creates a new branch and stamps a TTL into <code>.tinderbox/branches.json</code>.</p>
+      <dl class="params">
+        <dt>&lt;name&gt;</dt><dd>Slug appended to the <code>spark/</code> prefix.</dd>
+        <dt>--ttl</dt><dd>Days until the branch is eligible for <code>burn</code>. Default 14.</dd>
+        <dt>--from</dt><dd>Base ref. Default <code>HEAD</code>.</dd>
+      </dl>
+
+      <h2 id="list">list</h2>
+      <code class="signature">tinderbox list [--json] [--expired-only]</code>
+      <p>Lists known sparks and their remaining TTL.</p>
+
+      <h2 id="burn">burn</h2>
+      <code class="signature">tinderbox burn [--remote] [--force] [--dry-run]</code>
+      <p>Deletes expired sparks. Refuses branches with unpushed commits unless <code>--force</code>.</p>
+
+      <h2 id="exit-codes">Exit codes</h2>
+      <p>0 on success, 1 on generic failure, 2 on git-level failure, 3 if burn refused.</p>
+
+      <h2 id="json-format">JSON format</h2>
+<pre><code>{ "name": "spark/fix-pricing-typo",
+  "createdAt": "2026-05-08T14:22:00Z",
+  "ttlDays": 14,
+  "expiresAt": "2026-05-22T14:22:00Z",
+  "expired": false }</code></pre>
+
+  </div>
+</body>
+</html>

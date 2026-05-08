@@ -2,50 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Fleet Ops — Card-driven variant</title>
-  <link rel="stylesheet" href="../shared/styles/tokens.css">
-  <style>
-    /* Variant-local override: lead with active incidents, push the host list down. */
-    .lede {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin: 0 0 12px;
-    }
-    .section-h {
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin: 22px 0 8px;
-    }
-    .hosts-strip {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .pill {
-      font-family: var(--mono);
-      font-size: 12px;
-      padding: 3px 8px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      border-radius: 2px;
-    }
-    .pill .dot { margin-right: 4px; }
-  </style>
+  <title>Fleet Ops — acme-prod / Overview / light · sidebar · card-driven</title>
+  <link rel="stylesheet" href="../../shared/styles/tokens.css">
 </head>
 <body>
   <div class="shell">
     <aside class="sidebar">
       <h1>Fleet Ops</h1>
       <nav>
-        <a href="../index.html" aria-current="page">Overview</a>
-        <a href="../pages/alerts.html">Alerts</a>
-        <a href="../pages/settings.html">Settings</a>
+        <a href="./" aria-current="page">Overview</a>
+        <a href="../alerts/none-light-sidebar.html">Alerts</a>
+        <a href="../settings/none-light-sidebar.html">Settings</a>
       </nav>
+      <div class="rail-meta">
+        <div class="rail-label">Tenant</div>
+        <div class="mono">acme-prod</div>
+        <div class="rail-label">Region</div>
+        <div class="mono">us-east-1</div>
+      </div>
     </aside>
     <main>
-      <div class="crumbs"><span>acme-prod</span><span>Overview</span><span>card-driven</span></div>
+      <div class="crumbs"><span>acme-prod</span><span>Overview</span><span>light · sidebar · card-driven</span></div>
       <p class="lede">3 active incidents. 412 of 418 hosts healthy. Latest deploy 14 minutes ago.</p>
 
       <div class="section-h">Active incidents</div>

@@ -1,27 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="console">
 <head>
   <meta charset="utf-8">
-  <title>Tinderbox — A small CLI for managing experiment branches</title>
-  <link rel="stylesheet" href="./shared/styles/tokens.css">
+  <title>Tinderbox — home · console · single-column · text-first</title>
+  <link rel="stylesheet" href="../../shared/styles/tokens.css">
 </head>
 <body>
   <div class="docs-shell">
     <header class="brand">
       <span class="brand-mark">tinderbox</span>
-      <span class="brand-tag">v0.4 · CLI for experiment branches</span>
+      <span class="brand-tag">home · console · single-column · text-first</span>
     </header>
 
     <h1>A small CLI for managing experiment branches</h1>
     <p>Tinderbox is a single binary you drop into a repo to keep short-lived branches off your main tree. It has three commands: <code>spark</code>, <code>list</code>, and <code>burn</code>. That is the whole tool.</p>
 
-    <p>Read the <a href="./pages/quickstart.html">quickstart</a> to install and create your first branch. Skip to the <a href="./pages/api.html">API reference</a> if you already know what you want.</p>
+    <p>Read the <a href="../quickstart/text-first-paper-single-column.html">quickstart</a> to install and create your first branch. Skip to the <a href="../api/none-paper-three-pane.html">API reference</a> if you already know what you want.</p>
 
     <h2>Why it exists</h2>
     <p>Most teams accumulate a long tail of <code>wip/*</code> branches that nobody owns and nobody deletes. Tinderbox treats those branches as a queue: each spark gets a TTL, and <code>burn</code> reaps anything past it. The default TTL is two weeks.</p>
 
     <h2>Status</h2>
-    <p>Tinderbox is pre-1.0. The CLI surface is stable for the three commands above; the JSON output format is not yet frozen. See the <a href="./pages/api.html">API reference</a> for the current contract.</p>
+    <p>Tinderbox is pre-1.0. The CLI surface is stable for the three commands above; the JSON output format is not yet frozen. See the <a href="../api/none-paper-three-pane.html">API reference</a> for the current contract.</p>
+
   </div>
 </body>
 </html>
