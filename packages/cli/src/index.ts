@@ -30,6 +30,7 @@ import { githubRemoteUrl } from './github';
 import { initDraft } from './init/draft';
 import { initHost } from './init/host';
 import { init } from './init/init';
+import { refAdd } from './ref-add';
 import { validateSiteName } from './site-name';
 import { validatePrefix, validateRepo } from './validate';
 
@@ -400,6 +401,50 @@ const app = cli('design-drafts', {
               cliVersion: CLI_VERSION,
             })
           ),
+      })
+      .command('ref', {
+        description:
+          "Manage a draft's references/ directory (links and inspiration screenshots).",
+        builder: (refArgs) =>
+          refArgs.command('add', {
+            description:
+              'Add a reference URL or screenshot to references/. URL → references/links.md (with --note); image URL or local image → references/inspiration/.',
+            builder: (b) =>
+              b
+                .positional('source', {
+                  type: 'string',
+                  description: 'URL or local file path to add as a reference',
+                })
+                .option('note', {
+                  type: 'string',
+                  description:
+                    'Annotation describing what is being cited. Required for non-image URLs.',
+                })
+                .option('name', {
+                  type: 'string',
+                  description:
+                    'Override the filename used in references/inspiration/ (extension is added if missing).',
+                })
+                .option('draft', {
+                  type: 'string',
+                  description:
+                    'Path to the draft directory containing draft.config.json (default: cwd).',
+                }),
+            handler: (a) =>
+              runHandler(() => {
+                if (!a.source) {
+                  throw new CliError(
+                    'design-drafts ref add requires a <source> argument (URL or file path).'
+                  );
+                }
+                return refAdd({
+                  source: a.source,
+                  note: a.note,
+                  name: a.name,
+                  draft: a.draft,
+                });
+              }),
+          }),
       })
       // `push` is the `$0` default, registered LAST: its builder adds the greedy
       // `path` positional, and trailing it in the chain lets cli-forge infer
