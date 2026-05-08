@@ -1,0 +1,22 @@
+{
+  "name": "@design-drafts/toolbar",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/toolbar.js",
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@design-drafts/conventions": "workspace:*"
+  },
+  "devDependencies": {
+    "tsdown": "^0.21.7",
+    "typescript": "catalog:"
+  },
+  "nx": {
+    "name": "toolbar"
+  }
+}
