@@ -1,0 +1,21 @@
+{
+  "name": "@design-drafts/source",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {},
+  "devDependencies": {
+    "@nx/eslint": "catalog:",
+    "@nx/js": "catalog:",
+    "@nx/vite": "catalog:",
+    "nx": "catalog:",
+    "nx-github-pages": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  },
+  "nx": {
+    "includedScripts": []
+  }
+}
