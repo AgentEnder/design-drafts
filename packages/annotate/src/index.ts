@@ -331,6 +331,18 @@ class AnnotateOverlay {
         this.renderPanel();
         this.scrollEntryIntoView(annotation.id);
       });
+      const targetEl = result.element;
+      if (targetEl) {
+        pinNode.addEventListener('pointerenter', () => {
+          this.drawOutline({
+            element: targetEl,
+            rect: targetEl.getBoundingClientRect(),
+          });
+        });
+        pinNode.addEventListener('pointerleave', () => {
+          this.hideOutline();
+        });
+      }
       const stale = !result.element;
       if (stale) pinNode.classList.add('stale');
       this.pinLayer!.appendChild(pinNode);
@@ -452,7 +464,7 @@ class AnnotateOverlay {
       ? `${describeAnchor(annotation.selector)} · stale`
       : describeAnchor(annotation.selector);
     anchor.textContent = anchorText;
-    anchor.title = anchorText;
+    anchor.title = describeSelector(annotation.selector, stale);
     head.appendChild(anchor);
 
     node.appendChild(head);
@@ -613,6 +625,21 @@ function describeAnchor(bundle: SelectorBundle): string {
   }
   if (bundle.elementId) return `${tag}#${bundle.elementId}`;
   return `${tag} · ${bundle.preview}`;
+}
+
+function describeSelector(bundle: SelectorBundle, stale: boolean): string {
+  const lines: string[] = [];
+  if (stale) lines.push('STALE — selector did not resolve on this page');
+  lines.push(`Selector: ${bundle.cssPath || '(none)'}`);
+  if (bundle.annotateId) lines.push(`data-annotate-id: ${bundle.annotateId}`);
+  if (bundle.elementId) lines.push(`#${bundle.elementId}`);
+  if (bundle.headingAnchor) {
+    lines.push(
+      `Near heading "${bundle.headingAnchor.text}" (offset +${bundle.headingAnchor.offset})`
+    );
+  }
+  if (bundle.preview) lines.push(`Preview: ${bundle.preview}`);
+  return lines.join('\n');
 }
 
 function positionFloating(node: HTMLElement, rect: DOMRect): void {
