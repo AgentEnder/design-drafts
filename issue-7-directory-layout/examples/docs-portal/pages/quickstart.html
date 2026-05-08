@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Tinderbox — Quickstart</title>
+  <link rel="stylesheet" href="../shared/styles/tokens.css">
+</head>
+<body>
+  <div class="docs-shell">
+    <header class="brand">
+      <span class="brand-mark">tinderbox</span>
+      <span class="brand-tag">quickstart</span>
+    </header>
+
+    <h1>Quickstart</h1>
+    <p>Five minutes from install to your first reaped branch.</p>
+
+    <h2>1. Install</h2>
+<pre><code>brew install tinderbox
+# or: curl -sSL https://tinderbox.dev/install.sh | sh</code></pre>
+
+    <h2>2. Spark a branch</h2>
+    <p>Inside any git repo:</p>
+<pre><code>$ tinderbox spark fix-pricing-typo
+created branch <strong>spark/fix-pricing-typo</strong>
+TTL: 14 days (expires 2026-05-22)</code></pre>
+
+    <p><code>spark</code> creates a branch from the current HEAD and stamps a TTL into <code>.tinderbox/branches.json</code>. Push it like any other branch.</p>
+
+    <h2>3. List what's outstanding</h2>
+<pre><code>$ tinderbox list
+spark/fix-pricing-typo   13d remaining
+spark/audit-log-spike     2d remaining  (push first!)
+spark/old-experiment      expired</code></pre>
+
+    <h2>4. Burn the expired ones</h2>
+<pre><code>$ tinderbox burn
+deleting spark/old-experiment ... done
+1 branch reaped, 2 remaining</code></pre>
+
+    <div class="callout">
+      <strong>Heads up:</strong> <code>burn</code> deletes both the local branch
+      and (with <code>--remote</code>) the remote tracking branch. It refuses to
+      delete branches that have unpushed commits unless you pass
+      <code>--force</code>.
+    </div>
+
+    <h2>What's next</h2>
+    <p>See the full <a href="./api.html">API reference</a> for flags, exit codes, and the JSON output format.</p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "outDir": "./dist"
+  },
+  "include": ["pages/**/*.ts", "pages/**/*.tsx"]
+}

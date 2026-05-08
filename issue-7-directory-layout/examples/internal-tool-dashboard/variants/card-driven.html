@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fleet Ops — Card-driven variant</title>
+  <link rel="stylesheet" href="../shared/styles/tokens.css">
+  <style>
+    /* Variant-local override: lead with active incidents, push the host list down. */
+    .lede {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 0 0 12px;
+    }
+    .section-h {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 22px 0 8px;
+    }
+    .hosts-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .pill {
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 3px 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 2px;
+    }
+    .pill .dot { margin-right: 4px; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <h1>Fleet Ops</h1>
+      <nav>
+        <a href="../index.html" aria-current="page">Overview</a>
+        <a href="../pages/alerts.html">Alerts</a>
+        <a href="../pages/settings.html">Settings</a>
+      </nav>
+    </aside>
+    <main>
+      <div class="crumbs"><span>acme-prod</span><span>Overview</span><span>card-driven</span></div>
+      <p class="lede">3 active incidents. 412 of 418 hosts healthy. Latest deploy 14 minutes ago.</p>
+
+      <div class="section-h">Active incidents</div>
+      <div class="cards">
+        <div class="card card--crit">
+          <h3>worker-pdx-05 unreachable</h3>
+          <div class="meta">PAGE-2419 · 4m ago</div>
+          <p>Auto-restart failed twice. Likely host-level network. Paged @oncall-platform.</p>
+        </div>
+        <div class="card card--warn">
+          <h3>api-iad-13 elevated 5xx</h3>
+          <div class="meta">PAGE-2418 · 22m ago</div>
+          <p>0.8% on /v2/ingest sustained 10m. Below paging threshold; correlated with 12:40 deploy.</p>
+        </div>
+        <div class="card card--warn">
+          <h3>cache-fra-01 hit ratio drift</h3>
+          <div class="meta">PAGE-2410 · 1h ago · snoozed</div>
+          <p>94% to 86% over the last hour. Snoozed until EU morning.</p>
+        </div>
+      </div>
+
+      <div class="section-h">Fleet at a glance</div>
+      <div class="hosts-strip">
+        <span class="pill"><span class="dot dot--ok"></span>api-iad-12</span>
+        <span class="pill"><span class="dot dot--warn"></span>api-iad-13</span>
+        <span class="pill"><span class="dot dot--ok"></span>api-iad-14</span>
+        <span class="pill"><span class="dot dot--ok"></span>api-iad-15</span>
+        <span class="pill"><span class="dot dot--ok"></span>worker-pdx-04</span>
+        <span class="pill"><span class="dot dot--crit"></span>worker-pdx-05</span>
+        <span class="pill"><span class="dot dot--ok"></span>cache-fra-01</span>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

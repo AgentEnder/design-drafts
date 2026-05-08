@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fleet Ops — Top-nav layout</title>
+  <link rel="stylesheet" href="../shared/styles/tokens.css">
+</head>
+<body>
+  <div class="shell shell--top-nav">
+    <header class="topbar">
+      <h1>Fleet Ops</h1>
+      <nav>
+        <a href="../index.html" aria-current="page">Overview</a>
+        <a href="../pages/alerts.html">Alerts</a>
+        <a href="../pages/settings.html">Settings</a>
+      </nav>
+      <div style="margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--text-muted)">acme-prod · us-east-1</div>
+    </header>
+    <main>
+      <div class="crumbs"><span>acme-prod</span><span>Overview</span><span>layout: top-nav</span></div>
+      <p style="font-size:13px;color:var(--text-muted);margin:0 0 12px">Horizontal nav. Tenant context lives in the bar; left edge is freed up for content.</p>
+      <table class="fleet">
+        <thead><tr><th>Host</th><th>Role</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">api-iad-12</td><td>api</td><td><span class="dot dot--ok"></span>healthy</td></tr>
+          <tr><td class="mono">api-iad-13</td><td>api</td><td><span class="dot dot--warn"></span>degraded</td></tr>
+          <tr><td class="mono">worker-pdx-05</td><td>worker</td><td><span class="dot dot--crit"></span>down</td></tr>
+        </tbody>
+      </table>
+    </main>
+  </div>
+</body>
+</html>

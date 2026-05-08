@@ -1,0 +1,48 @@
+{
+  "$schema": "../../packages/conventions/schemas/draft-manifest.schema.json",
+  "name": "Tinderbox Docs Portal",
+  "description": "Developer documentation portal for the Tinderbox CLI. Compares a text-first reading experience against a playground-first try-it-now layout, across single-column and three-pane layouts.",
+  "pages": [
+    { "name": "Home", "path": "index.html" },
+    { "name": "Quickstart", "path": "pages/quickstart.html" },
+    { "name": "API reference", "path": "pages/api.html" }
+  ],
+  "variants": [
+    {
+      "name": "Text-first",
+      "path": "variants/text-first.html",
+      "description": "Long-form prose lead. Code samples inline. Designed for readers who learn by reading."
+    },
+    {
+      "name": "Playground-first",
+      "path": "variants/playground-first.html",
+      "description": "Editable code sample on top, explanation below. Designed for readers who learn by tinkering."
+    }
+  ],
+  "themes": [
+    {
+      "name": "Paper",
+      "path": "themes/paper.html",
+      "description": "Warm off-white background with a serif body face. Reading-optimized."
+    },
+    {
+      "name": "Console",
+      "path": "themes/console.html",
+      "description": "Dark terminal-adjacent palette with a mono body face for code-heavy pages."
+    }
+  ],
+  "layouts": [
+    {
+      "name": "Single column",
+      "path": "layouts/single-column.html",
+      "description": "Centered prose, no sidebars. Optimal line length, minimal chrome."
+    },
+    {
+      "name": "Three pane",
+      "path": "layouts/three-pane.html",
+      "description": "Left TOC, center content, right on-page outline. Reference-style."
+    }
+  ],
+  "prompt": "references/brief.md",
+  "createdAt": "2026-05-03T11:15:00.000Z"
+}

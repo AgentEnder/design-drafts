@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fleet Ops — Sidebar layout</title>
+  <link rel="stylesheet" href="../shared/styles/tokens.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <h1>Fleet Ops</h1>
+      <nav>
+        <a href="../index.html" aria-current="page">Overview</a>
+        <a href="../pages/alerts.html">Alerts</a>
+        <a href="../pages/settings.html">Settings</a>
+      </nav>
+      <div style="margin-top:24px;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">Tenant</div>
+      <div class="mono" style="margin-top:4px">acme-prod</div>
+      <div style="margin-top:18px;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em">Region</div>
+      <div class="mono" style="margin-top:4px">us-east-1</div>
+    </aside>
+    <main>
+      <div class="crumbs"><span>acme-prod</span><span>Overview</span><span>layout: sidebar</span></div>
+      <p style="font-size:13px;color:var(--text-muted);margin:0 0 12px">Persistent left rail. Tenant + region pinned. Page-level nav lives inline.</p>
+      <table class="fleet">
+        <thead><tr><th>Host</th><th>Role</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">api-iad-12</td><td>api</td><td><span class="dot dot--ok"></span>healthy</td></tr>
+          <tr><td class="mono">api-iad-13</td><td>api</td><td><span class="dot dot--warn"></span>degraded</td></tr>
+          <tr><td class="mono">worker-pdx-05</td><td>worker</td><td><span class="dot dot--crit"></span>down</td></tr>
+        </tbody>
+      </table>
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,52 @@
+{
+  "$schema": "../../packages/conventions/schemas/draft-manifest.schema.json",
+  "name": "Fleet Ops Console",
+  "description": "Internal admin shell for an SRE fleet-ops tool. Compares a data-dense table-first console against a card-driven incident-first console, across light/dark themes and sidebar/top-nav layouts.",
+  "pages": [
+    { "name": "Overview", "path": "index.html" },
+    { "name": "Alerts", "path": "pages/alerts.html" },
+    { "name": "Settings", "path": "pages/settings.html" }
+  ],
+  "variants": [
+    {
+      "name": "Data-dense",
+      "path": "variants/data-dense.html",
+      "description": "Wide tabular layout. Optimized for engineers who already know what they're looking for."
+    },
+    {
+      "name": "Card-driven",
+      "path": "variants/card-driven.html",
+      "description": "Incident-first cards with status accents. Optimized for triage during an active page."
+    }
+  ],
+  "themes": [
+    {
+      "name": "Light",
+      "path": "themes/light.html",
+      "description": "Daytime palette. Higher information density relies on stronger row dividers."
+    },
+    {
+      "name": "Dark",
+      "path": "themes/dark.html",
+      "description": "On-call palette. Status colors carry the saturation, chrome stays muted."
+    }
+  ],
+  "layouts": [
+    {
+      "name": "Sidebar",
+      "path": "layouts/sidebar.html",
+      "description": "Persistent left rail with primary nav and tenant switcher."
+    },
+    {
+      "name": "Top nav",
+      "path": "layouts/top-nav.html",
+      "description": "Horizontal nav with breadcrumb-driven page switching."
+    }
+  ],
+  "prompt": "references/brief.md",
+  "source": {
+    "repo": "acme/fleet-ops",
+    "author": "design-bot"
+  },
+  "createdAt": "2026-05-01T09:30:00.000Z"
+}

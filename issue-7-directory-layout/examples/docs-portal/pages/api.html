@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Tinderbox — API reference</title>
+  <link rel="stylesheet" href="../shared/styles/tokens.css">
+</head>
+<body>
+  <div class="docs-shell">
+    <header class="brand">
+      <span class="brand-mark">tinderbox</span>
+      <span class="brand-tag">api reference · v0.4</span>
+    </header>
+
+    <h1>API reference</h1>
+    <p>Every flag, every exit code, every field in the JSON output.</p>
+
+    <h2 id="spark">spark</h2>
+    <code class="signature">tinderbox spark &lt;name&gt; [--ttl=&lt;days&gt;] [--from=&lt;ref&gt;]</code>
+    <p>Creates a new branch named <code>spark/&lt;name&gt;</code> at the given ref and records its TTL.</p>
+    <dl class="params">
+      <dt>name</dt><dd>Required. Branch slug. Must match <code>[a-z0-9-]+</code>.</dd>
+      <dt>--ttl</dt><dd>Days until the branch is eligible for <code>burn</code>. Default 14.</dd>
+      <dt>--from</dt><dd>Base ref. Defaults to the current HEAD.</dd>
+    </dl>
+
+    <h2 id="list">list</h2>
+    <code class="signature">tinderbox list [--json] [--expired-only]</code>
+    <p>Lists known sparks and their remaining TTL.</p>
+    <dl class="params">
+      <dt>--json</dt><dd>Emit machine-readable output. See <a href="#json-format">JSON format</a>.</dd>
+      <dt>--expired-only</dt><dd>Only show branches whose TTL has elapsed.</dd>
+    </dl>
+
+    <h2 id="burn">burn</h2>
+    <code class="signature">tinderbox burn [--remote] [--force] [--dry-run]</code>
+    <p>Deletes expired sparks. Refuses to delete branches with unpushed commits unless <code>--force</code> is passed.</p>
+    <dl class="params">
+      <dt>--remote</dt><dd>Also delete the matching remote branch on <code>origin</code>.</dd>
+      <dt>--force</dt><dd>Delete even if the branch has unpushed commits.</dd>
+      <dt>--dry-run</dt><dd>Print what would be deleted without doing it.</dd>
+    </dl>
+
+    <h2 id="exit-codes">Exit codes</h2>
+    <dl class="params">
+      <dt>0</dt><dd>Success.</dd>
+      <dt>1</dt><dd>Generic failure (unknown command, bad flag).</dd>
+      <dt>2</dt><dd>Git-level failure surfaced from the underlying invocation.</dd>
+      <dt>3</dt><dd><code>burn</code> refused to delete a branch with unpushed commits.</dd>
+    </dl>
+
+    <h2 id="json-format">JSON format</h2>
+    <p>Currently <strong>unstable</strong>. The shape today:</p>
+<pre><code>{
+  "version": "0.4",
+  "branches": [
+    {
+      "name": "spark/fix-pricing-typo",
+      "createdAt": "2026-05-08T09:12:00Z",
+      "expiresAt": "2026-05-22T09:12:00Z",
+      "remainingDays": 13,
+      "expired": false,
+      "hasUnpushedCommits": false
+    }
+  ]
+}</code></pre>
+  </div>
+</body>
+</html>
