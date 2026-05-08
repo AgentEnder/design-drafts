@@ -446,8 +446,10 @@ class AnnotateOverlay {
         continue;
       }
 
-      let x = rect.right + halfPin;
-      let y = rect.top;
+      const naturalX = rect.right + halfPin;
+      const naturalY = rect.top;
+      let x = naturalX;
+      let y = naturalY;
 
       // Pin's bounding box after the translate:
       //   x range: [x - halfPin, x + halfPin]
@@ -461,6 +463,12 @@ class AnnotateOverlay {
       const maxY = vh - MARGIN;
       if (y < minY) y = minY;
       if (y > maxY) y = maxY;
+
+      // When the natural top-right-of-element anchor was clamped, the pin
+      // is no longer hanging off the corner — it's inside the element's
+      // bounds. Drop the squared "tail" corner; render as a circle.
+      const clamped = x !== naturalX || y !== naturalY;
+      pin.pinNode.classList.toggle('clamped', clamped);
 
       pin.pinNode.style.display = '';
       pin.pinNode.style.left = `${x}px`;
