@@ -1,0 +1,58 @@
+{
+  "$schema": "../../packages/conventions/src/draft-manifest.schema.json",
+  "name": "Acme Marketing Site Refresh",
+  "description": "Exploration of three hero treatments across two themes and two layouts for the Acme marketing site.",
+  "pages": [
+    { "name": "Landing", "path": "pages/landing.html" },
+    { "name": "Pricing", "path": "pages/pricing.html" },
+    { "name": "About", "path": "pages/about.html" }
+  ],
+  "variants": [
+    {
+      "name": "Bold Hero",
+      "path": "variants/bold-hero.html",
+      "description": "High-contrast oversized hero headline with a single CTA."
+    },
+    {
+      "name": "Story Hero",
+      "path": "variants/story-hero.html",
+      "description": "Editorial layout leading with customer narrative."
+    },
+    {
+      "name": "Product Hero",
+      "path": "variants/product-hero.html",
+      "description": "Hero anchored around a product screenshot."
+    }
+  ],
+  "themes": [
+    {
+      "name": "Light",
+      "path": "themes/light.html",
+      "description": "Default light theme with neutral palette."
+    },
+    {
+      "name": "Dark",
+      "path": "themes/dark.html",
+      "description": "Inverted palette with accent highlights."
+    }
+  ],
+  "layouts": [
+    {
+      "name": "Centered",
+      "path": "layouts/centered.html",
+      "description": "Single-column centered layout."
+    },
+    {
+      "name": "Split",
+      "path": "layouts/split.html",
+      "description": "Two-column split with content left, media right."
+    }
+  ],
+  "prompt": "references/brief.md",
+  "source": {
+    "sha": "1a2b3c4d5e6f7890abcdef1234567890abcdef12",
+    "repo": "acme/marketing-site",
+    "author": "design-bot"
+  },
+  "createdAt": "2026-04-20T15:04:05.000Z"
+}
