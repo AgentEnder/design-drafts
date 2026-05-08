@@ -5,6 +5,7 @@ catalog:
   '@nx/eslint': 22.6.3
   '@nx/js': 22.6.3
   '@nx/vite': 22.6.3
+  '@sinclair/typebox': ^0.34.38
   '@tailwindcss/vite': ^4.1.18
   '@types/node': 18.16.9
   '@types/react': ^19.2.9

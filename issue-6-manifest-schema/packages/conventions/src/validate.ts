@@ -4,12 +4,13 @@ import * as addFormatsModule from 'ajv-formats';
 // ajv-formats ships as CommonJS with both `module.exports = fn` and
 // `exports.default = fn`. Under NodeNext + esModuleInterop the namespace
 // import is the safest spelling, so we reach into `.default`.
-const addFormats = (addFormatsModule as unknown as {
-  default: (ajv: unknown) => unknown;
-}).default;
+const addFormats = (
+  addFormatsModule as unknown as {
+    default: (ajv: unknown) => unknown;
+  }
+).default;
 
-import schema from './draft-manifest.schema.json' with { type: 'json' };
-import type { DraftManifest } from './draft-manifest.js';
+import { DraftManifestSchema, type DraftManifest } from './draft-manifest.js';
 
 export type ValidationResult =
   | { ok: true; manifest: DraftManifest }
@@ -18,7 +19,7 @@ export type ValidationResult =
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 addFormats(ajv);
 
-const validateManifest = ajv.compile<DraftManifest>(schema);
+const validateManifest = ajv.compile<DraftManifest>(DraftManifestSchema);
 
 /**
  * Validate an unknown value against the draft manifest schema.
