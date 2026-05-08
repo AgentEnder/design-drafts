@@ -34,7 +34,18 @@ const SESSION_HIDDEN_KEY = 'design-drafts.toolbar.hidden';
 // race when dismiss happens while the cursor is still in the edge zone.
 type TuckState = 'tucked' | 'revealed-uncommitted' | 'revealed-committed';
 
-const EDGE_REVEAL_PX = 6;
+// Reveal zone: cursor within `[vh - REVEAL_ZONE_TOP_PX, vh - REVEAL_ZONE_BOTTOM_PX)`.
+//
+// Top: how far above the viewport bottom the reveal starts firing. Tuned
+// so the bar starts sliding up *before* the cursor reaches the OS chrome
+// at the very bottom (macOS Dock auto-hide, Windows taskbar peek).
+//
+// Bottom: a deadband at the very bottom edge that we deliberately ignore
+// so we don't compete with the OS for the same pixel row. The cursor can
+// still reach the OS chrome via this band; the toolbar is already
+// revealed by then.
+const REVEAL_ZONE_TOP_PX = 30;
+const REVEAL_ZONE_BOTTOM_PX = 6;
 
 export class DesignDraftsToolbar extends HTMLElement {
   private handles: ToolbarHandles | null = null;
@@ -109,7 +120,10 @@ export class DesignDraftsToolbar extends HTMLElement {
 
   private onPointerMove = (event: PointerEvent): void => {
     if (!this.handles) return;
-    const inEdge = event.clientY >= window.innerHeight - EDGE_REVEAL_PX;
+    const vh = window.innerHeight;
+    const inEdge =
+      event.clientY >= vh - REVEAL_ZONE_TOP_PX &&
+      event.clientY < vh - REVEAL_ZONE_BOTTOM_PX;
     if (!inEdge) this.armed = true;
 
     // While the bar is sliding into (or out of) place, skip hover/exit
