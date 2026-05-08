@@ -30,10 +30,6 @@ export const TOOLBAR_STYLES = /* css */ `
     color-scheme: dark;
   }
 
-  :host([hidden]) {
-    display: none;
-  }
-
   .bar {
     pointer-events: auto;
     margin: 0 auto;
@@ -50,6 +46,17 @@ export const TOOLBAR_STYLES = /* css */ `
     font-size: 13px;
     line-height: 1;
     overflow: hidden;
+    transition: transform 220ms cubic-bezier(0.32, 0.72, 0.34, 1);
+    will-change: transform;
+  }
+
+  /* Tucked: slide the bar fully below the viewport. The host stays in
+     place (so the bottom-edge pointer detector keeps firing); only the
+     visible bar moves. Pointer events are disabled while tucked so the
+     bar can't intercept clicks meant for the page. */
+  :host([data-tucked]) .bar {
+    transform: translateY(calc(100% + 24px));
+    pointer-events: none;
   }
 
   .brand {

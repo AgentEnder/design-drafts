@@ -9,8 +9,9 @@ import { TOOLBAR_STYLES } from './styles.js';
 
 export interface ToolbarHandles {
   host: HTMLElement;
-  setVisible: (visible: boolean) => void;
-  toggleVisible: () => boolean;
+  setTucked: (tucked: boolean) => void;
+  toggleTucked: () => boolean;
+  isTucked: () => boolean;
   destroy: () => void;
 }
 
@@ -28,14 +29,14 @@ export function populateToolbar(
   host: HTMLElement,
   manifest: DraftManifest,
   manifestUrl: URL,
-  initiallyVisible: boolean
+  initiallyTucked: boolean
 ): ToolbarHandles {
   // Idempotent: a second call on the same host (e.g. element reconnected)
   // returns existing handles rather than building a duplicate shadow.
   const existingHandles = (host as HostWithHandles).__ddToolbarHandles;
   if (existingHandles) return existingHandles;
 
-  setHidden(host, !initiallyVisible);
+  setTucked(host, initiallyTucked);
   const shadow =
     host.shadowRoot ?? host.attachShadow({ mode: 'open' });
 
@@ -73,12 +74,13 @@ export function populateToolbar(
 
   const handles: ToolbarHandles = {
     host,
-    setVisible: (visible) => setHidden(host, !visible),
-    toggleVisible: () => {
-      const wasHidden = host.hasAttribute('hidden');
-      setHidden(host, !wasHidden);
-      return wasHidden; // returns the new "visible" state
+    setTucked: (tucked) => setTucked(host, tucked),
+    toggleTucked: () => {
+      const wasTucked = host.hasAttribute('data-tucked');
+      setTucked(host, !wasTucked);
+      return !wasTucked; // returns the new "tucked" state
     },
+    isTucked: () => host.hasAttribute('data-tucked'),
     destroy: () => host.remove(),
   };
   (host as HostWithHandles).__ddToolbarHandles = handles;
@@ -175,14 +177,14 @@ function renderHideAction(host: HTMLElement): HTMLElement {
   const button = document.createElement('button');
   button.type = 'button';
   button.setAttribute('aria-label', 'Hide toolbar');
-  button.title = 'Hide (Cmd/Ctrl + .)';
+  button.title = 'Hide (Cmd/Ctrl + .) — peek by moving mouse to bottom edge';
   button.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
-  button.addEventListener('click', () => setHidden(host, true));
+  button.addEventListener('click', () => setTucked(host, true));
   wrap.appendChild(button);
   return wrap;
 }
 
-function setHidden(host: HTMLElement, hidden: boolean): void {
-  if (hidden) host.setAttribute('hidden', '');
-  else host.removeAttribute('hidden');
+function setTucked(host: HTMLElement, tucked: boolean): void {
+  if (tucked) host.setAttribute('data-tucked', '');
+  else host.removeAttribute('data-tucked');
 }
