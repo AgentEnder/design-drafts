@@ -1,0 +1,55 @@
+{
+  "name": "@design-drafts/site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vike dev",
+    "build": "vike build",
+    "preview": "vike build && vike preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "vike": "catalog:",
+    "vike-react": "catalog:"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "tailwindcss": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  },
+  "nx": {
+    "name": "site",
+    "targets": {
+      "build": {
+        "inputs": [
+          "production",
+          {
+            "env": "PAGES_DIR"
+          }
+        ],
+        "outputs": ["{projectRoot}/dist"]
+      },
+      "deploy": {
+        "dependsOn": ["build"],
+        "executor": "nx-github-pages:deploy",
+        "options": {
+          "directory": "{projectRoot}/dist/client"
+        }
+      },
+      "serve": {
+        "command": "vike dev",
+        "options": {
+          "cwd": "{projectRoot}"
+        }
+      }
+    }
+  }
+}
