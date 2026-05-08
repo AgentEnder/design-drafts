@@ -41,6 +41,8 @@ export class DesignDraftsToolbar extends HTMLElement {
   private tuckObserver: MutationObserver | null = null;
   private state: TuckState = 'revealed-uncommitted';
   private armed = true;
+  private animating = false;
+  private animatingFallback: number | null = null;
 
   async connectedCallback(): Promise<void> {
     if (this.handles) return;
@@ -83,6 +85,10 @@ export class DesignDraftsToolbar extends HTMLElement {
       } else if (this.state === 'tucked') {
         this.state = 'revealed-uncommitted';
       }
+      // Flag the bar as animating so onPointerMove ignores hover/exit
+      // transitions until the slide settles. The bar moves through a
+      // stationary cursor in the edge zone, otherwise.
+      this.flagAnimating();
     });
     this.tuckObserver.observe(this, {
       attributes: true,
@@ -105,6 +111,12 @@ export class DesignDraftsToolbar extends HTMLElement {
     if (!this.handles) return;
     const inEdge = event.clientY >= window.innerHeight - EDGE_REVEAL_PX;
     if (!inEdge) this.armed = true;
+
+    // While the bar is sliding into (or out of) place, skip hover/exit
+    // transitions — the bar's rect moves through the cursor, and that
+    // would otherwise read as commit-then-exit and tuck the bar
+    // immediately after revealing it.
+    if (this.animating) return;
 
     const barRect = this.getBarRect();
     const inBar =
@@ -129,6 +141,33 @@ export class DesignDraftsToolbar extends HTMLElement {
       }
     }
   };
+
+  private flagAnimating(): void {
+    this.animating = true;
+    if (this.animatingFallback !== null) {
+      window.clearTimeout(this.animatingFallback);
+      this.animatingFallback = null;
+    }
+    const bar = this.shadowRoot?.querySelector<HTMLElement>('.bar');
+    const settle = (): void => {
+      this.animating = false;
+      if (this.animatingFallback !== null) {
+        window.clearTimeout(this.animatingFallback);
+        this.animatingFallback = null;
+      }
+      bar?.removeEventListener('transitionend', onTransitionEnd);
+    };
+    const onTransitionEnd = (e: TransitionEvent): void => {
+      if (e.propertyName === 'transform') settle();
+    };
+    if (bar) {
+      bar.addEventListener('transitionend', onTransitionEnd);
+    }
+    // Safety net: clear the flag after a slightly-longer-than-the-CSS
+    // duration in case transitionend doesn't fire (animation cancelled,
+    // bar removed mid-flight, etc.).
+    this.animatingFallback = window.setTimeout(settle, 320);
+  }
 
   private getBarRect(): DOMRect | null {
     const bar =
