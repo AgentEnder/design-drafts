@@ -6,9 +6,11 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./draft-manifest.schema.json": "./schemas/draft-manifest.schema.json"
   },
   "scripts": {
+    "build": "tsx scripts/emit-schema.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
