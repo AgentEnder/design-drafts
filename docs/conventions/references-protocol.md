@@ -12,6 +12,7 @@ my-draft/
   index.html
   references/
     brief.md
+    explore.md          # optional, written by design-drafts:explore
     links.md
     inspiration/
       airbnb-typography.png
@@ -19,7 +20,7 @@ my-draft/
       hand-drawn-logo.jpg
 ```
 
-Three files matter. Anything else in `references/` is allowed but unused by the shipped skills.
+Three files matter to the variants skill and `frontend-design`: `brief.md`, `links.md`, and `inspiration/`. A fourth, `explore.md`, is optional working material from the brainstorm skill and is consumed only by `design-drafts:brief`. Anything else in `references/` is allowed but unused by the shipped skills.
 
 ### `references/brief.md`
 
@@ -28,6 +29,14 @@ The structured output of the [brief skill (#11)](https://github.com/AgentEnder/d
 The brief skill owns the exact shape of this file. Other skills consume it as-is — read it, do not regenerate it. If you are writing a draft by hand and skipping the brief skill, the minimum viable brief is four sections: who it is for, what it is doing, what it must not look like, and one or two sentences of voice.
 
 The variants skill and `frontend-design` both expect this file to exist. If it is missing, they should ask for it before generating anything.
+
+### `references/explore.md` (optional)
+
+The structured output of the [explore skill](../../skills/design-drafts/explore/SKILL.md). It contains the user's premise, axes-with-concept-options (some marked `[picked]`), captured quotes, and a list of references gathered during the brainstorm.
+
+This file is **working material**, not a brief. It is consumed by `design-drafts:brief` (which uses it to seed the Socratic interview rather than cold-asking) and ignored by `design-drafts:variants` and `frontend-design`. Once the brief is written, `explore.md` becomes a historical record — you can leave it in place or remove it; downstream skills will not look at it.
+
+Skip `explore.md` when you arrive at a draft with strong opinions already formed. It exists for the case where the user has only a name and a vibe.
 
 ### `references/inspiration/*.{png,webp,jpg}`
 
@@ -61,11 +70,30 @@ If a link is the source of a screenshot already in `inspiration/`, you can skip 
 
 ## Who reads what
 
-- **[Brief skill (#11)](https://github.com/AgentEnder/design-drafts/issues/11)** — writes `brief.md`, may suggest entries for `links.md` and `inspiration/` based on the interview.
-- **Variants skill** — reads all three files before generating. The brief sets intent; `links.md` and `inspiration/` set visual constraints.
-- **`frontend-design`** — reads `inspiration/` and `links.md` for visual grounding, reads `brief.md` for what to avoid.
+- **[Explore skill](../../skills/design-drafts/explore/SKILL.md)** — writes `explore.md`. Captures `links.md` entries and `inspiration/` images on the fly via `design-drafts ref add` as the user mentions URLs and screenshots during the brainstorm.
+- **[Brief skill (#11)](https://github.com/AgentEnder/design-drafts/issues/11)** — writes `brief.md`. Reads `explore.md` if present and seeds the interview from the picks; otherwise cold-interviews. Continues to capture references inline via `design-drafts ref add`.
+- **Variants skill** — reads `brief.md`, `links.md`, and `inspiration/` before generating. Does not read `explore.md`.
+- **`frontend-design`** — reads `inspiration/` and `links.md` for visual grounding, reads `brief.md` for what to avoid. Does not read `explore.md`.
 
 If you add a skill that produces drafts, it should read this directory. If it does not, it will produce the [anti-patterns](../anti-patterns.md) by default.
+
+## Capturing references inline (`design-drafts ref add`)
+
+The CLI exposes a `ref add` subcommand whose only job is to populate this directory. Both the explore and brief skills are expected to call it as the user mentions material — neither skill should ask the user to "drop files into a folder later."
+
+```
+design-drafts ref add <url-or-path> [--note "..."] [--name "..."] [--draft <dir>]
+```
+
+The command routes the input by shape:
+
+- **A homepage / docs / blog URL** — appended to `references/links.md` with `--note` as the annotation. `--note` is required for non-image URLs because an unannotated URL teaches consuming skills nothing.
+- **A direct image URL** ending in `.png`, `.webp`, `.jpg`, or `.jpeg` — downloaded into `references/inspiration/`. If `--note` is supplied, a cross-referencing line is also added to `links.md` pointing at the saved file. Filename is derived from the URL when `--name` is not supplied; the CLI nudges you to rename, since per this protocol the filename **is** the citation.
+- **A local image path** — copied into `references/inspiration/`. Pass `--name <descriptive>` because the original filename (e.g. `Screenshot 2026-05-08.png`) is rarely a useful citation.
+
+Default draft directory is the cwd. Pass `--draft <dir>` to point at a sibling draft. The CLI errors out cleanly if no `draft.config.json` is found — references are always scoped to a specific draft.
+
+If you are populating `references/` by hand, you can do that too — the CLI is convenience, not enforcement. The shape on disk is what matters.
 
 ## Publishing
 
