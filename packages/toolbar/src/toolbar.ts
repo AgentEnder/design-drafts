@@ -3,7 +3,6 @@ import { loadManifest } from './manifest.js';
 import { populateToolbar, type ToolbarHandles } from './ui.js';
 
 const TAG = 'dd-toolbar';
-const SESSION_HIDDEN_KEY = 'design-drafts.toolbar.hidden';
 
 /**
  * `<dd-toolbar>` — the toolbar as a custom element.
@@ -21,11 +20,10 @@ const SESSION_HIDDEN_KEY = 'design-drafts.toolbar.hidden';
  * Plugin children render inline as part of the bar via a `<slot>` between
  * the axis switchers and the hide button.
  *
- * Visibility precedence:
- *   1. `?toolbar=0` query param → hidden on load.
- *   2. `?toolbar=1` → visible, clearing any session-hide.
- *   3. sessionStorage flag set by the bar's hide button → hidden.
- *   4. Otherwise → visible.
+ * Initial visibility:
+ *   - `?toolbar=0` in the URL → hidden on load.
+ *   - Otherwise → visible. Tucked state is per-page-view, not persisted
+ *     across refreshes; reload always starts with the bar revealed.
  */
 // Auto-tuck state machine.
 //
@@ -54,11 +52,22 @@ export class DesignDraftsToolbar extends HTMLElement {
     if (this.handles) return;
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
+    // Attach the pointer listener BEFORE awaiting the manifest fetch so
+    // arming-via-top-half cursor movements made during the loading window
+    // aren't lost. The listener early-returns until handles are ready.
+    document.addEventListener('pointermove', this.onPointerMove, true);
+
     const resolved = await loadManifest();
-    if (!resolved) return;
+    if (!resolved) {
+      document.removeEventListener('pointermove', this.onPointerMove, true);
+      return;
+    }
 
     // Element may have been disconnected while awaiting the fetch.
-    if (!this.isConnected) return;
+    if (!this.isConnected) {
+      document.removeEventListener('pointermove', this.onPointerMove, true);
+      return;
+    }
 
     const initialTucked = computeInitialTuckState();
     this.handles = populateToolbar(
@@ -68,19 +77,16 @@ export class DesignDraftsToolbar extends HTMLElement {
       initialTucked
     );
     this.state = initialTucked ? 'tucked' : 'revealed';
-    this.armed = false;
 
     registerToggleShortcut(() => {
       if (!this.handles) return;
       const tucked = this.handles.toggleTucked();
-      persistTuckedPreference(tucked);
       this.state = tucked ? 'tucked' : 'revealed';
       this.armed = false;
     });
 
     this.tuckObserver = new MutationObserver(() => {
       const tucked = this.hasAttribute('data-tucked');
-      persistTuckedPreference(tucked);
       this.state = tucked ? 'tucked' : 'revealed';
       // Re-arming requires a fresh trip through the top half of the
       // viewport — every tuck (X click, shortcut, programmatic) starts
@@ -91,8 +97,6 @@ export class DesignDraftsToolbar extends HTMLElement {
       attributes: true,
       attributeFilter: ['data-tucked'],
     });
-
-    document.addEventListener('pointermove', this.onPointerMove, true);
   }
 
   disconnectedCallback(): void {
@@ -105,14 +109,16 @@ export class DesignDraftsToolbar extends HTMLElement {
   }
 
   private onPointerMove = (event: PointerEvent): void => {
-    if (!this.handles) return;
-    if (this.state !== 'tucked') return;
-
+    // `armed` tracks unconditionally so cursor movements during the
+    // manifest-load window aren't lost — once handles are ready and the
+    // state is tucked, a prior top-half visit still counts.
     const vh = window.innerHeight;
     if (event.clientY < vh * ARM_TOP_RATIO) {
       this.armed = true;
       return;
     }
+    if (!this.handles) return;
+    if (this.state !== 'tucked') return;
     if (this.armed && event.clientY >= vh * REVEAL_BOTTOM_RATIO) {
       this.handles.setTucked(false);
       // state is updated via the MutationObserver on data-tucked.
@@ -126,38 +132,7 @@ if (typeof customElements !== 'undefined' && !customElements.get(TAG)) {
 
 function computeInitialTuckState(): boolean {
   const params = new URLSearchParams(window.location.search);
-  const param = params.get('toolbar');
-  if (param === '0') return true; // start tucked
-  if (param === '1') {
-    clearTuckedPreference();
-    return false;
-  }
-  return readTuckedPreference();
-}
-
-function readTuckedPreference(): boolean {
-  try {
-    return window.sessionStorage.getItem(SESSION_HIDDEN_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
-function persistTuckedPreference(tucked: boolean): void {
-  try {
-    if (tucked) window.sessionStorage.setItem(SESSION_HIDDEN_KEY, '1');
-    else window.sessionStorage.removeItem(SESSION_HIDDEN_KEY);
-  } catch {
-    // sessionStorage can throw in privacy modes; ignore.
-  }
-}
-
-function clearTuckedPreference(): void {
-  try {
-    window.sessionStorage.removeItem(SESSION_HIDDEN_KEY);
-  } catch {
-    // ignore
-  }
+  return params.get('toolbar') === '0';
 }
 
 // Auto-mount: if no <dd-toolbar> is in the DOM at script-load time, append
