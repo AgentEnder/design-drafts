@@ -121,6 +121,16 @@ button:focus-visible {
   transform: translate(-50%, -100%) scale(1.08);
 }
 
+/* When the pin's natural top-right-of-element anchor would put it
+   outside the viewport (large element, element near edge), the pin is
+   clamped inward and ends up inside the element's bounds. The squared
+   bottom-left corner ("tail") is meaningful only when the pin is
+   hanging off the corner; once it's inside the shape, drop the tail
+   and render as a circle. */
+.pin.clamped {
+  border-radius: 50%;
+}
+
 .pin.stale {
   background: ${TEXT_MUTED};
   color: ${SURFACE};
