@@ -27,33 +27,28 @@ const SESSION_HIDDEN_KEY = 'design-drafts.toolbar.hidden';
  *   3. sessionStorage flag set by the bar's hide button → hidden.
  *   4. Otherwise → visible.
  */
-// Auto-tuck state machine. The toolbar peeks back into view when the
-// mouse hits the bottom edge of the viewport, then commits to staying
-// once the user actually enters the bar. Once committed, leaving the bar
-// re-tucks. The `armed` flag prevents the X-click → instant-re-reveal
-// race when dismiss happens while the cursor is still in the edge zone.
-type TuckState = 'tucked' | 'revealed-uncommitted' | 'revealed-committed';
+// Auto-tuck state machine.
+//
+// The X button (and Cmd/Ctrl+.) hides the bar — period. Auto-reveal is
+// gated by an `armed` flag that only flips on once the cursor has
+// visited the top half of the viewport since the last tuck. After
+// arming, returning the cursor to the bottom 25% of the viewport
+// brings the bar back. The bar then stays revealed until the user
+// hides it again — no auto-tuck on cursor movement.
+//
+// This removes the previous "edge of viewport" trigger entirely, which
+// was incidentally fighting the OS chrome (macOS Dock, Windows
+// taskbar peek) for the same pixel row.
+type TuckState = 'tucked' | 'revealed';
 
-// Reveal zone: cursor within `[vh - REVEAL_ZONE_TOP_PX, vh - REVEAL_ZONE_BOTTOM_PX)`.
-//
-// Top: how far above the viewport bottom the reveal starts firing. Tuned
-// so the bar starts sliding up *before* the cursor reaches the OS chrome
-// at the very bottom (macOS Dock auto-hide, Windows taskbar peek).
-//
-// Bottom: a deadband at the very bottom edge that we deliberately ignore
-// so we don't compete with the OS for the same pixel row. The cursor can
-// still reach the OS chrome via this band; the toolbar is already
-// revealed by then.
-const REVEAL_ZONE_TOP_PX = 30;
-const REVEAL_ZONE_BOTTOM_PX = 6;
+const ARM_TOP_RATIO = 0.5; // cursor must visit `y < vh * 0.5` to arm
+const REVEAL_BOTTOM_RATIO = 0.75; // when armed, `y >= vh * 0.75` reveals
 
 export class DesignDraftsToolbar extends HTMLElement {
   private handles: ToolbarHandles | null = null;
   private tuckObserver: MutationObserver | null = null;
-  private state: TuckState = 'revealed-uncommitted';
-  private armed = true;
-  private animating = false;
-  private animatingFallback: number | null = null;
+  private state: TuckState = 'revealed';
+  private armed = false;
 
   async connectedCallback(): Promise<void> {
     if (this.handles) return;
@@ -72,34 +67,25 @@ export class DesignDraftsToolbar extends HTMLElement {
       resolved.manifestUrl,
       initialTucked
     );
-    this.state = initialTucked ? 'tucked' : 'revealed-uncommitted';
+    this.state = initialTucked ? 'tucked' : 'revealed';
+    this.armed = false;
 
     registerToggleShortcut(() => {
       if (!this.handles) return;
       const tucked = this.handles.toggleTucked();
       persistTuckedPreference(tucked);
-      this.state = tucked ? 'tucked' : 'revealed-uncommitted';
-      // After explicit toggle, disarm so the cursor's current position
-      // (likely still inside or near the bar) doesn't immediately flip
-      // the state machine back.
+      this.state = tucked ? 'tucked' : 'revealed';
       this.armed = false;
     });
 
     this.tuckObserver = new MutationObserver(() => {
       const tucked = this.hasAttribute('data-tucked');
       persistTuckedPreference(tucked);
-      // The hide button writes the attribute directly — keep our state
-      // model in sync and disarm to prevent the immediate re-reveal.
-      if (tucked) {
-        this.state = 'tucked';
-        this.armed = false;
-      } else if (this.state === 'tucked') {
-        this.state = 'revealed-uncommitted';
-      }
-      // Flag the bar as animating so onPointerMove ignores hover/exit
-      // transitions until the slide settles. The bar moves through a
-      // stationary cursor in the edge zone, otherwise.
-      this.flagAnimating();
+      this.state = tucked ? 'tucked' : 'revealed';
+      // Re-arming requires a fresh trip through the top half of the
+      // viewport — every tuck (X click, shortcut, programmatic) starts
+      // from disarmed.
+      if (tucked) this.armed = false;
     });
     this.tuckObserver.observe(this, {
       attributes: true,
@@ -120,87 +106,18 @@ export class DesignDraftsToolbar extends HTMLElement {
 
   private onPointerMove = (event: PointerEvent): void => {
     if (!this.handles) return;
+    if (this.state !== 'tucked') return;
+
     const vh = window.innerHeight;
-    const inEdge =
-      event.clientY >= vh - REVEAL_ZONE_TOP_PX &&
-      event.clientY < vh - REVEAL_ZONE_BOTTOM_PX;
-    if (!inEdge) this.armed = true;
-
-    // While the bar is sliding into (or out of) place, skip hover/exit
-    // transitions — the bar's rect moves through the cursor, and that
-    // would otherwise read as commit-then-exit and tuck the bar
-    // immediately after revealing it.
-    if (this.animating) return;
-
-    const barRect = this.getBarRect();
-    const inBar =
-      !!barRect &&
-      event.clientX >= barRect.left &&
-      event.clientX <= barRect.right &&
-      event.clientY >= barRect.top &&
-      event.clientY <= barRect.bottom;
-
-    if (this.state === 'tucked') {
-      if (inEdge && this.armed) {
-        this.handles.setTucked(false);
-        this.state = 'revealed-uncommitted';
-      }
-    } else if (this.state === 'revealed-uncommitted') {
-      if (inBar) this.state = 'revealed-committed';
-    } else if (this.state === 'revealed-committed') {
-      if (!inBar) {
-        this.handles.setTucked(true);
-        this.state = 'tucked';
-        this.armed = false;
-      }
+    if (event.clientY < vh * ARM_TOP_RATIO) {
+      this.armed = true;
+      return;
+    }
+    if (this.armed && event.clientY >= vh * REVEAL_BOTTOM_RATIO) {
+      this.handles.setTucked(false);
+      // state is updated via the MutationObserver on data-tucked.
     }
   };
-
-  private flagAnimating(): void {
-    this.animating = true;
-    if (this.animatingFallback !== null) {
-      window.clearTimeout(this.animatingFallback);
-      this.animatingFallback = null;
-    }
-    const bar = this.shadowRoot?.querySelector<HTMLElement>('.bar');
-    const settle = (): void => {
-      this.animating = false;
-      if (this.animatingFallback !== null) {
-        window.clearTimeout(this.animatingFallback);
-        this.animatingFallback = null;
-      }
-      bar?.removeEventListener('transitionend', onTransitionEnd);
-    };
-    const onTransitionEnd = (e: TransitionEvent): void => {
-      if (e.propertyName === 'transform') settle();
-    };
-    if (bar) {
-      bar.addEventListener('transitionend', onTransitionEnd);
-    }
-    // Safety net: clear the flag after a slightly-longer-than-the-CSS
-    // duration in case transitionend doesn't fire (animation cancelled,
-    // bar removed mid-flight, etc.).
-    this.animatingFallback = window.setTimeout(settle, 320);
-  }
-
-  private getBarRect(): DOMRect | null {
-    const bar =
-      this.shadowRoot?.querySelector<HTMLElement>('.bar') ?? null;
-    if (!bar) return null;
-    if (this.hasAttribute('data-tucked')) {
-      // Tucked bar is translated below the viewport. For hit testing we
-      // want the rect the bar would occupy when visible, so synthesize
-      // it from the host's content box.
-      const hostRect = this.getBoundingClientRect();
-      return new DOMRect(
-        hostRect.left,
-        hostRect.top,
-        hostRect.width,
-        hostRect.height
-      );
-    }
-    return bar.getBoundingClientRect();
-  }
 }
 
 if (typeof customElements !== 'undefined' && !customElements.get(TAG)) {
