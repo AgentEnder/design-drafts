@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fleet Ops — acme-prod / Alerts / light · sidebar</title>
+  <link rel="stylesheet" href="../../shared/styles/tokens.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <h1>Fleet Ops</h1>
+      <nav>
+        <a href="../overview/data-dense-light-sidebar.html">Overview</a>
+        <a href="./" aria-current="page">Alerts</a>
+        <a href="../settings/none-light-sidebar.html">Settings</a>
+      </nav>
+      <div class="rail-meta">
+        <div class="rail-label">Tenant</div>
+        <div class="mono">acme-prod</div>
+        <div class="rail-label">Region</div>
+        <div class="mono">us-east-1</div>
+      </div>
+    </aside>
+    <main>
+      <div class="crumbs"><span>acme-prod</span><span>Alerts</span><span>light · sidebar</span></div>
+      <div class="cards">
+        <div class="card card--crit">
+          <h3>worker-pdx-05 unreachable</h3>
+          <div class="meta">PAGE-2419 · 4m ago · @oncall-platform</div>
+          <p>SSH and metrics scraper both failing. Auto-restart attempted twice. Likely host-level network issue; investigating.</p>
+        </div>
+        <div class="card card--warn">
+          <h3>api-iad-13 elevated 5xx</h3>
+          <div class="meta">PAGE-2418 · 22m ago · auto-acked</div>
+          <p>0.8% error rate on /v2/ingest, sustained 10 minutes. Below paging threshold but worth watching after the 12:40 deploy.</p>
+        </div>
+        <div class="card card--warn">
+          <h3>cache-fra-01 hit ratio drift</h3>
+          <div class="meta">PAGE-2410 · 1h ago · snoozed</div>
+          <p>Hit ratio fell from 94% to 86% over the last hour. No correlated deploy. Snoozed until EU morning.</p>
+        </div>
+        <div class="card card--ok">
+          <h3>build-runner-3 recovered</h3>
+          <div class="meta">PAGE-2401 · 3h ago · resolved</div>
+          <p>Resolved automatically after disk pressure cleared.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

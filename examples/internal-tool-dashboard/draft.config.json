@@ -1,0 +1,59 @@
+{
+  "$schema": "../../packages/conventions/schemas/draft-manifest.schema.json",
+  "name": "Fleet Ops Console",
+  "description": "Internal admin shell for an SRE fleet-ops tool. Compares a data-dense table-first console against a card-driven incident-first console, across light/dark themes and sidebar/top-nav layouts.",
+  "axes": [
+    {
+      "name": "page",
+      "description": "Top-level destinations in the console.",
+      "choices": [
+        { "name": "overview", "description": "Fleet at a glance — KPIs and host list." },
+        { "name": "alerts", "description": "Active and recent incidents." },
+        { "name": "settings", "description": "Tenant configuration." }
+      ]
+    },
+    {
+      "name": "variant",
+      "description": "Information density and content priority. Only meaningful on overview; secondary pages use 'none'.",
+      "choices": [
+        { "name": "none", "description": "No variant treatment; used for pages where density is fixed." },
+        { "name": "data-dense", "description": "Wide tabular layout. Optimized for engineers who already know what they're looking for." },
+        { "name": "card-driven", "description": "Incident-first cards with status accents. Optimized for triage during an active page." }
+      ]
+    },
+    {
+      "name": "theme",
+      "description": "Color palette.",
+      "choices": [
+        { "name": "light", "description": "Daytime palette. Higher information density relies on stronger row dividers." },
+        { "name": "dark", "description": "On-call palette. Status colors carry the saturation, chrome stays muted." }
+      ]
+    },
+    {
+      "name": "layout",
+      "description": "Top-level navigation chrome.",
+      "choices": [
+        { "name": "sidebar", "description": "Persistent left rail with primary nav and tenant switcher." },
+        { "name": "top-nav", "description": "Horizontal nav with breadcrumb-driven page switching." }
+      ]
+    }
+  ],
+  "pages": [
+    { "coordinates": { "page": "overview", "variant": "data-dense",  "theme": "light", "layout": "sidebar" }, "path": "pages/overview/data-dense-light-sidebar.html",  "description": "Default landing experience: dense table on a left-rail shell." },
+    { "coordinates": { "page": "overview", "variant": "data-dense",  "theme": "dark",  "layout": "sidebar" }, "path": "pages/overview/data-dense-dark-sidebar.html",   "description": "On-call mode of the dense console." },
+    { "coordinates": { "page": "overview", "variant": "data-dense",  "theme": "light", "layout": "top-nav" }, "path": "pages/overview/data-dense-light-top-nav.html",  "description": "Same dense console without the persistent rail." },
+    { "coordinates": { "page": "overview", "variant": "card-driven", "theme": "light", "layout": "sidebar" }, "path": "pages/overview/card-driven-light-sidebar.html", "description": "Incident-first cards on the rail layout." },
+    { "coordinates": { "page": "overview", "variant": "card-driven", "theme": "dark",  "layout": "sidebar" }, "path": "pages/overview/card-driven-dark-sidebar.html",  "description": "Card-driven console in dark; the variation we'd actually look at during a page." },
+    { "coordinates": { "page": "overview", "variant": "card-driven", "theme": "dark",  "layout": "top-nav" }, "path": "pages/overview/card-driven-dark-top-nav.html",  "description": "Card-driven console with horizontal nav, dark." },
+    { "coordinates": { "page": "alerts",   "variant": "none",        "theme": "light", "layout": "sidebar" }, "path": "pages/alerts/none-light-sidebar.html" },
+    { "coordinates": { "page": "alerts",   "variant": "none",        "theme": "dark",  "layout": "sidebar" }, "path": "pages/alerts/none-dark-sidebar.html" },
+    { "coordinates": { "page": "settings", "variant": "none",        "theme": "light", "layout": "sidebar" }, "path": "pages/settings/none-light-sidebar.html" },
+    { "coordinates": { "page": "settings", "variant": "none",        "theme": "light", "layout": "top-nav" }, "path": "pages/settings/none-light-top-nav.html" }
+  ],
+  "prompt": "references/brief.md",
+  "source": {
+    "repo": "acme/fleet-ops",
+    "author": "design-bot"
+  },
+  "createdAt": "2026-05-01T09:30:00.000Z"
+}
