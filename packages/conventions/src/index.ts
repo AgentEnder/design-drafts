@@ -1,7 +1,8 @@
 export type {
+  DraftAxis,
+  DraftAxisChoice,
   DraftManifest,
-  DraftNamedEntry,
-  DraftPageEntry,
+  DraftPage,
   DraftSource,
 } from './draft-manifest.js';
 
