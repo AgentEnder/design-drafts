@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://design-drafts.dev/schemas/draft-manifest.schema.json",
+  "title": "DraftManifest",
+  "description": "Machine-readable description of a design draft. Lives at the root of a draft directory as draft.config.json. A draft is a proposal made up of one or more axes; each page is a specific combination of axis choices realised as an HTML file.",
+  "additionalProperties": false,
+  "type": "object",
+  "required": [
+    "name",
+    "pages",
+    "createdAt"
+  ],
+  "properties": {
+    "$schema": {
+      "description": "Optional JSON Schema reference for editor tooling.",
+      "type": "string"
+    },
+    "name": {
+      "minLength": 1,
+      "description": "Human-readable label for the draft.",
+      "type": "string"
+    },
+    "description": {
+      "description": "Longer explanation of what the draft is exploring.",
+      "type": "string"
+    },
+    "axes": {
+      "description": "Design dimensions explored by this draft. Optional — a draft with no axes is a single-page proposal.",
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "description": "A single design dimension (e.g. theme, layout, density). Pages combine choices across axes; switching an axis in the toolbar navigates to the page that holds the corresponding combination.",
+        "type": "object",
+        "required": [
+          "name",
+          "choices"
+        ],
+        "properties": {
+          "name": {
+            "pattern": "^[a-z][a-z0-9_-]*$",
+            "minLength": 1,
+            "description": "Lowercase identifier used as a key in page coordinates and a query param in the toolbar URL.",
+            "type": "string"
+          },
+          "description": {
+            "description": "Optional longer description of what this axis represents.",
+            "type": "string"
+          },
+          "choices": {
+            "minItems": 1,
+            "description": "The set of values this axis can take.",
+            "type": "array",
+            "items": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "pattern": "^[a-z0-9][a-z0-9_-]*$",
+                  "minLength": 1,
+                  "description": "Identifier for this choice on its axis. Used in page coordinates and visible in the toolbar.",
+                  "type": "string"
+                },
+                "description": {
+                  "description": "Optional longer description shown in the toolbar switcher.",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pages": {
+      "minItems": 1,
+      "description": "Concrete files in the draft. Each page records the axis coordinates it represents and the relative path to its HTML. Sparse coverage is allowed; toolbar disables choices with no matching neighbour from the current coordinate.",
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "coordinates",
+          "path"
+        ],
+        "properties": {
+          "coordinates": {
+            "description": "Choice name per axis, identifying which point in the proposal this file represents. Keys must match an axis name; values must match a choice name within that axis.",
+            "type": "object",
+            "patternProperties": {
+              "^[a-z][a-z0-9_-]*$": {
+                "minLength": 1,
+                "type": "string"
+              }
+            }
+          },
+          "path": {
+            "pattern": "^(?!\\/)(?!.*\\.\\.(\\/|$)).+$",
+            "minLength": 1,
+            "description": "Path to an HTML file, relative to the draft root. Must not be empty or absolute and must not escape the draft root.",
+            "type": "string"
+          },
+          "description": {
+            "description": "Optional note about what this specific combination demonstrates.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "prompt": {
+      "description": "The brief that generated the draft. Free text, or a path reference like 'references/brief.md'.",
+      "type": "string"
+    },
+    "source": {
+      "additionalProperties": false,
+      "description": "Snapshot of where the draft came from.",
+      "type": "object",
+      "properties": {
+        "sha": {
+          "minLength": 1,
+          "description": "Git commit SHA the draft was generated from.",
+          "type": "string"
+        },
+        "repo": {
+          "minLength": 1,
+          "description": "Repository identifier (e.g. owner/name or URL).",
+          "type": "string"
+        },
+        "author": {
+          "minLength": 1,
+          "description": "Author or agent that produced the draft.",
+          "type": "string"
+        }
+      }
+    },
+    "createdAt": {
+      "format": "date-time",
+      "description": "ISO 8601 timestamp marking when the draft was generated.",
+      "type": "string"
+    }
+  }
+}
