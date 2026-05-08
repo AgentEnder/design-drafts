@@ -43,7 +43,7 @@ export default function Page() {
       </div>
       <ul className="grid gap-3 sm:grid-cols-2">
         {branches.map((branch) => (
-          <li key={branch.name}>
+          <li key={branch.name} className="relative">
             <a
               href={hrefFor(branch.name)}
               className="group relative block overflow-hidden rounded-xl border border-white/5 bg-white/[0.02] p-5 transition-all hover:border-blue-500/30 hover:bg-white/[0.04] hover:shadow-lg hover:shadow-blue-500/5"
@@ -60,6 +60,30 @@ export default function Page() {
                   <h3 className="mt-2 truncate font-medium text-gray-100 group-hover:text-white">
                     {branch.name}
                   </h3>
+                  {branch.pullRequestUrl && branch.pullRequestNumber ? (
+                    <a
+                      href={branch.pullRequestUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      onClick={(event) => event.stopPropagation()}
+                      className="relative z-10 mt-2 inline-flex items-center gap-1 text-xs font-medium text-blue-400 hover:text-blue-300"
+                    >
+                      View PR #{branch.pullRequestNumber}
+                      <svg
+                        className="h-3 w-3"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M14 3h7v7M10 14L21 3M21 14v7H3V3h7"
+                        />
+                      </svg>
+                    </a>
+                  ) : null}
                 </div>
                 <svg
                   className="h-4 w-4 flex-shrink-0 text-gray-600 transition-all group-hover:translate-x-0.5 group-hover:text-blue-400"
