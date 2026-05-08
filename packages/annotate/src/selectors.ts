@@ -3,6 +3,12 @@
 // A SelectorBundle captures multiple ways to identify an element so that
 // annotations survive minor DOM refactors. At resolve time we try each
 // strategy in priority order and report which one matched.
+//
+// The cssPath is built bottom-up and trimmed to the SHORTEST prefix that
+// still uniquely identifies the element. That gives us "least specific
+// selector that matches exactly one element" — short, readable, and
+// resilient to insertions far up the tree (a wrapper div added at the
+// root doesn't invalidate a selector that didn't depend on the root).
 
 const VOID_TAGS = new Set([
   'BR',
@@ -21,11 +27,12 @@ export interface SelectorBundle {
   annotateId: string | null;
   // Priority 2: stable element id (skipped if it looks framework-generated).
   elementId: string | null;
-  // Priority 3: nearest heading text plus offset within nodes that share it.
-  headingAnchor: { text: string; offset: number } | null;
-  // Priority 4: structural CSS path (most specific, most fragile).
+  // Priority 3: cssPath — minimal unique selector at capture time.
   cssPath: string;
-  // Tag name for human-readable previews.
+  // Priority 4 (recovery only): nearest heading text plus offset within
+  // same-tag elements that follow it.
+  headingAnchor: { text: string; offset: number } | null;
+  // Tag name for human-readable previews and for tag-aware recovery.
   tagName: string;
   // Short text excerpt for the panel preview.
   preview: string;
@@ -35,8 +42,8 @@ export function buildSelector(element: Element): SelectorBundle {
   return {
     annotateId: getAnnotateId(element),
     elementId: getStableId(element),
-    headingAnchor: getHeadingAnchor(element),
     cssPath: getCssPath(element),
+    headingAnchor: getHeadingAnchor(element),
     tagName: element.tagName.toLowerCase(),
     preview: getPreview(element),
   };
@@ -45,8 +52,8 @@ export function buildSelector(element: Element): SelectorBundle {
 export type ResolveStrategy =
   | 'annotateId'
   | 'elementId'
-  | 'headingAnchor'
   | 'cssPath'
+  | 'headingAnchor'
   | null;
 
 export interface ResolveResult {
@@ -67,26 +74,29 @@ export function resolveSelector(bundle: SelectorBundle): ResolveResult {
     if (el) return { element: el, strategy: 'elementId' };
   }
 
-  if (bundle.headingAnchor) {
-    const el = resolveHeadingAnchor(bundle.headingAnchor);
-    if (el) return { element: el, strategy: 'headingAnchor' };
+  // cssPath BEFORE headingAnchor — cssPath is precise at capture time. Only
+  // fall through to headingAnchor when cssPath fails to resolve to exactly
+  // one element (DOM has changed since capture).
+  if (bundle.cssPath) {
+    try {
+      const matches = document.querySelectorAll(bundle.cssPath);
+      if (matches.length === 1) {
+        return { element: matches[0]!, strategy: 'cssPath' };
+      }
+    } catch {
+      // Invalid selector — fall through.
+    }
   }
 
-  try {
-    const el = document.querySelector(bundle.cssPath);
-    if (el) return { element: el, strategy: 'cssPath' };
-  } catch {
-    // Invalid selector — fall through.
+  if (bundle.headingAnchor) {
+    const el = resolveHeadingAnchor(bundle.headingAnchor, bundle.tagName);
+    if (el) return { element: el, strategy: 'headingAnchor' };
   }
 
   return { element: null, strategy: null };
 }
 
 function getAnnotateId(element: Element): string | null {
-  // Author opt-in: data-annotate-id on the element itself or any ancestor up
-  // to the picked block. We only check the element itself here; the picker
-  // already chose a meaningful block, so its own data attribute is what
-  // matters.
   const value = element.getAttribute('data-annotate-id');
   return value && value.trim() ? value.trim() : null;
 }
@@ -109,8 +119,6 @@ function getStableId(element: Element): string | null {
 function getHeadingAnchor(
   element: Element
 ): { text: string; offset: number } | null {
-  // Find the nearest heading: either inside the element itself, or the
-  // most recent heading that comes before the element in document order.
   const heading =
     element.querySelector(HEADING_SELECTOR) ?? findPrecedingHeading(element);
   if (!heading) return null;
@@ -118,15 +126,11 @@ function getHeadingAnchor(
   const text = (heading.textContent || '').trim().slice(0, 200);
   if (!text) return null;
 
-  // Offset: how many elements with the same tag name share this heading
-  // anchor and come before our target. Lets us disambiguate "the third
-  // <button> under the 'Pricing' heading."
   const offset = computeOffsetUnderHeading(heading, element);
   return { text, offset };
 }
 
 function findPrecedingHeading(element: Element): Element | null {
-  // Walk preceding siblings up the tree, looking for a heading at any depth.
   let cursor: Node | null = element;
   while (cursor) {
     let prev: Node | null = cursor.previousSibling;
@@ -136,7 +140,6 @@ function findPrecedingHeading(element: Element): Element | null {
         if (prevEl.matches(HEADING_SELECTOR)) return prevEl;
         const heading = prevEl.querySelector(HEADING_SELECTOR);
         if (heading) {
-          // Use the last heading inside the previous subtree.
           const all = prevEl.querySelectorAll(HEADING_SELECTOR);
           return all[all.length - 1] ?? heading;
         }
@@ -148,14 +151,15 @@ function findPrecedingHeading(element: Element): Element | null {
   return null;
 }
 
+// Count how many elements with target's tagName appear after the heading
+// and before the target. Stored offset = capture-time count; resolution
+// uses the same-tag walk to look up the same offset.
 function computeOffsetUnderHeading(heading: Element, target: Element): number {
-  // Count how many elements with target's tagName appear after the heading
-  // and before (or equal to) the target.
   const tag = target.tagName;
   const candidates = document.getElementsByTagName(tag);
   let offset = 0;
   let countingStarted = false;
-  let foundHeading = false;
+  let found = false;
   for (const candidate of Array.from(candidates)) {
     if (!countingStarted) {
       const pos = heading.compareDocumentPosition(candidate);
@@ -165,18 +169,18 @@ function computeOffsetUnderHeading(heading: Element, target: Element): number {
     }
     if (!countingStarted) continue;
     if (candidate === target) {
-      foundHeading = true;
+      found = true;
       break;
     }
     offset++;
   }
-  return foundHeading ? offset : 0;
+  return found ? offset : 0;
 }
 
-function resolveHeadingAnchor(anchor: {
-  text: string;
-  offset: number;
-}): Element | null {
+function resolveHeadingAnchor(
+  anchor: { text: string; offset: number },
+  tagName: string
+): Element | null {
   const headings = document.querySelectorAll(HEADING_SELECTOR);
   let matchedHeading: Element | null = null;
   for (const h of Array.from(headings)) {
@@ -187,73 +191,81 @@ function resolveHeadingAnchor(anchor: {
   }
   if (!matchedHeading) return null;
 
-  // Walk forward in document order from the heading; return the Nth element
-  // we hit. We don't know the original tagName, so the caller (cssPath
-  // fallback) will validate. For the heading-only resolution we return the
-  // element at the right offset across any tag, which is what we counted
-  // when serializing. That's not quite right when offset was computed per
-  // tag, so we re-walk the document looking for elements that follow the
-  // heading and pick by index.
-  //
-  // Simplification: return the heading itself when offset is 0; otherwise
-  // walk document order and pick the offset-th element after the heading
-  // that is a "candidate block" (heuristically, anything that isn't a pure
-  // text node container).
-  if (anchor.offset === 0) return matchedHeading;
-
+  // Walk same-tag candidates that follow the heading. This mirrors the
+  // capture-time count in computeOffsetUnderHeading — both walk by tagName,
+  // so the offset arithmetic agrees.
+  const candidates = document.getElementsByTagName(tagName.toUpperCase());
   let count = 0;
-  let cursor: Element | null = nextElementInDocumentOrder(matchedHeading);
-  while (cursor) {
+  for (const candidate of Array.from(candidates)) {
+    const pos = matchedHeading.compareDocumentPosition(candidate);
+    if (!(pos & Node.DOCUMENT_POSITION_FOLLOWING)) continue;
+    if (count === anchor.offset) return candidate;
     count++;
-    if (count === anchor.offset) return cursor;
-    cursor = nextElementInDocumentOrder(cursor);
-  }
-  return matchedHeading;
-}
-
-function nextElementInDocumentOrder(element: Element): Element | null {
-  if (element.firstElementChild) return element.firstElementChild;
-  let cursor: Element | null = element;
-  while (cursor) {
-    if (cursor.nextElementSibling) return cursor.nextElementSibling;
-    cursor = cursor.parentElement;
   }
   return null;
 }
 
+// Build the shortest CSS path that uniquely identifies the element. Walk
+// from the element upward, prepending one segment at a time; stop as soon
+// as the joined path matches exactly one element in the document.
+//
+// Each segment uses the most-stable disambiguator available:
+//   1. tag if no same-tag siblings under the parent
+//   2. tag.class if a single class makes it unique among siblings
+//   3. tag:nth-of-type(N) as last resort
 function getCssPath(element: Element): string {
-  if (!element.parentElement) return element.tagName.toLowerCase();
+  if (element === document.documentElement) return 'html';
+  if (element === document.body) return 'body';
 
   const parts: string[] = [];
   let cursor: Element | null = element;
-  while (cursor && cursor.nodeType === Node.ELEMENT_NODE) {
-    if (cursor === document.documentElement) {
-      parts.unshift('html');
-      break;
-    }
+  while (cursor && cursor !== document.documentElement) {
     if (cursor === document.body) {
       parts.unshift('body');
       break;
     }
-    const current: Element = cursor;
-    const tag = current.tagName.toLowerCase();
-    const parent: Element | null = current.parentElement;
-    if (!parent) {
-      parts.unshift(tag);
-      break;
+    parts.unshift(elementSegment(cursor));
+
+    const path = parts.join(' > ');
+    try {
+      if (document.querySelectorAll(path).length === 1) {
+        return path;
+      }
+    } catch {
+      // Invalid combination — keep walking and let the next ancestor
+      // disambiguate.
     }
-    const sameTagSiblings: Element[] = Array.from(parent.children).filter(
-      (c): c is Element => c.tagName === current.tagName
-    );
-    if (sameTagSiblings.length === 1) {
-      parts.unshift(tag);
-    } else {
-      const index = sameTagSiblings.indexOf(current) + 1;
-      parts.unshift(`${tag}:nth-of-type(${index})`);
-    }
-    cursor = parent;
+    cursor = cursor.parentElement;
   }
   return parts.join(' > ');
+}
+
+function elementSegment(element: Element): string {
+  const tag = element.tagName.toLowerCase();
+  const parent = element.parentElement;
+  if (!parent) return tag;
+
+  // Try classes that disambiguate among siblings.
+  for (const cls of Array.from(element.classList)) {
+    const sel = `${tag}.${cssEscape(cls)}`;
+    let matches = 0;
+    for (const sibling of Array.from(parent.children)) {
+      try {
+        if (sibling.matches(sel)) matches++;
+      } catch {
+        // Invalid class name — skip.
+      }
+      if (matches > 1) break;
+    }
+    if (matches === 1) return sel;
+  }
+
+  const sameTagSiblings = Array.from(parent.children).filter(
+    (c): c is Element => c.tagName === element.tagName
+  );
+  if (sameTagSiblings.length === 1) return tag;
+  const index = sameTagSiblings.indexOf(element) + 1;
+  return `${tag}:nth-of-type(${index})`;
 }
 
 function getPreview(element: Element): string {
