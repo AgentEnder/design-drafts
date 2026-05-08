@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -11,22 +11,26 @@ const CONFIG_FILENAME = 'design-drafts.config.json';
 const homeConfigPath = join(homedir(), CONFIG_FILENAME);
 const localConfigPath = join(process.cwd(), CONFIG_FILENAME);
 
-async function ensureConfig(
-  path: string,
-  key: string,
+// JsonFile() walks up from cwd and only finds the nearest match, which means
+// the home-level config is invisible when cwd isn't under $HOME. Register an
+// explicit provider so it's always read.
+const homeJsonProvider = {
+  resolve: () => (existsSync(homeConfigPath) ? homeConfigPath : undefined),
+  load: (filename: string) => JSON.parse(readFileSync(filename, 'utf-8')),
+};
+
+async function promptAndPersist(
+  existing: string | undefined,
+  argKey: string,
+  configPath: string,
   promptMessage: string
-): Promise<void> {
-  if (existsSync(path)) {
-    const contents = JSON.parse(
-      (await import('node:fs')).readFileSync(path, 'utf-8')
-    );
-    if (contents[key]) return;
-  }
+): Promise<string> {
+  if (existing) return existing;
 
   const value = await text({
     message: promptMessage,
     validate: (v) => {
-      if (!v?.trim()) return `${key} is required`;
+      if (!v?.trim()) return `${argKey} is required`;
     },
   });
 
@@ -34,13 +38,14 @@ async function ensureConfig(
     process.exit(1);
   }
 
-  const existing = existsSync(path)
-    ? JSON.parse(
-        (await import('node:fs')).readFileSync(path, 'utf-8')
-      )
+  const previousFile = existsSync(configPath)
+    ? JSON.parse(readFileSync(configPath, 'utf-8'))
     : {};
-
-  writeFileSync(path, JSON.stringify({ ...existing, [key]: value }, null, 2) + '\n');
+  writeFileSync(
+    configPath,
+    JSON.stringify({ ...previousFile, [argKey]: value }, null, 2) + '\n'
+  );
+  return value;
 }
 
 function exec(command: string, cwd: string): void {
@@ -102,22 +107,22 @@ const app = cli('design-drafts', {
         type: 'string',
         description: 'Name for this site preview (becomes the branch name)',
       })
+      .config(homeJsonProvider)
       .config(ConfigurationProviders.JsonFile(CONFIG_FILENAME)),
 
   handler: async (args) => {
-    await ensureConfig(homeConfigPath, 'repo', 'GitHub repo (org/repo):');
-    await ensureConfig(localConfigPath, 'site-name', 'Site name for this preview:');
-
-    // Re-read config values after prompting (they may have just been written)
-    const homeConfig = JSON.parse(
-      (await import('node:fs')).readFileSync(homeConfigPath, 'utf-8')
+    const repo = await promptAndPersist(
+      args.repo,
+      'repo',
+      homeConfigPath,
+      'GitHub repo (org/repo):'
     );
-    const localConfig = JSON.parse(
-      (await import('node:fs')).readFileSync(localConfigPath, 'utf-8')
+    const siteName = await promptAndPersist(
+      args['site-name'],
+      'site-name',
+      localConfigPath,
+      'Site name for this preview:'
     );
-
-    const repo: string = args.repo ?? homeConfig.repo;
-    const siteName: string = args['site-name'] ?? localConfig['site-name'];
     const sourcePath = resolve(args.path);
 
     const validation = validateSiteName(siteName);
