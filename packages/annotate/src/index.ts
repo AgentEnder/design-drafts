@@ -21,9 +21,11 @@ import {
 } from './selectors.js';
 import { STYLES } from './styles.js';
 import {
+  currentPageUrl,
   deleteAnnotation,
   generateId,
   loadAnnotations,
+  loadAnnotationsByUrl,
   saveAnnotation,
   type Annotation,
 } from './storage.js';
@@ -53,6 +55,8 @@ class AnnotateOverlay {
   private outlineLabelEl: HTMLElement | null = null;
   private panelEl: HTMLElement | null = null;
   private panelBodyEl: HTMLElement | null = null;
+  private panelTabsEl: HTMLElement | null = null;
+  private currentTab: string = currentPageUrl();
   private toggleEl: HTMLElement | null = null;
   private composerEl: HTMLElement | null = null;
   private pinLayer: HTMLElement | null = null;
@@ -133,6 +137,25 @@ class AnnotateOverlay {
     this.renderToggle();
     this.openPanel();
     this.refreshPins();
+
+    // ?reveal=<annotation-id> in the URL means we just navigated here from
+    // a Reveal click on another page. Scroll-and-flash the target.
+    const params = new URLSearchParams(window.location.search);
+    const revealId = params.get('reveal');
+    if (revealId) {
+      const cleaned = new URL(window.location.href);
+      cleaned.searchParams.delete('reveal');
+      window.history.replaceState(null, '', cleaned.toString());
+      // Defer briefly so layout has settled and pins have resolved.
+      setTimeout(() => {
+        const pin = this.pins.find((p) => p.annotation.id === revealId);
+        if (pin?.element) {
+          const target = pin.element;
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => this.flashElement(target), 280);
+        }
+      }, 60);
+    }
   }
 
   deactivate(): void {
@@ -450,14 +473,21 @@ class AnnotateOverlay {
     });
     head.appendChild(close);
 
+    const tabs = document.createElement('div');
+    tabs.className = 'panel-tabs';
+
     const body = document.createElement('div');
     body.className = 'panel-body';
 
     panel.appendChild(head);
+    panel.appendChild(tabs);
     panel.appendChild(body);
     this.root.appendChild(panel);
     this.panelEl = panel;
+    this.panelTabsEl = tabs;
     this.panelBodyEl = body;
+    // Reset to current page when reopening the panel.
+    this.currentTab = currentPageUrl();
     this.renderPanel();
   }
 
@@ -466,33 +496,91 @@ class AnnotateOverlay {
       this.panelEl.remove();
       this.panelEl = null;
       this.panelBodyEl = null;
+      this.panelTabsEl = null;
     }
   }
 
   private renderPanel(): void {
-    if (!this.panelBodyEl) return;
+    if (!this.panelBodyEl || !this.panelTabsEl) return;
+
+    const currentUrl = currentPageUrl();
+    const allByUrl = loadAnnotationsByUrl();
+    // Always show the current page as a tab even if it has no annotations
+    // yet — the panel doubles as an empty-state prompt.
+    if (!allByUrl.has(currentUrl)) allByUrl.set(currentUrl, []);
+
+    // If the active tab no longer has any annotations and isn't the
+    // current page, fall back to the current page.
+    if (!allByUrl.has(this.currentTab)) this.currentTab = currentUrl;
+
+    // ---- tabs ----
+    this.panelTabsEl.replaceChildren();
+    const sortedTabs = Array.from(allByUrl.entries()).sort(([a], [b]) => {
+      if (a === currentUrl) return -1;
+      if (b === currentUrl) return 1;
+      return a.localeCompare(b);
+    });
+    for (const [url, list] of sortedTabs) {
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className =
+        'panel-tab' + (url === this.currentTab ? ' active' : '');
+      tab.title = url;
+      const label = document.createElement('span');
+      label.className = 'panel-tab-label';
+      label.textContent = formatTabLabel(url, currentUrl);
+      const count = document.createElement('span');
+      count.className = 'panel-tab-count';
+      count.textContent = String(list.length);
+      tab.appendChild(label);
+      tab.appendChild(count);
+      tab.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.currentTab = url;
+        this.renderPanel();
+      });
+      this.panelTabsEl.appendChild(tab);
+    }
+
+    // ---- body ----
     this.panelBodyEl.replaceChildren();
-    const annotations = loadAnnotations();
+    const annotations = allByUrl.get(this.currentTab) ?? [];
+    const isCurrentPage = this.currentTab === currentUrl;
+
     if (!annotations.length) {
       const empty = document.createElement('div');
       empty.className = 'panel-empty';
-      empty.textContent =
-        'No annotations yet. Click any block on the page to leave one.';
+      empty.textContent = isCurrentPage
+        ? 'No annotations yet. Click any block on the page to leave one.'
+        : 'No annotations on this page.';
       this.panelBodyEl.appendChild(empty);
       return;
     }
+
     annotations.forEach((annotation, index) => {
-      const pin = this.pins[index];
-      const stale = pin?.stale ?? false;
-      const entry = this.renderEntry(annotation, index + 1, stale);
+      const stale = isCurrentPage
+        ? (this.pinByAnnotationId(annotation.id)?.stale ?? false)
+        : false;
+      const entry = this.renderEntry(
+        annotation,
+        index + 1,
+        stale,
+        this.currentTab
+      );
       this.panelBodyEl!.appendChild(entry);
     });
+  }
+
+  private pinByAnnotationId(id: string): PinView | undefined {
+    return this.pins.find((p) => p.annotation.id === id);
   }
 
   private renderEntry(
     annotation: Annotation,
     number: number,
-    stale: boolean
+    stale: boolean,
+    pageUrl: string
   ): HTMLElement {
     const node = document.createElement('div');
     node.className = 'entry';
@@ -579,13 +667,27 @@ class AnnotateOverlay {
       reveal.textContent = 'Reveal';
       reveal.disabled = stale;
       reveal.addEventListener('click', () => {
-        const pin = this.pins.find((p) => p.annotation.id === annotation.id);
-        if (!pin?.element) return;
-        const target = pin.element;
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Brief delay so the smooth scroll has settled before the flash
-        // overlay locks onto the element's final on-screen position.
-        setTimeout(() => this.flashElement(target), 220);
+        if (pageUrl === currentPageUrl()) {
+          const pin = this.pins.find(
+            (p) => p.annotation.id === annotation.id
+          );
+          if (!pin?.element) return;
+          const target = pin.element;
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => this.flashElement(target), 220);
+          return;
+        }
+        // Navigate to the other page with reveal intent. The destination
+        // page picks up `?reveal=<id>` in activate() and runs the same
+        // scroll-and-flash flow once its DOM has loaded.
+        try {
+          const nav = new URL(pageUrl);
+          nav.searchParams.set('annotate', '1');
+          nav.searchParams.set('reveal', annotation.id);
+          window.location.href = nav.toString();
+        } catch {
+          // pageUrl unparseable — bail silently.
+        }
       });
 
       const edit = document.createElement('button');
@@ -705,6 +807,18 @@ function describeElement(element: Element): string {
     ? `.${Array.from(element.classList).slice(0, 2).join('.')}`
     : '';
   return `${tag}${id}${cls}`;
+}
+
+function formatTabLabel(url: string, currentUrl: string): string {
+  if (url === currentUrl) return 'This page';
+  try {
+    const parsed = new URL(url);
+    const segments = parsed.pathname.split('/').filter(Boolean);
+    if (!segments.length) return parsed.host;
+    return segments[segments.length - 1] ?? parsed.host;
+  } catch {
+    return url;
+  }
 }
 
 function describeAnchor(bundle: SelectorBundle): string {
