@@ -68,6 +68,7 @@ button:focus-visible {
 
 .outline-label {
   position: absolute;
+  pointer-events: none;
   top: -22px;
   left: -2px;
   background: ${ACCENT};
@@ -111,6 +112,7 @@ button:focus-visible {
 .composer {
   position: absolute;
   pointer-events: auto;
+  z-index: 3;
   background: ${SURFACE};
   border: 1px solid ${BORDER};
   border-radius: 4px;
@@ -199,6 +201,7 @@ button:focus-visible {
   flex-direction: column;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
   overflow: hidden;
+  z-index: 2;
 }
 
 .panel-head {
@@ -292,6 +295,7 @@ button:focus-visible {
   pointer-events: auto;
   top: 16px;
   right: 16px;
+  z-index: 2;
   background: ${SURFACE};
   color: ${TEXT};
   border: 1px solid ${BORDER};
