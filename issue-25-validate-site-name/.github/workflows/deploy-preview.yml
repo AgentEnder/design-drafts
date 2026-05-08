@@ -1,0 +1,141 @@
+name: Deploy Preview
+
+on:
+  create:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+  delete:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy a preview for'
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'create' && github.event.ref_type == 'branch' && github.event.ref != 'gh-pages' && !startsWith(github.event.ref, 'claude/')) ||
+      (github.event_name == 'pull_request' && !startsWith(github.head_ref, 'claude/')) ||
+      github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+    env:
+      BRANCH_NAME: ${{ inputs.branch || github.head_ref || github.event.ref }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Checkout gh-pages to staging
+        run: |
+          mkdir -p .gh-pages-staging
+          git fetch origin gh-pages:gh-pages 2>/dev/null && \
+            git worktree add .gh-pages-staging gh-pages || \
+            echo "gh-pages branch does not exist yet, starting fresh"
+
+      - name: Shallow clone branch content
+        run: |
+          git clone --depth 1 --branch "$BRANCH_NAME" \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" \
+            /tmp/branch-content
+          rm -rf /tmp/branch-content/.git
+
+      - name: Replace branch directory in staging
+        run: |
+          rm -rf ".gh-pages-staging/${BRANCH_NAME}"
+          mkdir -p ".gh-pages-staging/${BRANCH_NAME}"
+          cp -a /tmp/branch-content/. ".gh-pages-staging/${BRANCH_NAME}/"
+
+      - name: Build index site
+        run: npx nx build site
+        env:
+          PAGES_DIR: ${{ github.workspace }}/.gh-pages-staging
+
+      - name: Copy index site into staging
+        run: |
+          cp -r packages/site/dist/client/* .gh-pages-staging/ 2>/dev/null || true
+          touch .gh-pages-staging/.nojekyll
+
+      - name: Deploy to gh-pages
+        run: npx nx deploy site --directory=.gh-pages-staging
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  cleanup:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch' && !startsWith(github.event.ref, 'claude/')
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Checkout gh-pages to staging
+        run: |
+          mkdir -p .gh-pages-staging
+          git fetch origin gh-pages:gh-pages 2>/dev/null || exit 0
+          git worktree add .gh-pages-staging gh-pages
+
+      - name: Remove deleted branch's directory
+        run: |
+          BRANCH_NAME="${{ github.event.ref }}"
+          rm -rf ".gh-pages-staging/${BRANCH_NAME}"
+
+      - name: Rebuild index site
+        run: npx nx build site
+        env:
+          PAGES_DIR: ${{ github.workspace }}/.gh-pages-staging
+
+      - name: Copy index site into staging
+        run: |
+          cp -r packages/site/dist/client/* .gh-pages-staging/ 2>/dev/null || true
+          touch .gh-pages-staging/.nojekyll
+
+      - name: Deploy to gh-pages
+        run: npx nx deploy site --directory=.gh-pages-staging
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

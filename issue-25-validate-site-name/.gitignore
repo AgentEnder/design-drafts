@@ -1,0 +1,33 @@
+# compiled output
+dist
+tmp
+
+# dependencies
+node_modules
+
+# IDEs
+/.idea
+.vscode/*
+!.vscode/settings.json
+
+# misc
+/coverage
+npm-debug.log
+yarn-error.log
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Nx
+.nx/cache
+.nx/workspace-data
+
+# Vite
+vite.config.*.timestamp*
+
+# TypeScript
+*.tsbuildinfo
+
+# gh-pages staging
+.gh-pages-staging
