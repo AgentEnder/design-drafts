@@ -48,11 +48,32 @@ interface PinView {
 const HOST_ID = 'design-drafts-annotate-root';
 const QUERY_PARAM = 'annotate';
 
+export type AnnotateMode = 'standalone' | 'integrated';
+
+export interface AnnotateOverlayOptions {
+  mode?: AnnotateMode;
+  // In integrated mode, the trigger lives outside the overlay's shadow root
+  // (typically in the toolbar's slot). The overlay reads the trigger's
+  // position to anchor the panel above it.
+  triggerElement?: HTMLElement | null;
+}
+
 class AnnotateOverlay {
   private host: HTMLElement | null = null;
   private root: ShadowRoot | null = null;
   private outlineEl: HTMLElement | null = null;
   private outlineLabelEl: HTMLElement | null = null;
+  private mode: AnnotateMode;
+  private triggerElement: HTMLElement | null;
+
+  constructor(options: AnnotateOverlayOptions = {}) {
+    this.mode = options.mode ?? 'standalone';
+    this.triggerElement = options.triggerElement ?? null;
+  }
+
+  setTriggerElement(el: HTMLElement | null): void {
+    this.triggerElement = el;
+  }
   private panelEl: HTMLElement | null = null;
   private panelBodyEl: HTMLElement | null = null;
   private panelTabsEl: HTMLElement | null = null;
@@ -452,7 +473,8 @@ class AnnotateOverlay {
   private openPanel(): void {
     if (!this.root || this.panelEl) return;
     const panel = document.createElement('div');
-    panel.className = 'panel';
+    panel.className =
+      this.mode === 'integrated' ? 'panel integrated' : 'panel';
 
     const head = document.createElement('div');
     head.className = 'panel-head';
@@ -735,6 +757,7 @@ class AnnotateOverlay {
       this.toggleEl = null;
     }
     if (this.active) return; // panel header has its own Hide button
+    if (this.mode === 'integrated') return; // trigger lives outside the overlay (see DesignDraftsAnnotations)
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'toggle';
@@ -886,35 +909,165 @@ function isQueryParamActive(): boolean {
   }
 }
 
-function init(): AnnotateApi {
-  const overlay = new AnnotateOverlay();
-  overlay.mount();
+/**
+ * `<dd-annotations>` — the annotate overlay as a custom element.
+ *
+ * Standalone (no parent toolbar): renders a floating toggle + panel at the
+ * top-right of the viewport. Identical to the old IIFE behavior.
+ *
+ * Inside `<dd-toolbar>`: renders an inline trigger button via this
+ * element's own shadow DOM (which appears in the toolbar's slot). Click
+ * activates the picker AND opens the annotations panel positioned above
+ * the toolbar bar instead of floating at the top-right. Pins, outline,
+ * and composer continue to live in a separate floating shadow root —
+ * they're page-positioned overlays regardless of mode.
+ */
+const ANNOTATE_TAG = 'dd-annotations';
 
-  if (isQueryParamActive()) {
-    overlay.activate();
+const TRIGGER_STYLES = `
+:host { display: inline-flex; }
+.trigger {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9b9ba0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.trigger:hover { color: #f5f5f5; }
+.trigger.active { color: #f97316; }
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6b6b70;
+}
+.trigger.active .dot { background: #f97316; }
+`;
+
+class DesignDraftsAnnotations extends HTMLElement {
+  private overlay: AnnotateOverlay | null = null;
+  private trigger: HTMLButtonElement | null = null;
+  private mode: AnnotateMode = 'standalone';
+
+  connectedCallback(): void {
+    if (this.overlay) return;
+    if (typeof document === 'undefined') return;
+
+    // Detect whether we're hosted inside a <dd-toolbar>. If so, render an
+    // inline trigger button that surfaces in the toolbar's slot.
+    this.mode = this.closest('dd-toolbar') ? 'integrated' : 'standalone';
+
+    if (this.mode === 'integrated') {
+      const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
+      shadow.innerHTML = `
+        <style>${TRIGGER_STYLES}</style>
+        <button class="trigger" type="button">
+          <span class="dot" aria-hidden="true"></span>
+          <span>Annotate</span>
+        </button>
+      `;
+      const button = shadow.querySelector<HTMLButtonElement>('.trigger');
+      if (button) {
+        this.trigger = button;
+        button.addEventListener('click', () => this.overlay?.toggle());
+      }
+    }
+
+    this.overlay = new AnnotateOverlay({
+      mode: this.mode,
+      triggerElement: this.mode === 'integrated' ? this : null,
+    });
+    this.overlay.mount();
+
+    // Reflect activation state onto the trigger button so it can take
+    // an "active" style when the user has the overlay open.
+    if (this.trigger) {
+      const reflect = (): void => {
+        if (this.overlay?.isActive()) this.trigger?.classList.add('active');
+        else this.trigger?.classList.remove('active');
+      };
+      // Poll briefly — AnnotateOverlay doesn't currently emit events.
+      // Lightweight enough.
+      this.addEventListener('click', reflect, true);
+      const interval = window.setInterval(reflect, 250);
+      this.addEventListener(
+        'dd-annotations-disconnect',
+        () => window.clearInterval(interval),
+        { once: true }
+      );
+    }
+
+    if (isQueryParamActive()) {
+      this.overlay.activate();
+    }
   }
 
-  const api: AnnotateApi = {
-    activate: () => overlay.activate(),
-    deactivate: () => overlay.deactivate(),
-    toggle: () => overlay.toggle(),
-    isActive: () => overlay.isActive(),
-  };
+  disconnectedCallback(): void {
+    this.dispatchEvent(new CustomEvent('dd-annotations-disconnect'));
+    this.overlay?.deactivate();
+    this.overlay?.unmount();
+    this.overlay = null;
+    this.trigger = null;
+  }
 
-  // Expose on window so consumers can drive the overlay programmatically
-  // (e.g. the toolbar package can wire its own button to this).
-  (window as unknown as { DesignDraftsAnnotate?: AnnotateApi }).DesignDraftsAnnotate = api;
-  return api;
+  // Public API for programmatic control. Mirrors the old window
+  // .DesignDraftsAnnotate global, which is also still exposed.
+  activate(): void {
+    this.overlay?.activate();
+  }
+  deactivate(): void {
+    this.overlay?.deactivate();
+  }
+  toggle(): void {
+    this.overlay?.toggle();
+  }
+  isActive(): boolean {
+    return this.overlay?.isActive() ?? false;
+  }
 }
 
-declare const document: Document;
+if (typeof customElements !== 'undefined' && !customElements.get(ANNOTATE_TAG)) {
+  customElements.define(ANNOTATE_TAG, DesignDraftsAnnotations);
+}
 
-if (typeof document !== 'undefined') {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => init(), { once: true });
+// Auto-mount: ensure exactly one <dd-annotations> exists in the DOM.
+//
+// If a <dd-toolbar> is present we mount inside it (so the annotate trigger
+// becomes part of the toolbar bar). Otherwise we mount on body for the
+// standalone floating treatment.
+function autoMountAnnotate(): void {
+  if (typeof document === 'undefined') return;
+  if (document.querySelector(ANNOTATE_TAG)) return;
+  if (!document.body) {
+    document.addEventListener('DOMContentLoaded', autoMountAnnotate, {
+      once: true,
+    });
+    return;
+  }
+  const auto = document.createElement(ANNOTATE_TAG);
+  auto.setAttribute('data-auto', '');
+  const toolbar = document.querySelector('dd-toolbar');
+  if (toolbar) {
+    toolbar.appendChild(auto);
   } else {
-    init();
+    document.body.appendChild(auto);
   }
+
+  // Mirror the public API onto window for backward compatibility with
+  // window.DesignDraftsAnnotate consumers.
+  (window as unknown as { DesignDraftsAnnotate?: AnnotateApi })
+    .DesignDraftsAnnotate = auto as unknown as AnnotateApi;
 }
+
+autoMountAnnotate();
 
 export type { AnnotateApi };

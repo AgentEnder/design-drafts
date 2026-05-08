@@ -1,58 +1,79 @@
 import { registerToggleShortcut } from './keybindings.js';
 import { loadManifest } from './manifest.js';
-import { mountToolbar } from './ui.js';
+import { populateToolbar, type ToolbarHandles } from './ui.js';
 
+const TAG = 'dd-toolbar';
 const SESSION_HIDDEN_KEY = 'design-drafts.toolbar.hidden';
 
 /**
- * Bootstrap the toolbar. Idempotent and silent when there is no manifest at
- * `/draft.config.json`.
+ * `<dd-toolbar>` — the toolbar as a custom element.
+ *
+ * In normal usage the bundle script is included via a `<script>` tag and
+ * the auto-mount helper at the bottom of this file appends a single
+ * `<dd-toolbar>` to `<body>` if none is already present. Authors who want
+ * declarative composition with plugin elements can put one in the page
+ * themselves:
+ *
+ *     <dd-toolbar>
+ *       <dd-annotations></dd-annotations>
+ *     </dd-toolbar>
+ *
+ * Plugin children render inline as part of the bar via a `<slot>` between
+ * the axis switchers and the hide button.
  *
  * Visibility precedence:
- *   1. `?toolbar=0` query param → hidden on load (URL is the source of truth
- *      when the page author chose to set it).
- *   2. `?toolbar=1` → visible, explicitly clearing any session-hide.
- *   3. sessionStorage flag set by the toolbar's own hide button → hidden.
+ *   1. `?toolbar=0` query param → hidden on load.
+ *   2. `?toolbar=1` → visible, clearing any session-hide.
+ *   3. sessionStorage flag set by the bar's hide button → hidden.
  *   4. Otherwise → visible.
  */
-async function bootstrap(): Promise<void> {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+export class DesignDraftsToolbar extends HTMLElement {
+  private handles: ToolbarHandles | null = null;
+  private hideObserver: MutationObserver | null = null;
 
-  const resolved = await loadManifest();
-  if (!resolved) return;
+  async connectedCallback(): Promise<void> {
+    if (this.handles) return;
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
-  const initiallyVisible = computeInitialVisibility();
+    const resolved = await loadManifest();
+    if (!resolved) return;
 
-  // Defer to next tick if <body> isn't there yet (script ran in <head>).
-  if (!document.body) {
-    await new Promise<void>((resolve) => {
-      const onReady = (): void => {
-        document.removeEventListener('DOMContentLoaded', onReady);
-        resolve();
-      };
-      document.addEventListener('DOMContentLoaded', onReady);
+    // Element may have been disconnected while awaiting the fetch.
+    if (!this.isConnected) return;
+
+    this.handles = populateToolbar(
+      this,
+      resolved.manifest,
+      resolved.manifestUrl,
+      computeInitialVisibility()
+    );
+
+    registerToggleShortcut(() => {
+      if (!this.handles) return;
+      const visible = this.handles.toggleVisible();
+      persistHiddenPreference(!visible);
+    });
+
+    this.hideObserver = new MutationObserver(() => {
+      persistHiddenPreference(this.hasAttribute('hidden'));
+    });
+    this.hideObserver.observe(this, {
+      attributes: true,
+      attributeFilter: ['hidden'],
     });
   }
 
-  const handles = mountToolbar(
-    resolved.manifest,
-    resolved.manifestUrl,
-    initiallyVisible
-  );
+  disconnectedCallback(): void {
+    this.hideObserver?.disconnect();
+    this.hideObserver = null;
+    // Note: we don't tear down the shadow root or null out handles here,
+    // because connectedCallback can fire again if the node is moved
+    // around the tree. populateToolbar is idempotent.
+  }
+}
 
-  registerToggleShortcut(() => {
-    const visible = handles.toggleVisible();
-    persistHiddenPreference(!visible);
-  });
-
-  // Persist hidden state when the user clicks the bar's own hide button.
-  const observer = new MutationObserver(() => {
-    persistHiddenPreference(handles.host.hasAttribute('hidden'));
-  });
-  observer.observe(handles.host, {
-    attributes: true,
-    attributeFilter: ['hidden'],
-  });
+if (typeof customElements !== 'undefined' && !customElements.get(TAG)) {
+  customElements.define(TAG, DesignDraftsToolbar);
 }
 
 function computeInitialVisibility(): boolean {
@@ -91,4 +112,19 @@ function clearHiddenPreference(): void {
   }
 }
 
-void bootstrap();
+// Auto-mount: if no <dd-toolbar> is in the DOM at script-load time, append
+// one to <body> so existing `<script src=".../toolbar.js">` deployments
+// keep working without changes.
+function autoMount(): void {
+  if (typeof document === 'undefined') return;
+  if (document.querySelector(TAG)) return;
+  if (!document.body) {
+    document.addEventListener('DOMContentLoaded', autoMount, { once: true });
+    return;
+  }
+  const auto = document.createElement(TAG);
+  auto.setAttribute('data-auto', '');
+  document.body.appendChild(auto);
+}
+
+autoMount();

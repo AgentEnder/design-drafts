@@ -14,37 +14,30 @@ export interface ToolbarHandles {
   destroy: () => void;
 }
 
-const HOST_TAG = 'design-drafts-toolbar';
-
 /**
- * Mounts the toolbar UI and returns handles for external control. The host
- * element is appended to <body>; styles live in a shadow root so the host
- * page's CSS cannot bleed in.
+ * Populates an already-existing host element (a `<dd-toolbar>` custom
+ * element) with the toolbar UI. Styles live in a shadow root attached to
+ * the host so the page's CSS cannot bleed in.
+ *
+ * The bar contains a `<slot></slot>` between the axis groups and the
+ * hide-action, so plugin custom elements that are children of
+ * `<dd-toolbar>` (e.g. `<dd-annotations>`) render inline as part of the
+ * bar.
  */
-export function mountToolbar(
+export function populateToolbar(
+  host: HTMLElement,
   manifest: DraftManifest,
   manifestUrl: URL,
   initiallyVisible: boolean
 ): ToolbarHandles {
-  // If the host already exists (e.g. the script tag was included twice), bail
-  // out and reuse the existing instance.
-  const existing = document.querySelector(HOST_TAG) as HTMLElement | null;
-  if (existing) {
-    return {
-      host: existing,
-      setVisible: (visible) => setHidden(existing, !visible),
-      toggleVisible: () => {
-        const nowVisible = existing.hasAttribute('hidden');
-        setHidden(existing, !nowVisible);
-        return nowVisible;
-      },
-      destroy: () => existing.remove(),
-    };
-  }
+  // Idempotent: a second call on the same host (e.g. element reconnected)
+  // returns existing handles rather than building a duplicate shadow.
+  const existingHandles = (host as HostWithHandles).__ddToolbarHandles;
+  if (existingHandles) return existingHandles;
 
-  const host = document.createElement(HOST_TAG);
   setHidden(host, !initiallyVisible);
-  const shadow = host.attachShadow({ mode: 'open' });
+  const shadow =
+    host.shadowRoot ?? host.attachShadow({ mode: 'open' });
 
   const style = document.createElement('style');
   style.textContent = TOOLBAR_STYLES;
@@ -70,11 +63,15 @@ export function mountToolbar(
     bar.appendChild(renderAxis(axis, currentCoords, pageIndex, manifestUrl));
   }
 
+  // Plugin slot: light-DOM children of the host (e.g. `<dd-annotations>`)
+  // render here.
+  const slot = document.createElement('slot');
+  slot.className = 'plugins';
+  bar.appendChild(slot);
+
   bar.appendChild(renderHideAction(host));
 
-  document.body.appendChild(host);
-
-  return {
+  const handles: ToolbarHandles = {
     host,
     setVisible: (visible) => setHidden(host, !visible),
     toggleVisible: () => {
@@ -84,6 +81,12 @@ export function mountToolbar(
     },
     destroy: () => host.remove(),
   };
+  (host as HostWithHandles).__ddToolbarHandles = handles;
+  return handles;
+}
+
+interface HostWithHandles extends HTMLElement {
+  __ddToolbarHandles?: ToolbarHandles;
 }
 
 function renderAxis(
