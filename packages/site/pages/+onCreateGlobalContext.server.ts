@@ -6,6 +6,12 @@ export interface BranchEntry {
   path: string;
 }
 
+// The deploy-preview workflow stages each prefixed branch (e.g. `drafts/foo`)
+// at `<staging>/foo/` — i.e. it strips the configured branch prefix before
+// writing to gh-pages. As a result the listing logic here is intentionally
+// prefix-agnostic: it surfaces every top-level directory under PAGES_DIR.
+// That choice also keeps any pre-existing (un-prefixed) preview directories
+// on the deployed gh-pages branch visible during the soft transition.
 export async function onCreateGlobalContext(
   context: Partial<GlobalContextServer>
 ): Promise<void> {
