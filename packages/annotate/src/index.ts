@@ -363,6 +363,21 @@ class AnnotateOverlay {
   }
 
   private repositionPins(): void {
+    // Pin's CSS uses transform: translate(-50%, -100%), so the (left, top)
+    // we set is the bottom-center of the pin's bounding box.
+    //
+    // Layout rules:
+    // - Anchor at the top-right of the visible portion of the element.
+    // - Sit just above the element (outside) when there's room; clamp
+    //   inside when the element runs off the top of the viewport.
+    // - Hide entirely when the element doesn't intersect the viewport at
+    //   all, so we don't render pins floating in nowhere.
+    const PIN_SIZE = 22;
+    const MARGIN = 4;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const halfPin = PIN_SIZE / 2;
+
     for (const pin of this.pins) {
       if (!pin.element) {
         pin.pinNode.style.display = 'none';
@@ -373,9 +388,40 @@ class AnnotateOverlay {
         pin.pinNode.style.display = 'none';
         continue;
       }
+
+      const intersects =
+        rect.right > 0 && rect.left < vw && rect.bottom > 0 && rect.top < vh;
+      if (!intersects) {
+        pin.pinNode.style.display = 'none';
+        continue;
+      }
+
+      // X: just inside the right edge of the visible portion.
+      const visibleRight = Math.min(vw, rect.right);
+      let x = visibleRight - MARGIN - halfPin;
+      // Don't let the pin escape the left side of the viewport when the
+      // element is mostly off-screen to the left.
+      const minX = MARGIN + halfPin;
+      if (x < minX) x = minX;
+      // Or the right side, with a symmetric margin.
+      const maxX = vw - MARGIN - halfPin;
+      if (x > maxX) x = maxX;
+
+      // Y: prefer pin sitting *above* the element (bottom edge at rect.top
+      // minus a hair). If that runs above the viewport, clamp the pin
+      // inside the element near its visible top edge.
+      const visibleTop = Math.max(0, rect.top);
+      let y = rect.top - MARGIN;
+      if (y - PIN_SIZE < MARGIN) {
+        y = visibleTop + MARGIN + PIN_SIZE;
+      }
+      // Don't let the pin escape the bottom of the viewport.
+      const maxY = vh - MARGIN;
+      if (y > maxY) y = maxY;
+
       pin.pinNode.style.display = '';
-      pin.pinNode.style.left = `${rect.left + 12}px`;
-      pin.pinNode.style.top = `${rect.top}px`;
+      pin.pinNode.style.left = `${x}px`;
+      pin.pinNode.style.top = `${y}px`;
     }
   }
 
