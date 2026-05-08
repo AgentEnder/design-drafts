@@ -143,6 +143,10 @@ export const TOOLBAR_STYLES = /* css */ `
     color: var(--dd-text);
   }
 
+  option:disabled {
+    color: var(--dd-text-dim);
+  }
+
   .actions {
     display: flex;
     align-items: stretch;

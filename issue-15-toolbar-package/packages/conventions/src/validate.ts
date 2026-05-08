@@ -29,11 +29,15 @@ const validateManifest = ajv.compile<DraftManifest>(DraftManifestSchema);
  * offending field).
  */
 export function validateDraftManifest(input: unknown): ValidationResult {
-  if (validateManifest(input)) {
-    return { ok: true, manifest: input };
+  if (!validateManifest(input)) {
+    const errors = (validateManifest.errors ?? []).map(formatError);
+    return { ok: false, errors };
   }
-  const errors = (validateManifest.errors ?? []).map(formatError);
-  return { ok: false, errors };
+  const semanticErrors = checkSemantics(input);
+  if (semanticErrors.length > 0) {
+    return { ok: false, errors: semanticErrors };
+  }
+  return { ok: true, manifest: input };
 }
 
 /**
@@ -50,6 +54,57 @@ export function parseDraftManifest(json: string): ValidationResult {
     return { ok: false, errors: [`Invalid JSON: ${message}`] };
   }
   return validateDraftManifest(parsed);
+}
+
+// JSON Schema can't express "page coordinates must reference declared axes
+// and choices" or "page paths are unique" — those are checked here once
+// the structural shape is known to be valid.
+function checkSemantics(manifest: DraftManifest): string[] {
+  const errors: string[] = [];
+  const axesByName = new Map(
+    (manifest.axes ?? []).map((axis) => [
+      axis.name,
+      new Set(axis.choices.map((c) => c.name)),
+    ])
+  );
+
+  const seenPaths = new Map<string, number>();
+  const axisNames = Array.from(axesByName.keys());
+  manifest.pages.forEach((page, pageIndex) => {
+    const prior = seenPaths.get(page.path);
+    if (prior !== undefined) {
+      errors.push(
+        `/pages/${pageIndex}/path: duplicates path of /pages/${prior} ("${page.path}")`
+      );
+    } else {
+      seenPaths.set(page.path, pageIndex);
+    }
+
+    for (const [axisName, choiceName] of Object.entries(page.coordinates)) {
+      const choices = axesByName.get(axisName);
+      if (!choices) {
+        errors.push(
+          `/pages/${pageIndex}/coordinates/${axisName}: references unknown axis "${axisName}"`
+        );
+        continue;
+      }
+      if (!choices.has(choiceName)) {
+        errors.push(
+          `/pages/${pageIndex}/coordinates/${axisName}: "${choiceName}" is not a choice on axis "${axisName}"`
+        );
+      }
+    }
+
+    for (const axisName of axisNames) {
+      if (!(axisName in page.coordinates)) {
+        errors.push(
+          `/pages/${pageIndex}/coordinates: missing axis "${axisName}" — every page must specify a choice for every declared axis`
+        );
+      }
+    }
+  });
+
+  return errors;
 }
 
 function formatError(error: ErrorObject): string {
@@ -72,8 +127,11 @@ function formatError(error: ErrorObject): string {
     case 'minLength': {
       return `${path}: must not be empty`;
     }
+    case 'minItems': {
+      return `${path}: must have at least one entry`;
+    }
     case 'pattern': {
-      return `${path}: path must be relative to the draft root and must not start with "/" or contain ".." segments`;
+      return `${path}: value does not match expected pattern (${(error.params as { pattern?: string }).pattern ?? 'unknown'})`;
     }
     case 'format': {
       const format = (error.params as { format: string }).format;

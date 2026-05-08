@@ -7,27 +7,60 @@ const RelativeHtmlPath = Type.String({
     'Path to an HTML file, relative to the draft root. Must not be empty or absolute and must not escape the draft root.',
 });
 
-const PageEntrySchema = Type.Object(
+const AxisIdentifier = Type.String({
+  pattern: '^[a-z][a-z0-9_-]*$',
+  minLength: 1,
+  description:
+    'Lowercase identifier used as a key in page coordinates and a query param in the toolbar URL.',
+});
+
+const AxisChoiceSchema = Type.Object(
   {
     name: Type.String({
+      pattern: '^[a-z0-9][a-z0-9_-]*$',
       minLength: 1,
-      description: 'Human-readable label for the page.',
+      description:
+        'Identifier for this choice on its axis. Used in page coordinates and visible in the toolbar.',
     }),
-    path: RelativeHtmlPath,
+    description: Type.Optional(
+      Type.String({
+        description: 'Optional longer description shown in the toolbar switcher.',
+      })
+    ),
   },
   { additionalProperties: false }
 );
 
-const NamedEntrySchema = Type.Object(
+const AxisSchema = Type.Object(
   {
-    name: Type.String({
-      minLength: 1,
-      description: 'Human-readable label for the entry.',
+    name: AxisIdentifier,
+    description: Type.Optional(
+      Type.String({
+        description: 'Optional longer description of what this axis represents.',
+      })
+    ),
+    choices: Type.Array(AxisChoiceSchema, {
+      minItems: 1,
+      description: 'The set of values this axis can take.',
+    }),
+  },
+  {
+    additionalProperties: false,
+    description:
+      'A single design dimension (e.g. theme, layout, density). Pages combine choices across axes; switching an axis in the toolbar navigates to the page that holds the corresponding combination.',
+  }
+);
+
+const PageSchema = Type.Object(
+  {
+    coordinates: Type.Record(AxisIdentifier, Type.String({ minLength: 1 }), {
+      description:
+        'Choice name per axis, identifying which point in the proposal this file represents. Keys must match an axis name; values must match a choice name within that axis.',
     }),
     path: RelativeHtmlPath,
     description: Type.Optional(
       Type.String({
-        description: 'Optional longer description shown in switchers.',
+        description: 'Optional note about what this specific combination demonstrates.',
       })
     ),
   },
@@ -77,28 +110,17 @@ export const DraftManifestSchema = Type.Object(
         description: 'Longer explanation of what the draft is exploring.',
       })
     ),
-    pages: Type.Optional(
-      Type.Array(PageEntrySchema, {
+    axes: Type.Optional(
+      Type.Array(AxisSchema, {
         description:
-          'Distinct pages (e.g. landing, pricing) that exist in this draft. Each path points at an HTML file relative to the draft root.',
+          'Design dimensions explored by this draft. Optional — a draft with no axes is a single-page proposal.',
       })
     ),
-    variants: Type.Optional(
-      Type.Array(NamedEntrySchema, {
-        description:
-          'Alternative HTML files representing different variants of the design.',
-      })
-    ),
-    themes: Type.Optional(
-      Type.Array(NamedEntrySchema, {
-        description: 'Theme variations, each as a distinct HTML file.',
-      })
-    ),
-    layouts: Type.Optional(
-      Type.Array(NamedEntrySchema, {
-        description: 'Layout variations, each as a distinct HTML file.',
-      })
-    ),
+    pages: Type.Array(PageSchema, {
+      minItems: 1,
+      description:
+        'Concrete files in the draft. Each page records the axis coordinates it represents and the relative path to its HTML. Sparse coverage is allowed; toolbar disables choices with no matching neighbour from the current coordinate.',
+    }),
     prompt: Type.Optional(
       Type.String({
         description:
@@ -116,12 +138,13 @@ export const DraftManifestSchema = Type.Object(
     $id: 'https://design-drafts.dev/schemas/draft-manifest.schema.json',
     title: 'DraftManifest',
     description:
-      'Machine-readable description of a design draft. Lives at the root of a draft directory as draft.config.json. Themes, layouts, pages, and variants are all distinct HTML files; the manifest is a routing table consumed by the toolbar, the index site, and the annotate package.',
+      'Machine-readable description of a design draft. Lives at the root of a draft directory as draft.config.json. A draft is a proposal made up of one or more axes; each page is a specific combination of axis choices realised as an HTML file.',
     additionalProperties: false,
   }
 );
 
 export type DraftManifest = Static<typeof DraftManifestSchema>;
-export type DraftPageEntry = Static<typeof PageEntrySchema>;
-export type DraftNamedEntry = Static<typeof NamedEntrySchema>;
+export type DraftAxis = Static<typeof AxisSchema>;
+export type DraftAxisChoice = Static<typeof AxisChoiceSchema>;
+export type DraftPage = Static<typeof PageSchema>;
 export type DraftSource = Static<typeof DraftSourceSchema>;

@@ -1,11 +1,11 @@
-import { entryHref, findActiveEntry, type ManifestEntry } from './manifest.js';
+import type { DraftAxis, DraftManifest } from '@design-drafts/conventions';
+import {
+  findCurrentPage,
+  findNeighbourPage,
+  indexPagesByCoords,
+  pageHref,
+} from './manifest.js';
 import { TOOLBAR_STYLES } from './styles.js';
-
-interface SectionDef {
-  key: string;
-  label: string;
-  entries: ManifestEntry[];
-}
 
 export interface ToolbarHandles {
   host: HTMLElement;
@@ -22,7 +22,7 @@ const HOST_TAG = 'design-drafts-toolbar';
  * page's CSS cannot bleed in.
  */
 export function mountToolbar(
-  manifest: import('@design-drafts/conventions').DraftManifest,
+  manifest: DraftManifest,
   manifestUrl: URL,
   initiallyVisible: boolean
 ): ToolbarHandles {
@@ -62,15 +62,12 @@ export function mountToolbar(
   brand.innerHTML = `<span class="dot" aria-hidden="true"></span><span>drafts</span>`;
   bar.appendChild(brand);
 
-  const sections: SectionDef[] = [
-    { key: 'pages', label: 'Page', entries: manifest.pages ?? [] },
-    { key: 'variants', label: 'Variant', entries: manifest.variants ?? [] },
-    { key: 'themes', label: 'Theme', entries: manifest.themes ?? [] },
-    { key: 'layouts', label: 'Layout', entries: manifest.layouts ?? [] },
-  ].filter((section) => section.entries.length > 0);
+  const currentPage = findCurrentPage(manifest, manifestUrl);
+  const currentCoords = currentPage?.coordinates ?? {};
+  const pageIndex = indexPagesByCoords(manifest.pages);
 
-  for (const section of sections) {
-    bar.appendChild(renderSection(section, manifestUrl));
+  for (const axis of manifest.axes ?? []) {
+    bar.appendChild(renderAxis(axis, currentCoords, pageIndex, manifestUrl));
   }
 
   bar.appendChild(renderHideAction(host));
@@ -89,43 +86,75 @@ export function mountToolbar(
   };
 }
 
-function renderSection(section: SectionDef, manifestUrl: URL): HTMLElement {
+function renderAxis(
+  axis: DraftAxis,
+  currentCoords: Record<string, string>,
+  pageIndex: Map<string, import('@design-drafts/conventions').DraftPage>,
+  manifestUrl: URL
+): HTMLElement {
   const group = document.createElement('div');
   group.className = 'group';
-  group.dataset.section = section.key;
+  group.dataset.axis = axis.name;
 
-  const active = findActiveEntry(section.entries, manifestUrl);
-  if (active) group.dataset.active = 'true';
+  const currentChoice = currentCoords[axis.name];
+  const onAxis = currentChoice !== undefined;
+  if (onAxis) group.dataset.active = 'true';
+
+  const labelText = (axis.description ?? axis.name).toUpperCase();
 
   const label = document.createElement('div');
   label.className = 'group-label';
-  label.textContent = section.label;
+  label.textContent = labelText;
   group.appendChild(label);
 
   const select = document.createElement('select');
-  select.setAttribute('aria-label', section.label);
+  select.setAttribute('aria-label', labelText);
 
-  if (!active) {
-    // Insert a placeholder option so users can see what would be selected if
-    // they're on a page that isn't part of this section.
+  // Map option value (the choice name) to its href so we can navigate on
+  // change. Disabled options are present but have no href entry.
+  const hrefByChoice = new Map<string, string>();
+
+  if (!onAxis) {
+    // The current page doesn't sit on this axis. Show a placeholder so the
+    // <select> still reads "no selection" rather than auto-picking choice 0.
     const placeholder = document.createElement('option');
     placeholder.value = '';
-    placeholder.textContent = `Select ${section.label.toLowerCase()}…`;
+    placeholder.textContent = `Select ${axis.name}…`;
     placeholder.selected = true;
     placeholder.disabled = true;
     select.appendChild(placeholder);
   }
 
-  for (const entry of section.entries) {
+  for (const choice of axis.choices) {
     const option = document.createElement('option');
-    option.value = entryHref(entry, manifestUrl);
-    option.textContent = entry.name;
-    if (active && active.path === entry.path) option.selected = true;
+    option.value = choice.name;
+    option.textContent = choice.description ?? choice.name;
+
+    if (onAxis) {
+      const target = findNeighbourPage(
+        axis,
+        choice.name,
+        currentCoords,
+        pageIndex
+      );
+      if (target) {
+        hrefByChoice.set(choice.name, pageHref(target, manifestUrl));
+      } else {
+        option.disabled = true;
+      }
+      if (choice.name === currentChoice) option.selected = true;
+    } else {
+      // Off-axis: every choice is unreachable from here without picking
+      // values for the missing axes. Disable rather than guess.
+      option.disabled = true;
+    }
+
     select.appendChild(option);
   }
 
   select.addEventListener('change', () => {
-    if (select.value) window.location.href = select.value;
+    const href = hrefByChoice.get(select.value);
+    if (href) window.location.href = href;
   });
 
   group.appendChild(select);
