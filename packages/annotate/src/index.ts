@@ -814,11 +814,27 @@ class AnnotateOverlay {
   // Robust shadow-DOM-aware overlay check using composedPath, which
   // includes nodes inside the shadow tree even when event.target has been
   // retargeted at the boundary.
+  //
+  // In integrated mode the picker also has to recognize the trigger
+  // element's *host chain* (the <dd-annotations> custom element and any
+  // <dd-toolbar> ancestor) as overlay UI — otherwise clicks on the
+  // toolbar's hide button or axis switchers get swallowed by the picker's
+  // capture-phase preventDefault.
   private eventCrossesOverlay(event: Event): boolean {
     if (!this.host) return false;
     const path =
       typeof event.composedPath === 'function' ? event.composedPath() : [];
     if (path.includes(this.host)) return true;
+    if (this.triggerElement) {
+      let cursor: Element | null = this.triggerElement;
+      while (cursor) {
+        if (cursor === document.body || cursor === document.documentElement) {
+          break;
+        }
+        if (path.includes(cursor)) return true;
+        cursor = cursor.parentElement;
+      }
+    }
     return this.isInsideOverlay(event.target);
   }
 }
