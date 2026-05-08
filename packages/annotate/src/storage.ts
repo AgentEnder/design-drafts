@@ -18,13 +18,16 @@ export interface Annotation {
 const STORAGE_PREFIX = 'dd:annotate:';
 
 function storageKey(): string {
-  // Key by URL without the toggle/annotate query params so navigating with
-  // different toggles still surfaces the same annotations on the same page.
+  return STORAGE_PREFIX + currentPageUrl();
+}
+
+export function currentPageUrl(): string {
   const url = new URL(window.location.href);
   url.searchParams.delete('annotate');
   url.searchParams.delete('toolbar');
+  url.searchParams.delete('reveal');
   url.hash = '';
-  return STORAGE_PREFIX + url.toString();
+  return url.toString();
 }
 
 function safeRead(): Annotation[] {
@@ -63,6 +66,41 @@ function isAnnotation(value: unknown): value is Annotation {
 
 export function loadAnnotations(): Annotation[] {
   return safeRead();
+}
+
+// Enumerate every annotation set in localStorage for this origin, keyed by
+// the page URL. Used by the panel to surface annotations made on sibling
+// draft pages so reviewers can see the whole session at once.
+export function loadAnnotationsByUrl(): Map<string, Annotation[]> {
+  const out = new Map<string, Annotation[]>();
+  try {
+    const origin = window.location.origin;
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (!key || !key.startsWith(STORAGE_PREFIX)) continue;
+      const url = key.slice(STORAGE_PREFIX.length);
+      try {
+        const parsed = new URL(url);
+        if (parsed.origin !== origin) continue;
+      } catch {
+        continue;
+      }
+      const raw = window.localStorage.getItem(key);
+      if (!raw) continue;
+      try {
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          const valid = list.filter(isAnnotation);
+          if (valid.length) out.set(url, valid);
+        }
+      } catch {
+        // Skip malformed entries.
+      }
+    }
+  } catch {
+    // localStorage may be inaccessible.
+  }
+  return out;
 }
 
 export function saveAnnotation(annotation: Annotation): void {

@@ -229,6 +229,63 @@ button:focus-visible {
   border-bottom: 1px solid ${BORDER};
 }
 
+.panel-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  border-bottom: 1px solid ${BORDER};
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: ${BORDER} transparent;
+}
+
+.panel-tab {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid ${BORDER};
+  border-radius: 3px;
+  font: inherit;
+  font-size: 11px;
+  color: ${TEXT_MUTED};
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 180px;
+}
+
+.panel-tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel-tab:hover {
+  border-color: ${ACCENT};
+  color: ${TEXT};
+}
+
+.panel-tab.active {
+  border-color: ${ACCENT};
+  color: ${ACCENT};
+}
+
+.panel-tab-count {
+  background: ${SURFACE_2};
+  color: ${TEXT_MUTED};
+  border-radius: 10px;
+  padding: 0 6px;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.panel-tab.active .panel-tab-count {
+  background: ${ACCENT};
+  color: ${SURFACE};
+}
+
 .panel-title {
   font-size: 12px;
   font-weight: 600;
