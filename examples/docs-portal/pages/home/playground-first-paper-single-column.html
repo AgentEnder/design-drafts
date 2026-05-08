@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Tinderbox — home · paper · single-column · playground-first</title>
+  <link rel="stylesheet" href="../../shared/styles/tokens.css">
+</head>
+<body>
+  <div class="docs-shell">
+    <header class="brand">
+      <span class="brand-mark">tinderbox</span>
+      <span class="brand-tag">home · paper · single-column · playground-first</span>
+    </header>
+
+    <h1>Try it now</h1>
+
+    <div class="playground">
+      <header>
+        <span>$ tinderbox</span>
+        <span>edit and re-run</span>
+      </header>
+      <textarea class="editable" spellcheck="false">tinderbox spark fix-pricing-typo --ttl=7</textarea>
+      <button class="run" type="button">Run</button>
+      <div class="output">created branch spark/fix-pricing-typo
+TTL: 7 days (expires 2026-05-15)</div>
+    </div>
+
+    <p>The command above creates a branch with a 7-day TTL instead of the default 14. Edit the slug, change the TTL, hit run.</p>
+
+    <h2>Then list what's outstanding</h2>
+
+    <div class="playground">
+      <header>
+        <span>$ tinderbox</span>
+        <span>edit and re-run</span>
+      </header>
+      <textarea class="editable" spellcheck="false">tinderbox list --expired-only</textarea>
+      <button class="run" type="button">Run</button>
+      <div class="output">spark/old-experiment      expired (4 days ago)</div>
+    </div>
+
+    <p>For the full prose explanation of <em>why</em> branches get a TTL at all, read the <a href="text-first-paper-single-column.html">text-first overview</a> or jump to the <a href="../quickstart/text-first-paper-single-column.html">quickstart</a>.</p>
+
+  </div>
+</body>
+</html>

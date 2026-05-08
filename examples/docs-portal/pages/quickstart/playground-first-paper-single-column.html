@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Tinderbox — quickstart · paper · single-column · playground-first</title>
+  <link rel="stylesheet" href="../../shared/styles/tokens.css">
+</head>
+<body>
+  <div class="docs-shell">
+    <header class="brand">
+      <span class="brand-mark">tinderbox</span>
+      <span class="brand-tag">quickstart · paper · single-column · playground-first</span>
+    </header>
+
+    <h1>Quickstart — try each step</h1>
+    <p>Run each block, then read the explanation below it.</p>
+
+    <h2>1. Install</h2>
+    <div class="playground">
+      <header><span>$ shell</span><span>edit and re-run</span></header>
+      <textarea class="editable" spellcheck="false">brew install tinderbox</textarea>
+      <button class="run" type="button">Run</button>
+      <div class="output">==> Installing tinderbox
+Pouring tinderbox-0.4.bottle.tar.gz
+==> Successfully installed tinderbox</div>
+    </div>
+    <p>Or: <code>curl -sSL https://tinderbox.dev/install.sh | sh</code>.</p>
+
+    <h2>2. Spark a branch</h2>
+    <div class="playground">
+      <header><span>$ tinderbox</span><span>edit and re-run</span></header>
+      <textarea class="editable" spellcheck="false">tinderbox spark fix-pricing-typo</textarea>
+      <button class="run" type="button">Run</button>
+      <div class="output">created branch spark/fix-pricing-typo
+TTL: 14 days (expires 2026-05-22)</div>
+    </div>
+    <p><code>spark</code> creates a branch from the current HEAD and stamps a TTL.</p>
+
+    <h2>3. List what's outstanding</h2>
+    <div class="playground">
+      <header><span>$ tinderbox</span><span>edit and re-run</span></header>
+      <textarea class="editable" spellcheck="false">tinderbox list</textarea>
+      <button class="run" type="button">Run</button>
+      <div class="output">spark/fix-pricing-typo   13d remaining
+spark/audit-log-spike     2d remaining  (push first!)
+spark/old-experiment      expired</div>
+    </div>
+
+    <h2>4. Burn the expired ones</h2>
+    <div class="playground">
+      <header><span>$ tinderbox</span><span>edit and re-run</span></header>
+      <textarea class="editable" spellcheck="false">tinderbox burn</textarea>
+      <button class="run" type="button">Run</button>
+      <div class="output">deleting spark/old-experiment ... done
+1 branch reaped, 2 remaining</div>
+    </div>
+
+    <p>For the full reference of every flag, see the <a href="../api/none-paper-three-pane.html">API reference</a>. For the prose version of this walkthrough, see the <a href="text-first-paper-single-column.html">text-first quickstart</a>.</p>
+
+  </div>
+</body>
+</html>
