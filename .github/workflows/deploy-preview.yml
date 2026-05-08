@@ -13,6 +13,12 @@ on:
         required: true
         type: string
 
+# Branch prefix used by the design-drafts CLI. Only branches starting with this
+# prefix are deployed as previews; their preview directories drop the prefix so
+# the gh-pages layout stays flat (e.g. drafts/foo -> /foo/). The literal
+# "drafts/" appears in the `if:` filters below because GitHub Actions does not
+# expand `env` inside job-level `if:` expressions.
+
 concurrency:
   group: deploy-preview
   cancel-in-progress: false
@@ -21,13 +27,14 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'create' && github.event.ref_type == 'branch' && github.event.ref != 'gh-pages' && !startsWith(github.event.ref, 'claude/')) ||
-      (github.event_name == 'pull_request' && !startsWith(github.head_ref, 'claude/')) ||
+      (github.event_name == 'create' && github.event.ref_type == 'branch' && startsWith(github.event.ref, 'drafts/')) ||
+      (github.event_name == 'pull_request' && startsWith(github.head_ref, 'drafts/')) ||
       github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
     env:
       BRANCH_NAME: ${{ inputs.branch || github.head_ref || github.event.ref }}
+      DRAFT_BRANCH_PREFIX: drafts/
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -65,11 +72,23 @@ jobs:
             /tmp/branch-content
           rm -rf /tmp/branch-content/.git
 
+      - name: Resolve preview directory name
+        run: |
+          # Strip the draft prefix so branch "drafts/my-site" is staged at
+          # "<staging>/my-site/" (preview URL stays /my-site/).
+          PREVIEW_DIR="${BRANCH_NAME#${DRAFT_BRANCH_PREFIX}}"
+          if [ -z "$PREVIEW_DIR" ] || [ "$PREVIEW_DIR" = "$BRANCH_NAME" ]; then
+            # workflow_dispatch can target a non-prefixed branch; fall back to
+            # the raw branch name in that case so manual deploys still work.
+            PREVIEW_DIR="$BRANCH_NAME"
+          fi
+          echo "PREVIEW_DIR=$PREVIEW_DIR" >> "$GITHUB_ENV"
+
       - name: Replace branch directory in staging
         run: |
-          rm -rf ".gh-pages-staging/${BRANCH_NAME}"
-          mkdir -p ".gh-pages-staging/${BRANCH_NAME}"
-          cp -a /tmp/branch-content/. ".gh-pages-staging/${BRANCH_NAME}/"
+          rm -rf ".gh-pages-staging/${PREVIEW_DIR}"
+          mkdir -p ".gh-pages-staging/${PREVIEW_DIR}"
+          cp -a /tmp/branch-content/. ".gh-pages-staging/${PREVIEW_DIR}/"
 
       - name: Build index site
         run: npx nx build site
@@ -88,9 +107,11 @@ jobs:
 
   cleanup:
     runs-on: ubuntu-latest
-    if: github.event_name == 'delete' && github.event.ref_type == 'branch' && !startsWith(github.event.ref, 'claude/')
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch' && startsWith(github.event.ref, 'drafts/')
     permissions:
       contents: write
+    env:
+      DRAFT_BRANCH_PREFIX: drafts/
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -123,7 +144,10 @@ jobs:
       - name: Remove deleted branch's directory
         run: |
           BRANCH_NAME="${{ github.event.ref }}"
-          rm -rf ".gh-pages-staging/${BRANCH_NAME}"
+          # Mirror the staging logic: strip the draft prefix so we remove the
+          # un-prefixed preview directory.
+          PREVIEW_DIR="${BRANCH_NAME#${DRAFT_BRANCH_PREFIX}}"
+          rm -rf ".gh-pages-staging/${PREVIEW_DIR}"
 
       - name: Rebuild index site
         run: npx nx build site
