@@ -1,14 +1,56 @@
 import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
-import { isAbsolute, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 
 import { text } from '@clack/prompts';
 import { cli, ConfigurationProviders } from 'cli-forge';
 
 const CONFIG_FILENAME = 'design-drafts.config.json';
 const DEFAULT_PREFIX = 'drafts/';
+
+// Draft branches are orphan branches containing only the published site content.
+// The `push` event resolves a workflow from the pushed ref, so for the deploy to
+// auto-trigger the workflow file must live on the draft branch itself. We embed
+// the repo's canonical copy (from the default branch) before committing. The
+// deploy workflow strips this `.github/` dir back out before publishing so it
+// never leaks into the preview site.
+const DEFAULT_BRANCH = 'main';
+const WORKFLOW_PATH = '.github/workflows/deploy-preview.yml';
+
+async function embedDeployWorkflow(repo: string, tmpDir: string): Promise<void> {
+  const url = `https://raw.githubusercontent.com/${repo}/${DEFAULT_BRANCH}/${WORKFLOW_PATH}`;
+  let contents: string;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    contents = await response.text();
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    console.warn(
+      `Warning: could not fetch deploy workflow from ${url} (${reason}).\n` +
+        `The preview will not auto-deploy. Trigger it manually with:\n` +
+        `  gh workflow run deploy-preview.yml -f branch=<branch> --repo ${repo}`
+    );
+    return;
+  }
+
+  const destination = join(tmpDir, WORKFLOW_PATH);
+  mkdirSync(dirname(destination), { recursive: true });
+  writeFileSync(destination, contents);
+}
 
 const homeConfigPath = join(homedir(), CONFIG_FILENAME);
 const localConfigPath = join(process.cwd(), CONFIG_FILENAME);
@@ -349,6 +391,7 @@ const app = cli('design-drafts', {
 
     try {
       cpSync(sourcePath, tmpDir, { recursive: true });
+      await embedDeployWorkflow(repo, tmpDir);
       exec('git init', tmpDir);
       exec(`git checkout -b ${branchName}`, tmpDir);
       exec(`git remote add origin git@github.com:${repo}.git`, tmpDir);
