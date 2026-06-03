@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"><title>Turnbuckle</title>
+<!-- dark app-icon tile: the "T" is a turnbuckle — crimson pad on a post -->
+<rect width="64" height="64" rx="14" fill="#1B1D2B"/>
+<!-- post (stem) -->
+<rect x="27.5" y="17" width="9" height="35" rx="4.5" fill="#E5E7EB"/>
+<!-- pad (crossbar) — bright crimson for pop on dark -->
+<rect x="12" y="17" width="40" height="13" rx="6.5" fill="#E63946"/>
+</svg>

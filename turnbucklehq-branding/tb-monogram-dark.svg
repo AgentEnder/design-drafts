@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"><title>Turnbuckle</title>
+<!-- bare monogram for dark surfaces: bright crimson pad on a mist post, no tile -->
+<rect x="27.5" y="11" width="9" height="42" rx="4.5" fill="#E5E7EB"/>
+<rect x="8" y="11" width="48" height="15" rx="7.5" fill="#E63946"/>
+</svg>
