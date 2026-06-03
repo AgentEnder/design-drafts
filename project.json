@@ -1,0 +1,30 @@
+{
+  "name": "brand-guidelines",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "tags": ["type:assets"],
+  "targets": {
+    "build": {
+      "executor": "nx:noop",
+      "dependsOn": ["regenerate-icons"]
+    },
+    "regenerate-icons": {
+      "command": "bash scripts/regenerate-icons.sh",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/icons/tile/vector-square.svg",
+        "{projectRoot}/scripts/regenerate-icons.sh"
+      ],
+      "outputs": [
+        "{projectRoot}/icons/tile/*.png",
+        "{projectRoot}/icons/tile/*.ico"
+      ]
+    },
+    "preview": {
+      "command": "open index.html",
+      "options": { "cwd": "{projectRoot}" },
+      "dependsOn": ["build"]
+    }
+  }
+}

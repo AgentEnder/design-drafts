@@ -1,0 +1,171 @@
+name: Deploy Preview
+
+on:
+  create:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+  delete:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy a preview for'
+        required: true
+        type: string
+
+# Branch prefix used by the design-drafts CLI. Only branches starting with this
+# prefix are deployed as previews; their preview directories drop the prefix so
+# the gh-pages layout stays flat (e.g. drafts/foo -> /foo/). The literal
+# "drafts/" appears in the `if:` filters below because GitHub Actions does not
+# expand `env` inside job-level `if:` expressions.
+
+concurrency:
+  group: deploy-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'create' && github.event.ref_type == 'branch' && startsWith(github.event.ref, 'drafts/')) ||
+      (github.event_name == 'pull_request' && startsWith(github.head_ref, 'drafts/')) ||
+      github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+    env:
+      BRANCH_NAME: ${{ inputs.branch || github.head_ref || github.event.ref }}
+      DRAFT_BRANCH_PREFIX: drafts/
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Checkout gh-pages to staging
+        run: |
+          mkdir -p .gh-pages-staging
+          git fetch origin gh-pages:gh-pages 2>/dev/null && \
+            git worktree add .gh-pages-staging gh-pages || \
+            echo "gh-pages branch does not exist yet, starting fresh"
+
+      - name: Shallow clone branch content
+        run: |
+          git clone --depth 1 --branch "$BRANCH_NAME" \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" \
+            /tmp/branch-content
+          rm -rf /tmp/branch-content/.git
+
+      - name: Resolve preview directory name
+        run: |
+          # Strip the draft prefix so branch "drafts/my-site" is staged at
+          # "<staging>/my-site/" (preview URL stays /my-site/).
+          PREVIEW_DIR="${BRANCH_NAME#${DRAFT_BRANCH_PREFIX}}"
+          if [ -z "$PREVIEW_DIR" ] || [ "$PREVIEW_DIR" = "$BRANCH_NAME" ]; then
+            # workflow_dispatch can target a non-prefixed branch; fall back to
+            # the raw branch name in that case so manual deploys still work.
+            PREVIEW_DIR="$BRANCH_NAME"
+          fi
+          echo "PREVIEW_DIR=$PREVIEW_DIR" >> "$GITHUB_ENV"
+
+      - name: Replace branch directory in staging
+        run: |
+          rm -rf ".gh-pages-staging/${PREVIEW_DIR}"
+          mkdir -p ".gh-pages-staging/${PREVIEW_DIR}"
+          cp -a /tmp/branch-content/. ".gh-pages-staging/${PREVIEW_DIR}/"
+
+      - name: Build index site
+        run: npx nx build site
+        env:
+          PAGES_DIR: ${{ github.workspace }}/.gh-pages-staging
+          DESIGN_DRAFTS_PREFIX: drafts/
+          DESIGN_DRAFTS_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Copy index site into staging
+        run: |
+          cp -r packages/site/dist/client/* .gh-pages-staging/ 2>/dev/null || true
+          touch .gh-pages-staging/.nojekyll
+
+      - name: Deploy to gh-pages
+        run: npx nx deploy site --directory=.gh-pages-staging
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  cleanup:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch' && startsWith(github.event.ref, 'drafts/')
+    permissions:
+      contents: write
+    env:
+      DRAFT_BRANCH_PREFIX: drafts/
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Checkout gh-pages to staging
+        run: |
+          mkdir -p .gh-pages-staging
+          git fetch origin gh-pages:gh-pages 2>/dev/null || exit 0
+          git worktree add .gh-pages-staging gh-pages
+
+      - name: Remove deleted branch's directory
+        run: |
+          BRANCH_NAME="${{ github.event.ref }}"
+          # Mirror the staging logic: strip the draft prefix so we remove the
+          # un-prefixed preview directory.
+          PREVIEW_DIR="${BRANCH_NAME#${DRAFT_BRANCH_PREFIX}}"
+          rm -rf ".gh-pages-staging/${PREVIEW_DIR}"
+
+      - name: Rebuild index site
+        run: npx nx build site
+        env:
+          PAGES_DIR: ${{ github.workspace }}/.gh-pages-staging
+          DESIGN_DRAFTS_PREFIX: drafts/
+          DESIGN_DRAFTS_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Copy index site into staging
+        run: |
+          cp -r packages/site/dist/client/* .gh-pages-staging/ 2>/dev/null || true
+          touch .gh-pages-staging/.nojekyll
+
+      - name: Deploy to gh-pages
+        run: npx nx deploy site --directory=.gh-pages-staging
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turnbuckle — Brand Guidelines</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --crimson:#C8102E; --crimson-bright:#E63946; --charcoal:#2B2D42;
+    --charcoal-deep:#1B1D2B; --ink:#111827; --muted:#6B7280;
+    --surface:#FFFFFF; --surface-2:#F4F4F5; --line:#E5E7EB;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;color:var(--charcoal);
+    background:var(--surface-2);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:0 28px}
+  /* hero */
+  header{background:var(--surface);border-bottom:1px solid var(--line)}
+  .hero{padding:56px 28px 48px;max-width:920px;margin:0 auto}
+  .hero img{height:60px;display:block}
+  .hero .tag{font-size:22px;font-weight:700;color:var(--charcoal);margin:26px 0 4px;letter-spacing:-0.4px}
+  .hero .sub{font-size:14px;color:var(--muted);margin:0}
+  /* sections */
+  section{padding:52px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:13px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;
+    color:var(--crimson);margin:0 0 6px}
+  h2 + .lead{font-size:24px;font-weight:800;letter-spacing:-0.5px;color:var(--charcoal);margin:0 0 28px}
+  h3{font-size:15px;font-weight:700;color:var(--charcoal);margin:34px 0 14px}
+  p{font-size:14.5px;color:#3f4252;max-width:680px}
+  .muted{color:var(--muted)}
+  code{background:var(--surface);border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;font-size:12.5px;font-family:'SF Mono',Menlo,monospace;color:var(--charcoal)}
+  /* logo grid */
+  .panels{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:8px 0 6px}
+  .panel{border:1px solid var(--line);border-radius:14px;padding:34px;display:flex;
+    align-items:center;justify-content:center;min-height:150px}
+  .panel.lt{background:var(--surface)}
+  .panel.dk{background:var(--charcoal-deep);border-color:#2c2f44}
+  .panel img{max-width:80%;max-height:74px}
+  .cap{font-size:11.5px;color:var(--muted);margin:6px 2px 0}
+  .tiles{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;margin-top:6px}
+  .tile{width:84px;height:84px;border-radius:19px;display:flex;align-items:center;
+    justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.14)}
+  .tile img{width:64px;height:64px}
+  .tw{background:#fff}.td{background:var(--charcoal-deep)}
+  .scale{display:flex;gap:30px;align-items:flex-end;flex-wrap:wrap;background:var(--surface);
+    border:1px solid var(--line);border-radius:14px;padding:26px 30px;margin-top:6px}
+  .scale figure{margin:0;text-align:center}
+  .scale figcaption{font-size:10px;color:var(--muted);margin-top:7px}
+  /* clear space */
+  .clearbox{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:30px;display:inline-block;margin-top:6px}
+  .csp{position:relative;display:inline-block;padding:26px;outline:1px dashed #c9ccd6}
+  .csp img{height:48px;display:block}
+  /* dos donts */
+  .dd{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:10px}
+  .dd .col{border:1px solid var(--line);border-radius:12px;padding:20px 22px;background:var(--surface)}
+  .dd h4{margin:0 0 10px;font-size:13px;font-weight:800;letter-spacing:.4px}
+  .dd .do h4{color:#1a8f4a}.dd .dont h4{color:var(--crimson)}
+  .dd ul{margin:0;padding-left:18px}.dd li{font-size:13.5px;margin:6px 0;color:#3f4252}
+  /* color */
+  .sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-top:6px}
+  .chip{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+  .chip .fill{height:74px}
+  .chip .meta{padding:10px 12px}
+  .chip .nm{font-size:13px;font-weight:700}
+  .chip .hex{font-size:12px;color:var(--muted);font-family:'SF Mono',Menlo,monospace;text-transform:uppercase}
+  .chip .role{font-size:11px;color:var(--muted);margin-top:3px}
+  .callout{background:#fff;border:1px solid var(--line);border-left:4px solid var(--crimson);
+    border-radius:0 12px 12px 0;padding:16px 20px;margin:20px 0;max-width:700px}
+  .callout strong{color:var(--charcoal)}
+  /* type */
+  .specimen{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:30px;margin-top:6px}
+  .specimen .big{font-size:54px;font-weight:800;letter-spacing:-1.5px;color:var(--charcoal);margin:0 0 6px;line-height:1}
+  .scaleType div{border-top:1px solid var(--line);padding:14px 0;display:flex;align-items:baseline;gap:20px}
+  .scaleType div:first-child{border-top:0}
+  .scaleType .lbl{font-size:11px;color:var(--muted);width:130px;flex:none;font-family:'SF Mono',Menlo,monospace}
+  .wt{display:flex;gap:26px;flex-wrap:wrap;margin-top:14px}
+  .wt span{font-size:26px;color:var(--charcoal)}
+  /* voice */
+  .vocab{width:100%;border-collapse:collapse;margin-top:8px;background:var(--surface);
+    border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .vocab th,.vocab td{text-align:left;padding:11px 16px;font-size:13.5px;border-bottom:1px solid var(--line)}
+  .vocab th{background:var(--surface-2);font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+  .vocab tr:last-child td{border-bottom:0}
+  .vocab .use{color:#1a8f4a;font-weight:600}.vocab .avoid{color:var(--crimson)}
+  footer{padding:36px 0 60px;color:var(--muted);font-size:12.5px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hero">
+    <img src="icons/lockup/vector-light.svg" alt="Turnbuckle">
+    <p class="tag">Run the show.</p>
+    <p class="sub">Brand guidelines · v1 · the product identity for Turnbuckle promotion management</p>
+  </div>
+</header>
+
+<!-- ============ LOGO ============ -->
+<section><div class="wrap">
+  <h2>Logo</h2>
+  <div class="lead">One mark, three tiers.</div>
+  <p>The mark is a <strong>ring corner seen from inside the ring</strong> — crimson turnbuckle pads facing you,
+    ropes receding to the left and right, the corner post rising behind. It is drawn at three levels of detail,
+    each tuned to a size band. Never stretch one tier to do another's job.</p>
+  <p>The mark reads most clearly <strong>alongside the wordmark</strong>, where the name carries the meaning — so the
+    lockup is our primary signature and the bare mark a secondary one. We don't ask the mark to carry the brand by
+    itself in a caption-less slot, because it almost never appears that way: a favicon sits beside its tab title, an
+    app icon beside its label. So we shrink <em>this</em> mark into those slots rather than inventing a separate glyph
+    to decode in isolation.</p>
+
+  <h3>Hero mark — ≥ 48px</h3>
+  <div class="panels">
+    <div><div class="panel lt"><img src="icons/mark/vector-light.svg"></div><div class="cap">icons/mark/vector-light.svg · on light</div></div>
+    <div><div class="panel dk"><img src="icons/mark/vector-dark.svg"></div><div class="cap">icons/mark/vector-dark.svg · on dark</div></div>
+  </div>
+  <p class="muted">Full detail: soft underfoot mat, three ropes per side, full post. The mat is a hero-only flourish; it disappears below ~32px and can't carry the mark at small sizes — that's the glyph's job, so drop the mat the moment you drop below the hero band.</p>
+
+  <h3>Reduced glyph — ≤ 32px (favicon, dense UI)</h3>
+  <div class="panels">
+    <div><div class="panel lt"><img src="icons/glyph/vector-light.svg"></div><div class="cap">icons/glyph/vector-light.svg · on light</div></div>
+    <div><div class="panel dk"><img src="icons/glyph/vector-dark.svg"></div><div class="cap">icons/glyph/vector-dark.svg · on dark</div></div>
+  </div>
+  <p class="muted">No mat, one bold rope per pad (all three), a heavier post and fatter strokes — so it stays crisp where anti-aliasing eats thin parallel lines. At 16px this is a silhouette, not a detailed drawing: the three pads merge into a single red bar and the ropes fade. That's fine — at favicon size this same glyph goes on a tile (below), and the tab title beside it carries the recognition.</p>
+
+  <h3>Horizontal lockup — wordmark</h3>
+  <div class="panels">
+    <div><div class="panel lt"><img src="icons/lockup/vector-light.svg"></div><div class="cap">icons/lockup/vector-light.svg</div></div>
+    <div><div class="panel dk"><img src="icons/lockup/vector-dark.svg"></div><div class="cap">icons/lockup/vector-dark.svg</div></div>
+  </div>
+
+  <h3>Favicon &amp; app icon</h3>
+  <p>The browser makes you ship a favicon, and the bare glyph turns to mush at 16px — so the glyph goes on a
+    <strong>tile</strong>. This isn't a new mark; it's the same corner mark, reduced and seated on charcoal so it stays a
+    crisp, on-brand square. The dark tile is the default.</p>
+  <div class="tiles">
+    <figure style="margin:0;text-align:center"><div class="tile td"><img src="icons/tile/vector-dark.svg"></div><figcaption class="cap">icons/tile/vector-dark.svg · default</figcaption></figure>
+    <figure style="margin:0;text-align:center"><div class="tile tw"><img src="icons/tile/vector-light.svg"></div><figcaption class="cap">icons/tile/vector-light.svg · light contexts</figcaption></figure>
+  </div>
+  <p class="muted">At 16px (pinned/overflowing tabs) the ropes fade and you're left with a dark square holding a red core —
+    soft, but never seen alone: the tab title or app label is always adjacent and does the recognising. We don't optimise
+    this slot for standalone legibility because nothing here is standalone. Rasterised PNG/ICO set lives in <code>icons/tile/</code>;
+    <code>icons/tile/vector-square.svg</code> is the full-bleed source for OS-masked icons.</p>
+
+  <h3>Scaling behaviour</h3>
+  <div class="scale">
+    <figure><img src="icons/mark/vector-light.svg" height="96"><figcaption>96 · hero</figcaption></figure>
+    <figure><img src="icons/mark/vector-light.svg" height="48"><figcaption>48 · hero</figcaption></figure>
+    <figure><img src="icons/glyph/vector-light.svg" height="32"><figcaption>32 · glyph</figcaption></figure>
+    <figure><img src="icons/glyph/vector-light.svg" height="16"><figcaption>16 · glyph</figcaption></figure>
+    <figure><img src="icons/tile/vector-dark.svg" height="32"><figcaption>32 · tile</figcaption></figure>
+    <figure><img src="icons/tile/vector-dark.svg" height="16"><figcaption>16 · tile</figcaption></figure>
+  </div>
+  <p class="muted">Below ~32px the bare glyph thins out; on the tile it holds its shape as a square stamp. Use the bare glyph in dense UI where there's already a surface behind it, and the tile wherever the OS wants a square (favicon, app icon).</p>
+
+  <h3>Clear space &amp; minimum size</h3>
+  <div class="clearbox">
+    <div class="csp"><img src="icons/mark/vector-light.svg"></div>
+  </div>
+  <p class="muted">Keep clear space of at least <strong>one pad-height</strong> (the gap between two ropes) on all sides — shown by the dashed box. Minimum sizes: lockup <code>≥ 120px</code> wide · hero mark <code>≥ 24px</code> · glyph down to <code>16px</code> · favicon/app-icon tile down to <code>16px</code>.</p>
+
+  <h3>Do &amp; don't</h3>
+  <div class="dd">
+    <div class="col do"><h4>✓ DO</h4><ul>
+      <li>Use the tier that matches the size band.</li>
+      <li>Use the dark variants on dark surfaces — charcoal dies on dark.</li>
+      <li>Keep crimson pads as the focal color.</li>
+      <li>Give the mark room to breathe.</li>
+    </ul></div>
+    <div class="col dont"><h4>✗ DON'T</h4><ul>
+      <li>Stretch, skew, or rotate the mark.</li>
+      <li>Recolor the pads to a non-brand hue.</li>
+      <li>Shrink the hero mark below 24px — use the glyph, or the tile for favicons.</li>
+      <li>Use the bare glyph as a favicon — put it on the tile so it stays a clean square.</li>
+      <li>Put the light mark on a busy or crimson background.</li>
+    </ul></div>
+  </div>
+</div></section>
+
+<!-- ============ COLOR ============ -->
+<section><div class="wrap">
+  <h2>Color</h2>
+  <div class="lead">Crimson heat, charcoal structure.</div>
+  <p>This is the <strong>product</strong> palette — Turnbuckle's own identity. It is deliberately separate from
+    the per-promotion theming customers configure (their own primary/secondary/accent). Product crimson should
+    never be presented as a tenant's brand color.</p>
+  <p>Crimson and the design system's <code>danger</code> red sit close on the wheel, so keep them apart in
+    <em>function</em>, not just in hex: <strong>crimson never marks a destructive action</strong> (delete, cancel,
+    remove), and a crimson CTA should never sit shoulder-to-shoulder with a danger button competing for the same red.
+    When the two would collide, danger keeps the red and the brand action steps back to charcoal. If you can't tell at
+    a glance which red means "go" and which means "gone," the layout is wrong.</p>
+
+  <h3>Product palette</h3>
+  <div class="sw">
+    <div class="chip"><div class="fill" style="background:#C8102E"></div><div class="meta"><div class="nm">Crimson</div><div class="hex">#C8102E</div><div class="role">Primary · the heat · CTAs, pads</div></div></div>
+    <div class="chip"><div class="fill" style="background:#E63946"></div><div class="meta"><div class="nm">Crimson Bright</div><div class="hex">#E63946</div><div class="role">Dark-mode pads · hover</div></div></div>
+    <div class="chip"><div class="fill" style="background:#2B2D42"></div><div class="meta"><div class="nm">Charcoal</div><div class="hex">#2B2D42</div><div class="role">Ink · ropes · post · body text</div></div></div>
+    <div class="chip"><div class="fill" style="background:#1B1D2B"></div><div class="meta"><div class="nm">Charcoal Deep</div><div class="hex">#1B1D2B</div><div class="role">Dark surface · dark tile</div></div></div>
+    <div class="chip"><div class="fill" style="background:#E5E7EB"></div><div class="meta"><div class="nm">Mist</div><div class="hex">#E5E7EB</div><div class="role">Ropes on dark · hairlines</div></div></div>
+    <div class="chip"><div class="fill" style="background:#F4F4F5;box-shadow:inset 0 0 0 1px #e5e7eb"></div><div class="meta"><div class="nm">Off-white</div><div class="hex">#F4F4F5</div><div class="role">Light surface · page bg</div></div></div>
+  </div>
+
+  <div class="callout">
+    <strong>Two brand layers, kept apart.</strong> <span class="muted">Turnbuckle = crimson/charcoal (product chrome,
+    marketing, app icon). Each promotion themes its <em>own</em> space via <code>--brand-primary</code> etc.
+    (default blue <code>#3b82f6</code>). State colors — <code>success #22c55e</code>, <code>warning #f59e0b</code>,
+    <code>danger #ef4444</code> — come from the design system and stay independent of brand crimson.</span>
+  </div>
+</div></section>
+
+<!-- ============ TYPOGRAPHY ============ -->
+<section><div class="wrap">
+  <h2>Typography</h2>
+  <div class="lead">Inter, set tight.</div>
+  <p>Inter is the product typeface — it is already the app's default font, so brand and UI stay consistent.
+    The wordmark is <strong>Inter ExtraBold (800)</strong> with <code>-1</code> tracking. For shipped logo files
+    the wordmark should be converted to outlines so it renders identically without the font installed.</p>
+
+  <div class="specimen">
+    <p class="big">Turnbuckle</p>
+    <div class="muted" style="font-size:12px">Inter ExtraBold · letter-spacing −1 · the wordmark</div>
+    <div class="wt">
+      <span style="font-weight:400">Regular</span>
+      <span style="font-weight:500">Medium</span>
+      <span style="font-weight:600">Semibold</span>
+      <span style="font-weight:700">Bold</span>
+      <span style="font-weight:800">ExtraBold</span>
+      <span style="font-weight:900">Black</span>
+    </div>
+  </div>
+
+  <h3>Type scale</h3>
+  <div class="specimen scaleType">
+    <div><span class="lbl">Display / 800</span><span style="font-size:40px;font-weight:800;letter-spacing:-1px">Book the card</span></div>
+    <div><span class="lbl">H1 / 800</span><span style="font-size:30px;font-weight:800;letter-spacing:-.6px">Run the show</span></div>
+    <div><span class="lbl">H2 / 700</span><span style="font-size:22px;font-weight:700">Segments &amp; matches</span></div>
+    <div><span class="lbl">Body / 400</span><span style="font-size:15px">The reliable back office for an independent wrestling promotion.</span></div>
+    <div><span class="lbl">Caption / 500</span><span style="font-size:12px;font-weight:500;color:var(--muted)">UPDATED 2 MINUTES AGO</span></div>
+  </div>
+</div></section>
+
+<!-- ============ VOICE ============ -->
+<section><div class="wrap">
+  <h2>Voice &amp; Tone</h2>
+  <div class="lead">Kayfabe out front, spreadsheet in back.</div>
+  <p>Turnbuckle is run by people who love the business and need to run it well. We talk like a seasoned promoter
+    who is also organized — energetic and fluent in the craft, but never hokey, and always reliable when it counts.</p>
+
+  <h3>Principles</h3>
+  <div class="dd">
+    <div class="col do"><h4>HOW WE SOUND</h4><ul>
+      <li><strong>Talk like you book shows</strong>, not like enterprise software. "Add a match," not "Create segment entity."</li>
+      <li><strong>Respect the craft.</strong> Use real wrestling vocabulary correctly — card, segment, run-in, over, draw.</li>
+      <li><strong>Be the reliable one.</strong> It runs live events; functional copy is plain and unambiguous.</li>
+      <li><strong>Save swagger for the marquee.</strong> Landing pages can have heat; in-app microcopy stays calm.</li>
+    </ul></div>
+    <div class="col dont"><h4>WHAT WE AVOID</h4><ul>
+      <li>Forced wrestling puns on every button ("Body-slam your data!").</li>
+      <li>Corporate filler — "leverage," "synergy," "solutions."</li>
+      <li>Cutesy errors when something real broke.</li>
+      <li>Breaking kayfabe cynically — we're fans, not above it.</li>
+    </ul></div>
+  </div>
+
+  <h3>Word choice</h3>
+  <table class="vocab">
+    <tr><th>Context</th><th class="use">We say</th><th class="avoid">Not</th></tr>
+    <tr><td>A wrestling event</td><td class="use">show / event / card</td><td class="avoid">"calendar item"</td></tr>
+    <tr><td>Items on the card</td><td class="use">segment / match</td><td class="avoid">"content block"</td></tr>
+    <tr><td>The talent</td><td class="use">roster / personnel</td><td class="avoid">"resources" / "users"</td></tr>
+    <tr><td>Primary action</td><td class="use">Book · Add · Run</td><td class="avoid">"Initiate" / "Execute"</td></tr>
+    <tr><td>Empty state</td><td class="use">"No matches booked yet."</td><td class="avoid">"No records found."</td></tr>
+  </table>
+
+  <h3>In practice</h3>
+  <div class="dd">
+    <div class="col do"><h4>✓ ON-BRAND</h4><ul>
+      <li>"Card's set. 6 segments, doors at 7."</li>
+      <li>"Add the main event"</li>
+      <li>"Heads up — two wrestlers are double-booked in segment 3."</li>
+    </ul></div>
+    <div class="col dont"><h4>✗ OFF-BRAND</h4><ul>
+      <li>"Your event entity has been successfully persisted."</li>
+      <li>"Initiate new segment creation workflow"</li>
+      <li>"Error 409: scheduling conflict detected in resource allocation."</li>
+    </ul></div>
+  </div>
+  <p class="muted" style="margin-top:22px"><strong>Working tagline:</strong> "Run the show." &nbsp;·&nbsp;
+    Alternates to consider: "Book the card. Run the show." · "From bell to bell." · "The promoter's back office."</p>
+</div></section>
+
+<footer><div class="wrap">Turnbuckle brand guidelines · v1 · turnbucklehq.com · assets in <code>packages/brand-guidelines/</code></div></footer>
+
+</body>
+</html>

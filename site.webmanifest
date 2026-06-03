@@ -1,0 +1,11 @@
+{
+  "name": "Turnbuckle",
+  "short_name": "Turnbuckle",
+  "icons": [
+    { "src": "icons/tile/192-dark.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/tile/512-dark.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "theme_color": "#1B1D2B",
+  "background_color": "#1B1D2B",
+  "display": "standalone"
+}
