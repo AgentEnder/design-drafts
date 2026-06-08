@@ -13,6 +13,7 @@ interface PackageJson {
   // The host is a single project, not an nx workspace, so the site's `nx`
   // project config is dropped during promotion.
   nx?: unknown;
+  packageManager?: string;
   [key: string]: unknown;
 }
 
@@ -29,9 +30,15 @@ function resolveDepBlock(
       resolved[name] = spec;
       continue;
     }
-    // `catalog:` (default) and `catalog:<name>` both resolve against the named
-    // catalog entry. We only support the default catalog, which is all the
-    // canonical workspace uses.
+    // Only the default catalog (`catalog:`) is supported. A named catalog
+    // (`catalog:<group>`) would resolve against a different table we don't read,
+    // so fail loudly rather than silently picking the wrong version.
+    const group = spec.slice(CATALOG_PREFIX.length);
+    if (group) {
+      throw new Error(
+        `Cannot resolve "${name}": named catalogs ("${spec}") are not supported`
+      );
+    }
     const version = catalog[name];
     if (!version) {
       throw new Error(
@@ -46,11 +53,14 @@ function resolveDepBlock(
 /**
  * Rewrites a site package.json for life in a standalone host repo: every
  * `catalog:` dependency specifier is replaced with the concrete version from
- * the canonical workspace catalog, and the nx project config is removed.
+ * the canonical workspace catalog, the nx project config is removed, and a
+ * `packageManager` field is set (so `pnpm/action-setup` can resolve a version
+ * in the generated repo — without it the first deploy fails).
  */
 export function resolveSitePackageJson(
   raw: string,
-  catalog: CatalogMap
+  catalog: CatalogMap,
+  packageManager?: string
 ): string {
   const pkg = JSON.parse(raw) as PackageJson;
 
@@ -58,6 +68,9 @@ export function resolveSitePackageJson(
   next.dependencies = resolveDepBlock(pkg.dependencies, catalog);
   next.devDependencies = resolveDepBlock(pkg.devDependencies, catalog);
   delete next.nx;
+  if (packageManager) {
+    next.packageManager = packageManager;
+  }
 
   // Drop empty dep blocks so we don't emit `"dependencies": {}`.
   if (next.dependencies && Object.keys(next.dependencies).length === 0) {

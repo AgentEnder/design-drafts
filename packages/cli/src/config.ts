@@ -35,7 +35,10 @@ export async function promptAndPersist(
   existing: string | undefined,
   argKey: string,
   configPath: string,
-  promptMessage: string
+  promptMessage: string,
+  // Optional extra check, run in the prompt so an invalid value is re-prompted
+  // and never persisted. Returns an error message, or undefined when valid.
+  validate?: (value: string) => string | undefined
 ): Promise<string> {
   if (existing) return existing;
 
@@ -43,6 +46,7 @@ export async function promptAndPersist(
     message: promptMessage,
     validate: (v) => {
       if (!v?.trim()) return `${argKey} is required`;
+      return validate?.(v);
     },
   });
 

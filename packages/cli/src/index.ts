@@ -29,6 +29,7 @@ import { initDraft } from './init/draft';
 import { initHost } from './init/host';
 import { init } from './init/init';
 import { validateSiteName } from './site-name';
+import { validatePrefix, validateRepo } from './validate';
 
 const CLI_VERSION: string = pkg.version;
 
@@ -221,7 +222,8 @@ async function pushHandler(args: PushArgs): Promise<void> {
     args.repo,
     'repo',
     homeConfigPath,
-    'GitHub repo (org/repo):'
+    'GitHub repo (org/repo):',
+    (v) => (validateRepo(v).ok ? undefined : 'use "owner/name" form')
   );
   const siteName = await promptAndPersist(
     args['site-name'],
@@ -238,6 +240,19 @@ async function pushHandler(args: PushArgs): Promise<void> {
     if (validation.suggestion) {
       console.error(`Try: ${validation.suggestion}`);
     }
+    process.exit(1);
+  }
+
+  // repo and prefix are interpolated into git/gh commands; reject anything that
+  // could break or inject before they reach the shell.
+  const repoCheck = validateRepo(repo);
+  if (!repoCheck.ok) {
+    console.error(`Invalid repo "${repo}": ${repoCheck.reason}`);
+    process.exit(1);
+  }
+  const prefixCheck = validatePrefix(prefix);
+  if (!prefixCheck.ok) {
+    console.error(`Invalid prefix "${prefix}": ${prefixCheck.reason}`);
     process.exit(1);
   }
 
@@ -314,7 +329,7 @@ const app = cli('design-drafts', {
       .config(ConfigurationProviders.JsonFile(CONFIG_FILENAME))
       .command('init', {
         description:
-          'Scaffold a host repo and/or a draft (no subcommand = guided one-liner)',
+          'Set up a host (if needed) and scaffold a draft, ready to publish',
         builder: (initArgs) =>
           initArgs
             .command('host', {

@@ -29,6 +29,12 @@ function makeCheckout(): string {
     join(checkout, 'tsconfig.base.json'),
     JSON.stringify({ compilerOptions: { strict: true, target: 'ES2022' } })
   );
+  // Cone-mode sparse checkout also materialises the root package.json, which
+  // writeScaffold reads to carry `packageManager` into the standalone host.
+  writeFileSync(
+    join(checkout, 'package.json'),
+    JSON.stringify({ name: 'root', packageManager: 'pnpm@10.33.0' })
+  );
   writeFileSync(
     join(siteDir, 'package.json'),
     JSON.stringify({
@@ -74,6 +80,8 @@ describe('writeScaffold', () => {
     expect(pkg.dependencies).toEqual({ react: '^19.2.3' });
     expect(pkg.devDependencies).toEqual({ vike: '^0.4.256' });
     expect(pkg.nx).toBeUndefined();
+    // packageManager carried over so pnpm/action-setup works on first deploy.
+    expect(pkg.packageManager).toBe('pnpm@10.33.0');
   });
 
   it('rewrites the vite base to the host repo name', () => {

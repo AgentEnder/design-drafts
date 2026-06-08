@@ -19,6 +19,7 @@ import {
 } from '../config';
 import { capture, exec, succeeds } from '../exec';
 import { githubRemoteUrl } from '../github';
+import { validateRepo, validateTemplateRef } from '../validate';
 import {
   inlineTsconfig,
   parseCatalog,
@@ -109,11 +110,18 @@ export function writeScaffold(
   const catalog = parseCatalog(
     readFileSync(join(checkout, 'pnpm-workspace.yaml'), 'utf-8')
   );
+  // The site package.json has no `packageManager` (it inherits pnpm from the
+  // monorepo root). A standalone host needs it so pnpm/action-setup resolves a
+  // version on the first deploy — carry it over from the canonical root.
+  const rootPkg = JSON.parse(
+    readFileSync(join(checkout, 'package.json'), 'utf-8')
+  ) as { packageManager?: string };
   writeFileSync(
     join(targetDir, 'package.json'),
     resolveSitePackageJson(
       readFileSync(join(siteDir, 'package.json'), 'utf-8'),
-      catalog
+      catalog,
+      rootPkg.packageManager
     )
   );
 
@@ -162,6 +170,7 @@ function configureGitHub(
     printManualSteps(
       repo,
       targetDir,
+      isPrivate,
       'GitHub CLI (`gh`) is not installed or authenticated'
     );
     return false;
@@ -176,10 +185,10 @@ function configureGitHub(
       targetDir
     )} --remote origin --push`;
     if (!succeeds(create, targetDir)) {
-      printManualSteps(repo, targetDir, `could not create ${repo}`);
+      printManualSteps(repo, targetDir, isPrivate, `could not create ${repo}`);
       return false;
     }
-    enablePages(targetDir, repo);
+    enablePages(targetDir, repo, isPrivate);
     return true;
   }
 
@@ -188,24 +197,32 @@ function configureGitHub(
     exec(`git remote add origin ${githubRemoteUrl(repo, targetDir)}`, targetDir);
   }
   if (!succeeds(`git push -u origin ${DEFAULT_BRANCH}`, targetDir)) {
-    printManualSteps(repo, targetDir, 'could not push main');
+    printManualSteps(
+      repo,
+      targetDir,
+      isPrivate,
+      `could not push to ${repo} (does its ${DEFAULT_BRANCH} already have commits?)`
+    );
     return false;
   }
 
-  enablePages(targetDir, repo);
+  enablePages(targetDir, repo, isPrivate);
   return true;
 }
 
 /** Sets the Pages source to "GitHub Actions" (build_type=workflow). */
-function enablePages(targetDir: string, repo: string): void {
+function enablePages(targetDir: string, repo: string, isPrivate: boolean): void {
   const create = `gh api -X POST /repos/${repo}/pages -f build_type=workflow`;
   const update = `gh api -X PUT /repos/${repo}/pages -f build_type=workflow`;
   if (succeeds(create, targetDir) || succeeds(update, targetDir)) {
     console.log(`Enabled GitHub Pages (Actions source) on ${repo}.`);
     return;
   }
+  const privateHint = isPrivate
+    ? ' Private repos need GitHub Pro/Team for Pages — make the repo public or upgrade.'
+    : '';
   console.warn(
-    `Warning: could not enable GitHub Pages on ${repo}.\n` +
+    `Warning: could not enable GitHub Pages on ${repo}.${privateHint}\n` +
       `Enable it manually: Settings -> Pages -> Build and deployment -> Source: GitHub Actions.`
   );
 }
@@ -213,12 +230,14 @@ function enablePages(targetDir: string, repo: string): void {
 function printManualSteps(
   repo: string,
   targetDir: string,
+  isPrivate: boolean,
   reason: string
 ): void {
+  const visibility = isPrivate ? '--private' : '--public';
   console.warn(
     `\nScaffold is at ${targetDir}, but GitHub setup was skipped (${reason}).\n` +
       `Finish manually:\n` +
-      `  gh repo create ${repo} --public --source ${JSON.stringify(
+      `  gh repo create ${repo} ${visibility} --source ${JSON.stringify(
         targetDir
       )} --remote origin --push\n` +
       `  Settings -> Pages -> Source: GitHub Actions\n`
@@ -268,13 +287,29 @@ export async function initHost(opts: InitHostOptions): Promise<void> {
       (opts.path ? detectRemoteRepo(targetDir) : undefined),
     'repo',
     homeConfigPath,
-    'GitHub repo for the host (org/repo):'
+    'GitHub repo for the host (org/repo):',
+    (v) => (validateRepo(v).ok ? undefined : 'use "owner/name" form')
   );
+
+  // repo and template-ref are interpolated into git/gh commands; reject anything
+  // that could break or inject before they reach the shell.
+  const repoCheck = validateRepo(repo);
+  if (!repoCheck.ok) {
+    console.error(`Invalid repo "${repo}": ${repoCheck.reason}`);
+    process.exit(1);
+  }
+  if (opts.templateRef) {
+    const refCheck = validateTemplateRef(opts.templateRef);
+    if (!refCheck.ok) {
+      console.error(`Invalid template-ref "${opts.templateRef}": ${refCheck.reason}`);
+      process.exit(1);
+    }
+  }
 
   // Idempotency only applies to a persistent directory; a tmpdir is always fresh.
   if (opts.path && alreadyConfigured(targetDir)) {
     console.log(`Host already configured at ${targetDir}; re-ensuring Pages.`);
-    enablePages(targetDir, repo);
+    enablePages(targetDir, repo, opts.private ?? false);
     return;
   }
 
@@ -302,7 +337,7 @@ export async function initHost(opts: InitHostOptions): Promise<void> {
     console.log(
       `\nStopped before GitHub setup. The scaffold is at ${targetDir}.`
     );
-    printManualSteps(repo, targetDir, 'cancelled');
+    printManualSteps(repo, targetDir, isPrivate, 'cancelled');
     return;
   }
 
