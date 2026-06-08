@@ -24,6 +24,7 @@ import {
   resolvePrefix,
 } from './config';
 import { capture, exec } from './exec';
+import { githubRemoteUrl } from './github';
 import { initDraft } from './init/draft';
 import { initHost } from './init/host';
 import { init } from './init/init';
@@ -273,7 +274,7 @@ async function pushHandler(args: PushArgs): Promise<void> {
     await embedDeployWorkflow(repo, tmpDir);
     exec('git init', tmpDir);
     exec(`git checkout -b ${branchName}`, tmpDir);
-    exec(`git remote add origin git@github.com:${repo}.git`, tmpDir);
+    exec(`git remote add origin ${githubRemoteUrl(repo, tmpDir)}`, tmpDir);
     exec('git add .', tmpDir);
     exec(`git commit -F ${JSON.stringify(messageFile)}`, tmpDir);
     exec(`git push --force origin ${branchName}`, tmpDir);
@@ -319,16 +320,28 @@ const app = cli('design-drafts', {
             .command('host', {
               description: 'Scaffold a GitHub repo to host draft previews',
               builder: (b) =>
-                b.positional('path', {
-                  type: 'string',
-                  default: '.',
-                  description: 'Directory to scaffold the host into',
-                }),
+                b
+                  .option('path', {
+                    type: 'string',
+                    description:
+                      'Persist the scaffold to this directory instead of a throwaway tmpdir',
+                  })
+                  .option('private', {
+                    type: 'boolean',
+                    description:
+                      'Create a private repo (default: prompt; Pages needs Pro/Team for private)',
+                  })
+                  .option('yes', {
+                    type: 'boolean',
+                    description: 'Skip the confirmation prompt before GitHub setup',
+                  }),
               handler: (a) =>
                 initHost({
                   path: a.path,
                   repo: a.repo,
                   templateRef: a['template-ref'],
+                  private: a.private,
+                  yes: a.yes,
                   cliVersion: CLI_VERSION,
                 }),
             })

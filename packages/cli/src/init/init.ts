@@ -21,10 +21,9 @@ export async function init(opts: InitOptions): Promise<void> {
 
   if (!hostConfigured) {
     console.log('No host configured yet — setting one up first.\n');
-    // Scaffold the host into a sibling `host/` dir so it doesn't collide with
-    // the draft we create in the target directory.
+    // Scaffold the host in a throwaway tmpdir (the default): it only needs to
+    // live on GitHub, not next to the draft we create in the target directory.
     await initHost({
-      path: 'host',
       repo: opts.repo,
       templateRef: opts.templateRef,
       cliVersion: opts.cliVersion,

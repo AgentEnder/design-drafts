@@ -84,19 +84,32 @@ store** of all previews (not the Pages source). Two jobs:
 
 ## `init host` behavior
 
-1. Resolve target dir (arg, default `.`) and repo `org/repo` (`--repo`, else
-   home config, else `git remote get-url origin` of target, else prompt).
+The host site rarely needs local edits, so the base case scaffolds into a
+**throwaway tmpdir** and discards it once the GitHub repo is set up. `--path`
+opts into a persistent, customizable directory.
+
+1. Pick the target dir: `--path` (resolved, persistent) or a fresh tmpdir
+   (default, discarded on success). Resolve repo `org/repo` (`--repo`, else home
+   config, else — only for `--path` — `git remote get-url origin`, else prompt).
 2. Resolve ref (`--template-ref` || `v<cliVersion>` if tag exists || `main`).
-3. Idempotency: if the workflow + a host-marked `package.json` already exist,
-   print "already configured", still (re)ensure Pages, exit 0.
+3. Idempotency (`--path` only — a tmpdir is always fresh): if the workflow + a
+   host-marked `package.json` already exist, print "already configured", still
+   (re)ensure Pages, exit 0.
 4. Sparse-checkout + copy + rewrites; generate workflow/.nojekyll/.gitignore.
-5. `git init` (if needed), add, commit.
-6. Ensure `origin` → `git@github.com:<repo>.git`; create the GitHub repo via
-   `gh repo create` if absent; push `main`.
-7. Enable Pages: `gh api POST /repos/{repo}/pages -f build_type=workflow`
+5. `git init -b main`, add, commit.
+6. Interactive gate: prompt visibility (`--private` skips) and a confirm before
+   any outward action (`--yes` skips). On decline, keep the scaffold and print
+   manual steps.
+7. GitHub: if the repo doesn't exist, `gh repo create … --source … --remote
+   origin --push` (gh sets the remote with the user's configured protocol and
+   pushes — no hardcoded URL). If it exists, add a remote via the detected
+   protocol (`gh config get git_protocol`, else ssh) and push.
+8. Enable Pages: `gh api POST /repos/{repo}/pages -f build_type=workflow`
    (PUT to update if it already exists). On any `gh` failure (missing, unauthed,
    missing scopes) print exact manual steps and continue — never hard-fail the
    scaffold that already succeeded.
+9. Cleanup: a throwaway tmpdir is removed on a successful push and kept on
+   failure (so the user can finish manually); a `--path` dir is always kept.
 
 The gh-pages store is **not** pre-created; the first workflow run initializes it.
 

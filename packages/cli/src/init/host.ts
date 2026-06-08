@@ -10,12 +10,15 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
+import { confirm, isCancel, select } from '@clack/prompts';
+
 import {
   homeConfigPath,
   promptAndPersist,
   readHomeConfigValue,
 } from '../config';
 import { capture, exec, succeeds } from '../exec';
+import { githubRemoteUrl } from '../github';
 import {
   inlineTsconfig,
   parseCatalog,
@@ -44,10 +47,18 @@ const TRANSFORMED = new Set([
 ]);
 
 export interface InitHostOptions {
-  path: string;
+  // Override the throwaway tmpdir with a persistent directory you intend to
+  // customize. Undefined means "scaffold in a tmpdir and discard it once the
+  // GitHub repo is set up" — the common case, since the index site rarely needs
+  // local edits.
+  path?: string;
   repo?: string;
   templateRef?: string;
   cliVersion: string;
+  // Repository visibility. Undefined => prompt interactively.
+  private?: boolean;
+  // Skip the confirmation prompt before outward GitHub actions.
+  yes?: boolean;
 }
 
 function repoName(repo: string): string {
@@ -140,30 +151,49 @@ function commitScaffold(targetDir: string): void {
 }
 
 /** Best-effort GitHub wiring. Never hard-fails: the local scaffold already
- * succeeded, so any gh gap becomes printed manual steps. */
-function configureGitHub(targetDir: string, repo: string): void {
+ * succeeded, so any gh gap becomes printed manual steps. Returns true when the
+ * repo is set up and pushed (so the caller can discard a throwaway scaffold). */
+function configureGitHub(
+  targetDir: string,
+  repo: string,
+  isPrivate: boolean
+): boolean {
   if (!succeeds('gh auth status', targetDir)) {
-    printManualSteps(repo, 'GitHub CLI (`gh`) is not installed or authenticated');
-    return;
+    printManualSteps(
+      repo,
+      targetDir,
+      'GitHub CLI (`gh`) is not installed or authenticated'
+    );
+    return false;
   }
 
-  if (!detectRemoteRepo(targetDir)) {
-    exec(`git remote add origin git@github.com:${repo}.git`, targetDir);
-  }
+  const visibility = isPrivate ? '--private' : '--public';
 
   if (!succeeds(`gh repo view ${repo}`, targetDir)) {
-    if (!succeeds(`gh repo create ${repo} --public`, targetDir)) {
-      printManualSteps(repo, `could not create ${repo}`);
-      return;
+    // gh creates the repo, sets the `origin` remote using the user's configured
+    // git protocol, and pushes — one step, correct auth, no hardcoded URL.
+    const create = `gh repo create ${repo} ${visibility} --source ${JSON.stringify(
+      targetDir
+    )} --remote origin --push`;
+    if (!succeeds(create, targetDir)) {
+      printManualSteps(repo, targetDir, `could not create ${repo}`);
+      return false;
     }
+    enablePages(targetDir, repo);
+    return true;
   }
 
+  // Repo already exists — ensure a remote (with working auth) and push.
+  if (!detectRemoteRepo(targetDir)) {
+    exec(`git remote add origin ${githubRemoteUrl(repo, targetDir)}`, targetDir);
+  }
   if (!succeeds(`git push -u origin ${DEFAULT_BRANCH}`, targetDir)) {
-    printManualSteps(repo, 'could not push main');
-    return;
+    printManualSteps(repo, targetDir, 'could not push main');
+    return false;
   }
 
   enablePages(targetDir, repo);
+  return true;
 }
 
 /** Sets the Pages source to "GitHub Actions" (build_type=workflow). */
@@ -180,29 +210,69 @@ function enablePages(targetDir: string, repo: string): void {
   );
 }
 
-function printManualSteps(repo: string, reason: string): void {
+function printManualSteps(
+  repo: string,
+  targetDir: string,
+  reason: string
+): void {
   console.warn(
-    `\nScaffold written, but GitHub setup was skipped (${reason}).\n` +
+    `\nScaffold is at ${targetDir}, but GitHub setup was skipped (${reason}).\n` +
       `Finish manually:\n` +
-      `  git -C <host> push -u origin main   # to https://github.com/${repo}\n` +
+      `  gh repo create ${repo} --public --source ${JSON.stringify(
+        targetDir
+      )} --remote origin --push\n` +
       `  Settings -> Pages -> Source: GitHub Actions\n`
   );
 }
 
+/** Resolves repo visibility, prompting interactively when not preset. */
+async function resolveVisibility(opts: InitHostOptions): Promise<boolean> {
+  if (typeof opts.private === 'boolean') return opts.private;
+  const choice = await select({
+    message: 'Repository visibility:',
+    options: [
+      { value: false, label: 'Public', hint: 'required for free GitHub Pages' },
+      { value: true, label: 'Private', hint: 'Pages needs GitHub Pro/Team' },
+    ],
+    initialValue: false,
+  });
+  if (isCancel(choice)) process.exit(1);
+  return choice as boolean;
+}
+
+/** Confirmation gate before the outward GitHub actions (create/push/Pages). */
+async function confirmGitHub(repo: string, isPrivate: boolean): Promise<boolean> {
+  const answer = await confirm({
+    message: `Create ${
+      isPrivate ? 'private' : 'public'
+    } repo ${repo} on GitHub, push the scaffold, and enable Pages?`,
+  });
+  if (isCancel(answer)) process.exit(1);
+  return answer === true;
+}
+
 export async function initHost(opts: InitHostOptions): Promise<void> {
-  const targetDir = resolve(opts.path);
-  if (!existsSync(targetDir)) {
+  // The base case scaffolds into a throwaway tmpdir and discards it once the
+  // GitHub repo is set up; `--path` opts into a persistent, customizable copy.
+  const usingTmp = !opts.path;
+  const targetDir = opts.path
+    ? resolve(opts.path)
+    : mkdtempSync(join(tmpdir(), 'design-drafts-host-scaffold-'));
+  if (opts.path && !existsSync(targetDir)) {
     mkdirSync(targetDir, { recursive: true });
   }
 
   const repo = await promptAndPersist(
-    opts.repo ?? readHomeConfigValue('repo') ?? detectRemoteRepo(targetDir),
+    opts.repo ??
+      readHomeConfigValue('repo') ??
+      (opts.path ? detectRemoteRepo(targetDir) : undefined),
     'repo',
     homeConfigPath,
     'GitHub repo for the host (org/repo):'
   );
 
-  if (alreadyConfigured(targetDir)) {
+  // Idempotency only applies to a persistent directory; a tmpdir is always fresh.
+  if (opts.path && alreadyConfigured(targetDir)) {
     console.log(`Host already configured at ${targetDir}; re-ensuring Pages.`);
     enablePages(targetDir, repo);
     return;
@@ -216,16 +286,41 @@ export async function initHost(opts: InitHostOptions): Promise<void> {
       Boolean(capture(`git ls-remote --tags ${CANONICAL_URL} ${tag}`, targetDir)),
   });
 
-  console.log(`Scaffolding host "${repoName(repo)}" from ${CANONICAL_REPO}@${ref}...`);
+  console.log(
+    `Scaffolding host "${repoName(repo)}" from ${CANONICAL_REPO}@${ref}...`
+  );
   const checkout = sparseCheckout(ref);
   try {
     writeScaffold(checkout, targetDir, repo);
   } finally {
     rmSync(checkout, { recursive: true, force: true });
   }
-
   commitScaffold(targetDir);
-  configureGitHub(targetDir, repo);
 
-  console.log(`\nHost scaffolded at ${targetDir}.`);
+  const isPrivate = await resolveVisibility(opts);
+  if (!(opts.yes || (await confirmGitHub(repo, isPrivate)))) {
+    console.log(
+      `\nStopped before GitHub setup. The scaffold is at ${targetDir}.`
+    );
+    printManualSteps(repo, targetDir, 'cancelled');
+    return;
+  }
+
+  const pushed = configureGitHub(targetDir, repo, isPrivate);
+
+  if (!usingTmp) {
+    console.log(`\nHost scaffolded at ${targetDir}.`);
+    return;
+  }
+
+  // Throwaway scaffold: discard it on success, but keep it if the push didn't
+  // land so the user still has something to finish manually.
+  if (pushed) {
+    rmSync(targetDir, { recursive: true, force: true });
+    console.log(
+      `\nHost ready at https://github.com/${repo} (local scaffold discarded).`
+    );
+  } else {
+    console.log(`\nKept the scaffold at ${targetDir} so you can finish the push.`);
+  }
 }
