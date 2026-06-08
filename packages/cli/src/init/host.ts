@@ -13,8 +13,8 @@ import { dirname, join, resolve } from 'node:path';
 import { confirm, isCancel, select } from '@clack/prompts';
 
 import {
-  homeConfigPath,
-  promptAndPersist,
+  persistHomeConfigValue,
+  promptForValue,
   readHomeConfigValue,
 } from '../config';
 import { capture, exec, succeeds } from '../exec';
@@ -281,12 +281,11 @@ export async function initHost(opts: InitHostOptions): Promise<void> {
     mkdirSync(targetDir, { recursive: true });
   }
 
-  const repo = await promptAndPersist(
+  const repo = await promptForValue(
     opts.repo ??
       readHomeConfigValue('repo') ??
       (opts.path ? detectRemoteRepo(targetDir) : undefined),
     'repo',
-    homeConfigPath,
     'GitHub repo for the host (org/repo):',
     (v) => (validateRepo(v).ok ? undefined : 'use "owner/name" form')
   );
@@ -342,6 +341,12 @@ export async function initHost(opts: InitHostOptions): Promise<void> {
   }
 
   const pushed = configureGitHub(targetDir, repo, isPrivate);
+
+  // Remember the host repo as the default only once it's actually live, so a
+  // repo that failed to create/push never becomes a sticky bad default.
+  if (pushed) {
+    persistHomeConfigValue('repo', repo);
+  }
 
   if (!usingTmp) {
     console.log(`\nHost scaffolded at ${targetDir}.`);

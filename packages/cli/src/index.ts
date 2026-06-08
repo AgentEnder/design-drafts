@@ -17,10 +17,11 @@ import { cli, ConfigurationProviders } from 'cli-forge';
 import pkg from '../package.json';
 import {
   CONFIG_FILENAME,
-  homeConfigPath,
   homeJsonProvider,
   localConfigPath,
+  persistHomeConfigValue,
   promptAndPersist,
+  promptForValue,
   resolvePrefix,
 } from './config';
 import { capture, exec } from './exec';
@@ -218,10 +219,9 @@ interface PushArgs {
 }
 
 async function pushHandler(args: PushArgs): Promise<void> {
-  const repo = await promptAndPersist(
+  const repo = await promptForValue(
     args.repo,
     'repo',
-    homeConfigPath,
     'GitHub repo (org/repo):',
     (v) => (validateRepo(v).ok ? undefined : 'use "owner/name" form')
   );
@@ -294,6 +294,9 @@ async function pushHandler(args: PushArgs): Promise<void> {
     exec(`git commit -F ${JSON.stringify(messageFile)}`, tmpDir);
     exec(`git push --force origin ${branchName}`, tmpDir);
 
+    // Remember the repo as the default only now that the push has landed, so a
+    // typo'd or inaccessible repo never wedges future runs as a bad default.
+    persistHomeConfigValue('repo', repo);
     console.log(`\nPushed "${branchName}" to ${repo}`);
   } finally {
     rmSync(tmpDir, { recursive: true, force: true });

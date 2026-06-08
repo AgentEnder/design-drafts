@@ -31,6 +31,33 @@ export function readHomeConfigValue(key: string): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
+/** Resolves a value, prompting (with optional validation) when it's missing.
+ * Does NOT persist — callers that want the answer remembered should call
+ * `persistHomeConfigValue` only after the operation it feeds succeeds, so a
+ * value that led nowhere (e.g. a repo that failed to push) never becomes a
+ * sticky default. */
+export async function promptForValue(
+  existing: string | undefined,
+  label: string,
+  promptMessage: string,
+  validate?: (value: string) => string | undefined
+): Promise<string> {
+  if (existing) return existing;
+
+  const value = await text({
+    message: promptMessage,
+    validate: (v) => {
+      if (!v?.trim()) return `${label} is required`;
+      return validate?.(v);
+    },
+  });
+
+  if (typeof value !== 'string') {
+    process.exit(1);
+  }
+  return value;
+}
+
 export async function promptAndPersist(
   existing: string | undefined,
   argKey: string,
@@ -42,17 +69,7 @@ export async function promptAndPersist(
 ): Promise<string> {
   if (existing) return existing;
 
-  const value = await text({
-    message: promptMessage,
-    validate: (v) => {
-      if (!v?.trim()) return `${argKey} is required`;
-      return validate?.(v);
-    },
-  });
-
-  if (typeof value !== 'string') {
-    process.exit(1);
-  }
+  const value = await promptForValue(existing, argKey, promptMessage, validate);
 
   writeFileSync(
     configPath,
