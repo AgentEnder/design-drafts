@@ -8,7 +8,8 @@
   },
   "scripts": {
     "build": "tsdown src/index.ts --format esm --out-dir dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@clack/prompts": "^1.1.0",
@@ -17,7 +18,8 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "tsdown": "^0.21.7",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "nx": {
     "name": "cli"

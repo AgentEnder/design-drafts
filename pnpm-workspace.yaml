@@ -22,3 +22,4 @@ catalog:
   vike: ^0.4.256
   vike-react: ^0.6.19
   vite: ^7.3.2
+  vitest: ^4.1.4

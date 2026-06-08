@@ -2,7 +2,13 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "types": ["node"]
+    "types": ["node"],
+    // tsdown bundles the CLI, so bundler resolution lets us use extensionless
+    // relative imports rather than the `.js`-suffixed style NodeNext requires.
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   },
   "include": ["src/**/*.ts"]
 }
