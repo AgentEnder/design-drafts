@@ -69,15 +69,15 @@ function alreadyConfigured(targetDir: string): boolean {
   return readFileSync(workflow, 'utf-8').includes(HOST_MARKER);
 }
 
-/** Sparse-checks-out the canonical site source + the root files we need to
- * resolve it (catalog + base tsconfig) into a temp dir, returning that path. */
+/** Sparse-checks-out the canonical site source into a temp dir, returning that
+ * path. Cone mode (the recommended default) always materialises top-level
+ * files, so the root files we read to resolve the site (pnpm-workspace.yaml's
+ * catalog and tsconfig.base.json) come along without listing them, while the
+ * sibling packages stay excluded. */
 function sparseCheckout(ref: string): string {
   const tmp = mkdtempSync(join(tmpdir(), 'design-drafts-host-'));
   exec(`git clone --filter=blob:none --no-checkout ${CANONICAL_URL} .`, tmp);
-  exec(
-    `git sparse-checkout set --no-cone ${SITE_SUBDIR} pnpm-workspace.yaml tsconfig.base.json`,
-    tmp
-  );
+  exec(`git sparse-checkout set ${SITE_SUBDIR}`, tmp);
   exec(`git checkout ${ref}`, tmp);
   return tmp;
 }

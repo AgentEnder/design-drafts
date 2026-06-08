@@ -46,18 +46,20 @@ workflow's job.
 
 ### Where files come from
 
-`git clone --filter=blob:none --sparse <canonical> --branch <ref>` with
-sparse path `packages/site`, then copy its contents to the host root and
-apply the rewrites. Default `<ref>` is the tag matching the CLI version
-(`v<version>`), falling back to `main` when that tag is absent; `--template-ref`
-overrides. The workflow/.nojekyll/.gitignore are generated from CLI-side
-string templates, not checked out.
+A blobless clone (`--filter=blob:none --no-checkout`) with a cone-mode sparse
+checkout of `packages/site`, then copy its contents to the host root and apply
+the rewrites. Cone mode always materialises top-level files, so the root files
+we read (`pnpm-workspace.yaml`'s catalog, `tsconfig.base.json`) come along
+without being listed, while sibling packages stay excluded. Default `<ref>` is
+the tag matching the CLI version (`v<version>`), falling back to `main` when
+that tag is absent; `--template-ref` overrides. The workflow/.nojekyll/.gitignore
+are generated from CLI-side string templates, not checked out.
 
 ### Rewrites (pure functions, unit-tested)
 
 - `resolveCatalog(sitePkg, catalogMap)` — replace every `catalog:` specifier
   in dependencies/devDependencies with the concrete version from the canonical
-  `pnpm-workspace.yaml` catalog (fetched as a single file at `<ref>`). Drop the
+  `pnpm-workspace.yaml` catalog (read from the sparse checkout). Drop the
   `nx` field.
 - `rewriteViteBase(source, repoName)` — replace the `base: '…'` literal with
   `/<repoName>/`.
