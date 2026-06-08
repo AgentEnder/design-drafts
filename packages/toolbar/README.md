@@ -16,7 +16,19 @@ swapping and no runtime dependency on React, Vue, or any other framework.
 ## Usage
 
 Drop one `<script>` tag at the bottom of every page in your draft (or in a
-shared partial):
+shared partial). The simplest option is a CDN reference — no build step, no
+file to copy:
+
+```html
+<!-- Pin a major version (recommended); unpkg serves the published bundle. -->
+<script src="https://unpkg.com/@design-drafts/toolbar@0/dist/toolbar.js" defer></script>
+
+<!-- jsDelivr works too: -->
+<script src="https://cdn.jsdelivr.net/npm/@design-drafts/toolbar@0/dist/toolbar.js" defer></script>
+```
+
+Or self-host by copying the bundle next to your pages and referencing it
+relatively:
 
 ```html
 <script src="/toolbar.js" defer></script>

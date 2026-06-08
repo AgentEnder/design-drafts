@@ -7,7 +7,18 @@ draft iterations.
 
 ## Usage
 
-Drop the bundle into the host page once it's been built:
+Drop the bundle into the host page via a CDN reference — no build step, no
+file to copy:
+
+```html
+<!-- Pin a major version (recommended); unpkg serves the published bundle. -->
+<script src="https://unpkg.com/@design-drafts/annotate@0/dist/annotate.js" defer></script>
+
+<!-- jsDelivr works too: -->
+<script src="https://cdn.jsdelivr.net/npm/@design-drafts/annotate@0/dist/annotate.js" defer></script>
+```
+
+Or self-host by copying the built bundle next to your pages:
 
 ```html
 <script src="/path/to/annotate.js" defer></script>

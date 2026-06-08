@@ -39,6 +39,23 @@
       ]
     }
   },
+  "release": {
+    "projects": [
+      "cli",
+      "toolbar",
+      "annotate"
+    ],
+    "projectsRelationship": "independent",
+    "releaseTagPattern": "{projectName}@{version}",
+    "version": {
+      "conventionalCommits": true,
+      "fallbackCurrentVersionResolver": "disk"
+    },
+    "changelog": {
+      "projectChangelogs": true,
+      "workspaceChangelog": false
+    }
+  },
   "plugins": [
     {
       "plugin": "@nx/js/typescript",

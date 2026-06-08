@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.33.0",
-  "scripts": {},
+  "scripts": {
+    "release": "nx release",
+    "release:dry-run": "nx release --dry-run"
+  },
   "devDependencies": {
     "@nx/eslint": "catalog:",
     "@nx/js": "catalog:",

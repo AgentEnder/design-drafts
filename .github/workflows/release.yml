@@ -1,0 +1,90 @@
+name: Release
+
+# Manual, conventional-commit-driven release of the publishable packages
+# (@design-drafts/cli, @design-drafts/toolbar, @design-drafts/annotate).
+#
+# `nx release` determines each project's next version independently from the
+# conventional commits touching it, writes per-project changelogs, commits and
+# tags the bump (tag pattern `{projectName}@{version}`), then publishes to npm.
+# Nothing publishes without an explicit run of this workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Explicit version or specifier to pin (e.g. "0.1.0", "patch", "minor"). Leave blank to derive each package''s bump from conventional commits.'
+        required: false
+        type: string
+        default: ''
+      dry-run:
+        description: 'Print what would happen without versioning, tagging, or publishing'
+        required: false
+        type: boolean
+        default: false
+      first-release:
+        description: 'First release for these packages (no prior git tags / npm versions exist yet)'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history + tags so nx release can read prior tags and derive
+          # conventional-commit version bumps.
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Build publishable packages
+        run: pnpm exec nx run-many -t build -p cli toolbar annotate
+
+      - name: Release
+        env:
+          # pnpm expands ${NODE_AUTH_TOKEN} from the .npmrc that setup-node wrote.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Enable npm provenance attestations (uses the id-token permission above).
+          NPM_CONFIG_PROVENANCE: 'true'
+        run: |
+          FLAGS="--yes"
+          if [ -n "${{ inputs.version }}" ]; then
+            # An explicit specifier overrides conventional-commit derivation —
+            # use it to pin the first release (e.g. "0.1.0").
+            FLAGS="$FLAGS ${{ inputs.version }}"
+          fi
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            FLAGS="$FLAGS --dry-run"
+          fi
+          if [ "${{ inputs.first-release }}" = "true" ]; then
+            FLAGS="$FLAGS --first-release"
+          fi
+          echo "Running: nx release $FLAGS"
+          pnpm exec nx release $FLAGS

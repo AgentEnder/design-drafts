@@ -1,10 +1,38 @@
 {
   "name": "@design-drafts/cli",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "CLI for scaffolding and deploying design-drafts previews to GitHub Pages.",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "design-drafts": "./bin.js"
+  },
+  "files": [
+    "dist",
+    "bin.js",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AgentEnder/design-drafts.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/AgentEnder/design-drafts/tree/main/packages/cli#readme",
+  "bugs": {
+    "url": "https://github.com/AgentEnder/design-drafts/issues"
+  },
+  "keywords": [
+    "design-drafts",
+    "cli",
+    "preview",
+    "github-pages",
+    "static-site"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsdown src/index.ts --format esm --out-dir dist",

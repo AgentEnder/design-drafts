@@ -1,18 +1,46 @@
 {
   "name": "@design-drafts/toolbar",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "Framework-agnostic, single-file toolbar for switching between a design draft's axes. Drop in via a <script> tag.",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/toolbar.js",
-  "files": ["dist", "README.md"],
+  "unpkg": "./dist/toolbar.js",
+  "jsdelivr": "./dist/toolbar.js",
+  "exports": {
+    ".": "./dist/toolbar.js",
+    "./toolbar.js": "./dist/toolbar.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AgentEnder/design-drafts.git",
+    "directory": "packages/toolbar"
+  },
+  "homepage": "https://github.com/AgentEnder/design-drafts/tree/main/packages/toolbar#readme",
+  "bugs": {
+    "url": "https://github.com/AgentEnder/design-drafts/issues"
+  },
+  "keywords": [
+    "design-drafts",
+    "toolbar",
+    "iife",
+    "cdn",
+    "static-site",
+    "preview"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@design-drafts/conventions": "workspace:*"
-  },
   "devDependencies": {
+    "@design-drafts/conventions": "workspace:*",
     "tsdown": "^0.21.7",
     "typescript": "catalog:"
   },

@@ -1,9 +1,41 @@
 {
   "name": "@design-drafts/annotate",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "Framework-agnostic annotation overlay for static draft previews. Drop in via a <script> tag.",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/annotate.js",
+  "unpkg": "./dist/annotate.js",
+  "jsdelivr": "./dist/annotate.js",
+  "exports": {
+    ".": "./dist/annotate.js",
+    "./annotate.js": "./dist/annotate.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AgentEnder/design-drafts.git",
+    "directory": "packages/annotate"
+  },
+  "homepage": "https://github.com/AgentEnder/design-drafts/tree/main/packages/annotate#readme",
+  "bugs": {
+    "url": "https://github.com/AgentEnder/design-drafts/issues"
+  },
+  "keywords": [
+    "design-drafts",
+    "annotate",
+    "annotation",
+    "overlay",
+    "iife",
+    "cdn",
+    "review"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit"
