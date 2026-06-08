@@ -15,14 +15,14 @@ on:
         description: 'Explicit version or specifier to pin (e.g. "0.1.0", "patch", "minor"). Leave blank to derive each package''s bump from conventional commits.'
         required: false
         type: string
-        default: ''
+        default: ""
       dry-run:
-        description: 'Print what would happen without versioning, tagging, or publishing'
+        description: "Print what would happen without versioning, tagging, or publishing"
         required: false
         type: boolean
         default: false
       first-release:
-        description: 'First release for these packages (no prior git tags / npm versions exist yet)'
+        description: "First release for these packages (no prior git tags / npm versions exist yet)"
         required: false
         type: boolean
         default: false
@@ -52,9 +52,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 26
           cache: pnpm
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -72,7 +72,7 @@ jobs:
           # pnpm expands ${NODE_AUTH_TOKEN} from the .npmrc that setup-node wrote.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           # Enable npm provenance attestations (uses the id-token permission above).
-          NPM_CONFIG_PROVENANCE: 'true'
+          NPM_CONFIG_PROVENANCE: "true"
         run: |
           FLAGS="--yes"
           if [ -n "${{ inputs.version }}" ]; then
