@@ -24,6 +24,7 @@ import {
   promptForValue,
   resolvePrefix,
 } from './config';
+import { CliError, runHandler } from './errors';
 import { capture, exec } from './exec';
 import { githubRemoteUrl } from './github';
 import { initDraft } from './init/draft';
@@ -287,12 +288,23 @@ async function pushHandler(args: PushArgs): Promise<void> {
   try {
     cpSync(sourcePath, tmpDir, { recursive: true });
     await embedDeployWorkflow(repo, tmpDir);
-    exec('git init', tmpDir);
-    exec(`git checkout -b ${branchName}`, tmpDir);
+    // Create the draft branch as the initial branch in one step — avoids git's
+    // "using 'master'" hint and a redundant checkout.
+    exec(`git init -b ${branchName}`, tmpDir);
     exec(`git remote add origin ${githubRemoteUrl(repo, tmpDir)}`, tmpDir);
     exec('git add .', tmpDir);
     exec(`git commit -F ${JSON.stringify(messageFile)}`, tmpDir);
-    exec(`git push --force origin ${branchName}`, tmpDir);
+    try {
+      exec(`git push --force origin ${branchName}`, tmpDir);
+    } catch {
+      // git already printed the underlying reason (stdio is inherited); add a
+      // concise, actionable summary instead of a Node stack trace.
+      throw new CliError(
+        `Failed to push "${branchName}" to ${repo}.\n` +
+          `Check that the repo exists and you have push access (\`gh auth status\`),\n` +
+          `then re-run. Nothing was saved as a default.`
+      );
+    }
 
     // Remember the repo as the default only now that the push has landed, so a
     // typo'd or inaccessible repo never wedges future runs as a bad default.
@@ -354,14 +366,16 @@ const app = cli('design-drafts', {
                     description: 'Skip the confirmation prompt before GitHub setup',
                   }),
               handler: (a) =>
-                initHost({
-                  path: a.path,
-                  repo: a.repo,
-                  templateRef: a['template-ref'],
-                  private: a.private,
-                  yes: a.yes,
-                  cliVersion: CLI_VERSION,
-                }),
+                runHandler(() =>
+                  initHost({
+                    path: a.path,
+                    repo: a.repo,
+                    templateRef: a['template-ref'],
+                    private: a.private,
+                    yes: a.yes,
+                    cliVersion: CLI_VERSION,
+                  })
+                ),
             })
             .command('draft', {
               description: 'Scaffold a new draft directory',
@@ -372,16 +386,20 @@ const app = cli('design-drafts', {
                   description: 'Directory to scaffold the draft into',
                 }),
               handler: (a) =>
-                initDraft({ path: a.path, siteName: a['site-name'] }),
+                runHandler(() =>
+                  initDraft({ path: a.path, siteName: a['site-name'] })
+                ),
             }),
         handler: (a) =>
-          init({
-            path: '.',
-            repo: a.repo,
-            siteName: a['site-name'],
-            templateRef: a['template-ref'],
-            cliVersion: CLI_VERSION,
-          }),
+          runHandler(() =>
+            init({
+              path: '.',
+              repo: a.repo,
+              siteName: a['site-name'],
+              templateRef: a['template-ref'],
+              cliVersion: CLI_VERSION,
+            })
+          ),
       })
       // `push` is the `$0` default, registered LAST: its builder adds the greedy
       // `path` positional, and trailing it in the chain lets cli-forge infer
@@ -405,7 +423,7 @@ const app = cli('design-drafts', {
                 'Branch prefix used when pushing previews (default: "drafts/"). Pass an empty string to push without a prefix.',
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
             }) as any,
-        handler: pushHandler,
+        handler: (a: PushArgs) => runHandler(() => pushHandler(a)),
       }),
 });
 

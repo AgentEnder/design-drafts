@@ -17,6 +17,7 @@ import {
   promptForValue,
   readHomeConfigValue,
 } from '../config';
+import { CliError } from '../errors';
 import { capture, exec, succeeds } from '../exec';
 import { githubRemoteUrl } from '../github';
 import { validateRepo, validateTemplateRef } from '../validate';
@@ -88,9 +89,17 @@ function alreadyConfigured(targetDir: string): boolean {
  * sibling packages stay excluded. */
 function sparseCheckout(ref: string): string {
   const tmp = mkdtempSync(join(tmpdir(), 'design-drafts-host-'));
-  exec(`git clone --filter=blob:none --no-checkout ${CANONICAL_URL} .`, tmp);
-  exec(`git sparse-checkout set ${SITE_SUBDIR}`, tmp);
-  exec(`git checkout ${ref}`, tmp);
+  try {
+    exec(`git clone --filter=blob:none --no-checkout ${CANONICAL_URL} .`, tmp);
+    exec(`git sparse-checkout set ${SITE_SUBDIR}`, tmp);
+    exec(`git checkout ${ref}`, tmp);
+  } catch {
+    rmSync(tmp, { recursive: true, force: true });
+    throw new CliError(
+      `Could not fetch the host template from ${CANONICAL_REPO}@${ref}.\n` +
+        `Check your network connection and that the ref exists (try --template-ref main).`
+    );
+  }
   return tmp;
 }
 
