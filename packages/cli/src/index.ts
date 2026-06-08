@@ -1,4 +1,3 @@
-import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   cpSync,
@@ -10,21 +9,34 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
-import { homedir, tmpdir } from 'node:os';
+import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 
-import { text } from '@clack/prompts';
 import { cli, ConfigurationProviders } from 'cli-forge';
 
-const CONFIG_FILENAME = 'design-drafts.config.json';
-const DEFAULT_PREFIX = 'drafts/';
+import pkg from '../package.json';
+import {
+  CONFIG_FILENAME,
+  homeConfigPath,
+  homeJsonProvider,
+  localConfigPath,
+  promptAndPersist,
+  resolvePrefix,
+} from './config';
+import { capture, exec } from './exec';
+import { initDraft } from './init/draft';
+import { initHost } from './init/host';
+import { init } from './init/init';
+import { validateSiteName } from './site-name';
+
+const CLI_VERSION: string = pkg.version;
 
 // Draft branches are orphan branches containing only the published site content.
 // The `push` event resolves a workflow from the pushed ref, so for the deploy to
 // auto-trigger the workflow file must live on the draft branch itself. We embed
-// the repo's canonical copy (from the default branch) before committing. The
-// deploy workflow strips this `.github/` dir back out before publishing so it
-// never leaks into the preview site.
+// the host repo's canonical copy (from its default branch) before committing.
+// The deploy workflow strips this `.github/` dir back out before publishing so
+// it never leaks into the preview site.
 const DEFAULT_BRANCH = 'main';
 const WORKFLOW_PATH = '.github/workflows/deploy-preview.yml';
 
@@ -52,75 +64,6 @@ async function embedDeployWorkflow(repo: string, tmpDir: string): Promise<void> 
   writeFileSync(destination, contents);
 }
 
-const homeConfigPath = join(homedir(), CONFIG_FILENAME);
-const localConfigPath = join(process.cwd(), CONFIG_FILENAME);
-
-// JsonFile() walks up from cwd and only finds the nearest match, which means
-// the home-level config is invisible when cwd isn't under $HOME. Register an
-// explicit provider so it's always read.
-const homeJsonProvider = {
-  resolve: () => (existsSync(homeConfigPath) ? homeConfigPath : undefined),
-  load: (filename: string) => JSON.parse(readFileSync(filename, 'utf-8')),
-};
-
-async function promptAndPersist(
-  existing: string | undefined,
-  argKey: string,
-  configPath: string,
-  promptMessage: string
-): Promise<string> {
-  if (existing) return existing;
-
-  const value = await text({
-    message: promptMessage,
-    validate: (v) => {
-      if (!v?.trim()) return `${argKey} is required`;
-    },
-  });
-
-  if (typeof value !== 'string') {
-    process.exit(1);
-  }
-
-  const previousFile = existsSync(configPath)
-    ? JSON.parse(readFileSync(configPath, 'utf-8'))
-    : {};
-  writeFileSync(
-    configPath,
-    JSON.stringify({ ...previousFile, [argKey]: value }, null, 2) + '\n'
-  );
-  return value;
-}
-
-function resolvePrefix(existing: string | undefined): string {
-  // Treat undefined as "no value configured" -> use default and persist it so the
-  // home config visibly records the value for users who want to edit it later.
-  // Treat an explicit empty string as a deliberate opt-out (no prefix); honor it
-  // and persist it so the choice is durable.
-  if (typeof existing === 'string') {
-    persistHomeConfigValue('prefix', existing);
-    return existing;
-  }
-
-  persistHomeConfigValue('prefix', DEFAULT_PREFIX);
-  return DEFAULT_PREFIX;
-}
-
-function persistHomeConfigValue(key: string, value: string): void {
-  const previousFile = existsSync(homeConfigPath)
-    ? JSON.parse(readFileSync(homeConfigPath, 'utf-8'))
-    : {};
-  if (previousFile[key] === value) return;
-  writeFileSync(
-    homeConfigPath,
-    JSON.stringify({ ...previousFile, [key]: value }, null, 2) + '\n'
-  );
-}
-
-function exec(command: string, cwd: string): void {
-  execSync(command, { cwd, stdio: 'inherit' });
-}
-
 interface SourceMetadata {
   sha?: string;
   repo?: string;
@@ -128,25 +71,15 @@ interface SourceMetadata {
   authorEmail?: string;
 }
 
-function captureGit(command: string, cwd: string): string | undefined {
-  try {
-    const out = execSync(command, { cwd, stdio: ['ignore', 'pipe', 'ignore'] });
-    const trimmed = out.toString('utf-8').trim();
-    return trimmed || undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 function getSourceMetadata(sourcePath: string): SourceMetadata {
   // git config falls back to global automatically when no local value is set,
   // so a single `git config user.name` invocation handles the spec's
   // "local then global" rule on its own.
   return {
-    sha: captureGit('git rev-parse HEAD', sourcePath),
-    repo: captureGit('git remote get-url origin', sourcePath),
-    authorName: captureGit('git config user.name', sourcePath),
-    authorEmail: captureGit('git config user.email', sourcePath),
+    sha: capture('git rev-parse HEAD', sourcePath),
+    repo: capture('git remote get-url origin', sourcePath),
+    authorName: capture('git config user.name', sourcePath),
+    authorEmail: capture('git config user.email', sourcePath),
   };
 }
 
@@ -272,53 +205,96 @@ function buildCommitMessage(opts: CommitMessageOptions): string {
   return lines.join('\n') + '\n';
 }
 
-const SITE_NAME_PATTERN = /^[a-z0-9][a-z0-9-_]{0,62}$/;
-
-function slugifySiteName(input: string): string {
-  const lowered = input.toLowerCase();
-  const replaced = lowered.replace(/[^a-z0-9_-]+/g, '-');
-  const trimmed = replaced.replace(/^-+/, '').replace(/-+$/, '');
-  // Ensure first character is alphanumeric (the regex allows _ or - normally,
-  // but our pattern requires the leading char to be [a-z0-9]).
-  const leading = trimmed.replace(/^[-_]+/, '');
-  return leading.slice(0, 63);
+interface PushArgs {
+  // Optional in the type because cli-forge pins a $0 command's handler args to
+  // the parent shape (without the builder's positional); the positional's `.`
+  // default means it is always present at runtime.
+  path?: string;
+  repo?: string;
+  'site-name'?: string;
+  prefix?: string;
 }
 
-function validateSiteName(
-  name: string
-): { ok: true } | { ok: false; reason: string; suggestion?: string } {
-  if (!name || !name.trim()) {
-    return { ok: false, reason: 'site-name must not be empty' };
+async function pushHandler(args: PushArgs): Promise<void> {
+  const repo = await promptAndPersist(
+    args.repo,
+    'repo',
+    homeConfigPath,
+    'GitHub repo (org/repo):'
+  );
+  const siteName = await promptAndPersist(
+    args['site-name'],
+    'site-name',
+    localConfigPath,
+    'Site name for this preview:'
+  );
+  const prefix = resolvePrefix(args.prefix);
+  const sourcePath = resolve(args.path ?? '.');
+
+  const validation = validateSiteName(siteName);
+  if (!validation.ok) {
+    console.error(`Invalid site-name "${siteName}": ${validation.reason}`);
+    if (validation.suggestion) {
+      console.error(`Try: ${validation.suggestion}`);
+    }
+    process.exit(1);
   }
-  if (name.length > 63) {
-    const suggestion = slugifySiteName(name);
-    return {
-      ok: false,
-      reason: 'site-name must be 63 characters or fewer',
-      suggestion: suggestion || undefined,
-    };
+
+  if (!existsSync(sourcePath)) {
+    console.error(`Path does not exist: ${sourcePath}`);
+    process.exit(1);
   }
-  if (!SITE_NAME_PATTERN.test(name)) {
-    const suggestion = slugifySiteName(name);
-    return {
-      ok: false,
-      reason:
-        'site-name must start with a lowercase letter or digit and contain only lowercase letters, digits, hyphens, or underscores',
-      suggestion: suggestion || undefined,
-    };
+
+  // Capture metadata about the SOURCE path before we copy it into a tmpdir.
+  // The tmpdir gets a fresh `git init` and won't carry the source repo's
+  // history, remotes, or config — so we have to read all of that from the
+  // user's actual working directory.
+  const manifestPath = join(sourcePath, 'draft.config.json');
+  const metadata = getSourceMetadata(sourcePath);
+  const draftConfigSha = hashManifest(manifestPath);
+  const prompt = readManifestPrompt(manifestPath, sourcePath);
+  const commitMessage = buildCommitMessage({
+    siteName,
+    metadata,
+    prompt,
+    draftConfigSha,
+  });
+
+  const branchName = `${prefix}${siteName}`;
+  const tmpDir = mkdtempSync(join(tmpdir(), 'design-drafts-'));
+  // Keep the commit message OUTSIDE the working tree so `git add .` can't
+  // accidentally stage it. `git commit -F` is the cleanest way to feed a
+  // multi-line, blank-line-containing message without quoting headaches.
+  const messageFile = join(tmpdir(), `design-drafts-msg-${process.pid}.txt`);
+  writeFileSync(messageFile, commitMessage);
+
+  try {
+    cpSync(sourcePath, tmpDir, { recursive: true });
+    await embedDeployWorkflow(repo, tmpDir);
+    exec('git init', tmpDir);
+    exec(`git checkout -b ${branchName}`, tmpDir);
+    exec(`git remote add origin git@github.com:${repo}.git`, tmpDir);
+    exec('git add .', tmpDir);
+    exec(`git commit -F ${JSON.stringify(messageFile)}`, tmpDir);
+    exec(`git push --force origin ${branchName}`, tmpDir);
+
+    console.log(`\nPushed "${branchName}" to ${repo}`);
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true });
+    rmSync(messageFile, { force: true });
   }
-  return { ok: true };
 }
 
+// Shared options (repo / site-name / template-ref / env / config) live on the
+// root so every command sees them. `push` is the `$0` default command: its
+// greedy `path` positional is deferred by cli-forge until the discovery loop
+// confirms no explicit subcommand matched, so it can't swallow an `init host`
+// /`init draft` subcommand token. The `init` parent intentionally has no
+// positional for the same reason.
 const app = cli('design-drafts', {
   description: 'Push static site previews as branches to a design-drafts repo',
   builder: (args) =>
     args
-      .positional('path', {
-        type: 'string',
-        default: '.',
-        description: 'Directory to push as a site preview',
-      })
       .option('repo', {
         type: 'string',
         description: 'GitHub repo in org/repo form',
@@ -327,84 +303,79 @@ const app = cli('design-drafts', {
         type: 'string',
         description: 'Name for this site preview (becomes the branch name)',
       })
-      .option('prefix', {
+      .option('template-ref', {
         type: 'string',
         description:
-          'Branch prefix used when pushing previews (default: "drafts/"). Pass an empty string to push without a prefix.',
+          'Ref of the canonical repo to scaffold the host site from (default: matching version tag, else main)',
       })
       .env({ prefix: 'DESIGN_DRAFTS' })
       .config(homeJsonProvider)
-      .config(ConfigurationProviders.JsonFile(CONFIG_FILENAME)),
-
-  handler: async (args) => {
-    const repo = await promptAndPersist(
-      args.repo,
-      'repo',
-      homeConfigPath,
-      'GitHub repo (org/repo):'
-    );
-    const siteName = await promptAndPersist(
-      args['site-name'],
-      'site-name',
-      localConfigPath,
-      'Site name for this preview:'
-    );
-    const prefix = resolvePrefix(args.prefix);
-    const sourcePath = resolve(args.path);
-
-    const validation = validateSiteName(siteName);
-    if (!validation.ok) {
-      console.error(`Invalid site-name "${siteName}": ${validation.reason}`);
-      if (validation.suggestion) {
-        console.error(`Try: ${validation.suggestion}`);
-      }
-      process.exit(1);
-    }
-
-    if (!existsSync(sourcePath)) {
-      console.error(`Path does not exist: ${sourcePath}`);
-      process.exit(1);
-    }
-
-    // Capture metadata about the SOURCE path before we copy it into a tmpdir.
-    // The tmpdir gets a fresh `git init` and won't carry the source repo's
-    // history, remotes, or config — so we have to read all of that from the
-    // user's actual working directory.
-    const manifestPath = join(sourcePath, 'draft.config.json');
-    const metadata = getSourceMetadata(sourcePath);
-    const draftConfigSha = hashManifest(manifestPath);
-    const prompt = readManifestPrompt(manifestPath, sourcePath);
-    const commitMessage = buildCommitMessage({
-      siteName,
-      metadata,
-      prompt,
-      draftConfigSha,
-    });
-
-    const branchName = `${prefix}${siteName}`;
-    const tmpDir = mkdtempSync(join(tmpdir(), 'design-drafts-'));
-    // Keep the commit message OUTSIDE the working tree so `git add .` can't
-    // accidentally stage it. `git commit -F` is the cleanest way to feed a
-    // multi-line, blank-line-containing message without quoting headaches.
-    const messageFile = join(tmpdir(), `design-drafts-msg-${process.pid}.txt`);
-    writeFileSync(messageFile, commitMessage);
-
-    try {
-      cpSync(sourcePath, tmpDir, { recursive: true });
-      await embedDeployWorkflow(repo, tmpDir);
-      exec('git init', tmpDir);
-      exec(`git checkout -b ${branchName}`, tmpDir);
-      exec(`git remote add origin git@github.com:${repo}.git`, tmpDir);
-      exec('git add .', tmpDir);
-      exec(`git commit -F ${JSON.stringify(messageFile)}`, tmpDir);
-      exec(`git push --force origin ${branchName}`, tmpDir);
-
-      console.log(`\nPushed "${branchName}" to ${repo}`);
-    } finally {
-      rmSync(tmpDir, { recursive: true, force: true });
-      rmSync(messageFile, { force: true });
-    }
-  },
+      .config(ConfigurationProviders.JsonFile(CONFIG_FILENAME))
+      .command('init', {
+        description:
+          'Scaffold a host repo and/or a draft (no subcommand = guided one-liner)',
+        builder: (initArgs) =>
+          initArgs
+            .command('host', {
+              description: 'Scaffold a GitHub repo to host draft previews',
+              builder: (b) =>
+                b.positional('path', {
+                  type: 'string',
+                  default: '.',
+                  description: 'Directory to scaffold the host into',
+                }),
+              handler: (a) =>
+                initHost({
+                  path: a.path,
+                  repo: a.repo,
+                  templateRef: a['template-ref'],
+                  cliVersion: CLI_VERSION,
+                }),
+            })
+            .command('draft', {
+              description: 'Scaffold a new draft directory',
+              builder: (b) =>
+                b.positional('path', {
+                  type: 'string',
+                  default: '.',
+                  description: 'Directory to scaffold the draft into',
+                }),
+              handler: (a) =>
+                initDraft({ path: a.path, siteName: a['site-name'] }),
+            }),
+        handler: (a) =>
+          init({
+            path: '.',
+            repo: a.repo,
+            siteName: a['site-name'],
+            templateRef: a['template-ref'],
+            cliVersion: CLI_VERSION,
+          }),
+      })
+      // `push` is the `$0` default, registered LAST: its builder adds the greedy
+      // `path` positional, and trailing it in the chain lets cli-forge infer
+      // those args into the handler rather than pinning them to the parent shape.
+      .command('push', {
+        alias: ['$0'],
+        description: 'Push a built directory as a draft preview branch',
+        // cli-forge can't infer a $0 command's builder-extended args into the
+        // handler when sibling commands exist, so we erase the builder return
+        // type here and keep `pushHandler` explicitly typed (PushArgs) instead.
+        builder: (b) =>
+          b
+            .positional('path', {
+              type: 'string',
+              default: '.',
+              description: 'Directory to push as a site preview',
+            })
+            .option('prefix', {
+              type: 'string',
+              description:
+                'Branch prefix used when pushing previews (default: "drafts/"). Pass an empty string to push without a prefix.',
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            }) as any,
+        handler: pushHandler,
+      }),
 });
 
 await app.forge();
