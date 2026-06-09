@@ -32,7 +32,7 @@ The variants skill and `frontend-design` both expect this file to exist. If it i
 
 ### `references/explore.md` (optional)
 
-The structured output of the [explore skill](../../skills/design-drafts/explore/SKILL.md). It contains the user's premise, axes-with-concept-options (some marked `[picked]`), captured quotes, and a list of references gathered during the brainstorm.
+The structured output of the [explore skill](../../skills/design-drafts/skills/explore/SKILL.md). It contains the user's premise, axes-with-concept-options (some marked `[picked]`), captured quotes, and a list of references gathered during the brainstorm.
 
 This file is **working material**, not a brief. It is consumed by `design-drafts:brief` (which uses it to seed the Socratic interview rather than cold-asking) and ignored by `design-drafts:variants` and `frontend-design`. Once the brief is written, `explore.md` becomes a historical record — you can leave it in place or remove it; downstream skills will not look at it.
 
@@ -70,7 +70,7 @@ If a link is the source of a screenshot already in `inspiration/`, you can skip 
 
 ## Who reads what
 
-- **[Explore skill](../../skills/design-drafts/explore/SKILL.md)** — writes `explore.md`. Captures `links.md` entries and `inspiration/` images on the fly via `design-drafts ref add` as the user mentions URLs and screenshots during the brainstorm.
+- **[Explore skill](../../skills/design-drafts/skills/explore/SKILL.md)** — writes `explore.md`. Captures `links.md` entries and `inspiration/` images on the fly via `design-drafts ref add` as the user mentions URLs and screenshots during the brainstorm.
 - **[Brief skill (#11)](https://github.com/AgentEnder/design-drafts/issues/11)** — writes `brief.md`. Reads `explore.md` if present and seeds the interview from the picks; otherwise cold-interviews. Continues to capture references inline via `design-drafts ref add`.
 - **Variants skill** — reads `brief.md`, `links.md`, and `inspiration/` before generating. Does not read `explore.md`.
 - **`frontend-design`** — reads `inspiration/` and `links.md` for visual grounding, reads `brief.md` for what to avoid. Does not read `explore.md`.

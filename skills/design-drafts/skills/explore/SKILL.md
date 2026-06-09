@@ -180,8 +180,8 @@ Things that make the skill worse:
 
 ## See also
 
-- `skills/design-drafts/brief/SKILL.md` — the next step. Reads `references/explore.md` to seed the Socratic interview.
-- `skills/design-drafts/explore/example-explore.md` — a sample of the deterministic output for a fictional product.
+- `skills/design-drafts/skills/brief/SKILL.md` — the next step. Reads `references/explore.md` to seed the Socratic interview.
+- `skills/design-drafts/skills/explore/example-explore.md` — a sample of the deterministic output for a fictional product.
 - `docs/anti-patterns.md` — cited by entry number when proposing concepts and their anti-directions.
 - `docs/conventions/axes-and-coordinates.md` — what counts as a good axis (independent, few in number, lower-case identifiers).
 - `docs/conventions/references-protocol.md` — the four-file convention; the `design-drafts ref add` CLI command is the canonical way to populate `links.md` and `inspiration/`.
