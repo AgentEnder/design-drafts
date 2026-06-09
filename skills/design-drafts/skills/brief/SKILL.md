@@ -217,7 +217,7 @@ Things that make the skill worse:
 
 ## See also
 
-- `skills/design-drafts/explore/SKILL.md` — the upstream brainstorming skill. If `references/explore.md` exists, this skill seeds the interview from it instead of cold-asking.
+- `skills/design-drafts/skills/explore/SKILL.md` — the upstream brainstorming skill. If `references/explore.md` exists, this skill seeds the interview from it instead of cold-asking.
 - `docs/anti-patterns.md` — cited by entry number in the must-not-look-likes section.
 - `docs/conventions/references-protocol.md` — the four-file convention this skill is one half of. The `design-drafts ref add` CLI is the canonical way to add links/screenshots.
-- `skills/design-drafts/brief/example-brief.md` — a sample of the deterministic output for a fictional product. The matching exploration document at `skills/design-drafts/explore/example-explore.md` shows what the input looks like one stage upstream.
+- `skills/design-drafts/skills/brief/example-brief.md` — a sample of the deterministic output for a fictional product. The matching exploration document at `skills/design-drafts/skills/explore/example-explore.md` shows what the input looks like one stage upstream.
