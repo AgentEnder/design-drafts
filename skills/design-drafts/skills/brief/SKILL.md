@@ -20,8 +20,8 @@ The second most important rule: **one question at a time.** Do not list five que
 3. **Check for an exploration document.** If `references/explore.md` is present, read it before asking the first question. It contains: a premise in the user's words, axes with concept picks (marked `[picked]`), captured quotes, and a list of references already saved into `references/links.md` and `references/inspiration/`. The interview shifts when this file exists — see "Interview order with explore.md present" below.
 
 4. **Read the supporting docs once, silently.** Before asking the first question, make sure you've read:
-   - `docs/anti-patterns.md` — the catalog of defaults to steer away from. You will reference this by entry number when asking about must-not-look-likes.
-   - `docs/conventions/references-protocol.md` — the four-file convention for `references/`. The `design-drafts ref add` CLI command is the canonical way to add links/screenshots; you will use it during the interview when the user mentions URLs or screenshots, instead of telling them to drop files into folders.
+   - `${CLAUDE_PLUGIN_ROOT}/reference/anti-patterns.md` — the catalog of defaults to steer away from. You will reference this by entry number when asking about must-not-look-likes.
+   - `${CLAUDE_PLUGIN_ROOT}/reference/references-protocol.md` — the four-file convention for `references/`. The `design-drafts ref add` CLI command is the canonical way to add links/screenshots; you will use it during the interview when the user mentions URLs or screenshots, instead of telling them to drop files into folders.
 
    You do not need to recite these to the user. Just have them loaded so you can cite specific entries when relevant.
 
@@ -104,9 +104,9 @@ If the user pastes URLs without context, ask the obvious question: "What about i
 
 ### 5. Must-not-look-likes (anti-references)
 
-This is where you cite `docs/anti-patterns.md` directly. Read or briefly summarize the catalog if the user hasn't seen it:
+This is where you cite `${CLAUDE_PLUGIN_ROOT}/reference/anti-patterns.md` directly. Read or briefly summarize the catalog if the user hasn't seen it:
 
-"Here's the catalog of defaults that AI-generated drafts converge on — `docs/anti-patterns.md`. Some you might want; most you probably don't. I'll call out the ones we steer away from automatically: indigo-to-violet hero gradients (#1), three-column icon-headline-blurb feature grids (#3), centered hero with eyebrow pill plus two CTAs (#6), 'Empower your team to...' copy (#10), 'Built for modern teams' (#11), the hero→features→testimonial→CTA→footer skeleton (#17). Are there entries from the rest of the catalog you specifically want to avoid? And — separate question — are there any of those defaults you actually do want, because they fit this brief?"
+"Here's the catalog of defaults that AI-generated drafts converge on — `${CLAUDE_PLUGIN_ROOT}/reference/anti-patterns.md`. Some you might want; most you probably don't. I'll call out the ones we steer away from automatically: indigo-to-violet hero gradients (#1), three-column icon-headline-blurb feature grids (#3), centered hero with eyebrow pill plus two CTAs (#6), 'Empower your team to...' copy (#10), 'Built for modern teams' (#11), the hero→features→testimonial→CTA→footer skeleton (#17). Are there entries from the rest of the catalog you specifically want to avoid? And — separate question — are there any of those defaults you actually do want, because they fit this brief?"
 
 Capture both lists: things to avoid (cite by number and name), and any defaults the user is consciously embracing. The "I want this default" answers are as important as the "avoid this" ones — they prevent the next skill from second-guessing the user.
 
@@ -116,7 +116,7 @@ Capture both lists: things to avoid (cite by number and name), and any defaults 
 2. "What vocabulary is off-limits? Specific words, phrases, or registers you've seen elsewhere and don't want here."
 3. "Is there an example of copy — one paragraph from another product, a tweet, a sentence from a book — that has the voice you want?"
 
-Cross-check answers against the copy entries in `docs/anti-patterns.md` (#10–#16). If the user says "delightful" or "magical" or "modern," push back gently: "Those are entries #14 and #11 in the anti-pattern catalog — they're flagged as filler. Can you say what behavior you actually want the copy to describe?" The point isn't to ban the word; it's to make sure they chose it deliberately.
+Cross-check answers against the copy entries in `${CLAUDE_PLUGIN_ROOT}/reference/anti-patterns.md` (#10–#16). If the user says "delightful" or "magical" or "modern," push back gently: "Those are entries #14 and #11 in the anti-pattern catalog — they're flagged as filler. Can you say what behavior you actually want the copy to describe?" The point isn't to ban the word; it's to make sure they chose it deliberately.
 
 ## Confirming each answer
 
@@ -168,7 +168,7 @@ See `references/links.md` and `references/inspiration/` for the source material.
 
 ## Must-not-look-likes
 
-Cited by entry number from `docs/anti-patterns.md`:
+Cited by entry number from the anti-pattern catalog:
 
 - **#N — <entry name>:** <one sentence on why this draft specifically avoids it>
 - **#N — <entry name>:** <one sentence>
@@ -199,7 +199,7 @@ Rules for filling this in:
 ## After writing
 
 1. Show the user the file path and a one-line summary of what was captured. Do not paste the whole file back at them — they were just on the phone with you.
-2. Print the next step exactly as: `Next: hand this brief to the variants skill (\`design-drafts:variants\`) once it lands. In the meantime, \`frontend-design\` will read \`references/brief.md\` directly.`
+2. Print the next step exactly as: ``Next: hand this brief to `design-drafts:variants`. It reads `references/brief.md` (plus `links.md` and `inspiration/`) and generates the draft pages with a valid `draft.config.json`. (`frontend-design` can also read `references/brief.md` directly if you'd rather drive generation that way.)``
 3. If the user mentioned references during the interview that you did not capture inline (because they spoke faster than you could run the CLI), list them now and ask: "Want me to run `design-drafts ref add` for these now? URLs need a `--note`; screenshots need a descriptive `--name`." Do not finish the session with references stranded in the conversation.
 
 ## Anti-patterns for this skill itself
@@ -209,15 +209,16 @@ Things that make the skill worse:
 - **Asking multi-part questions.** "Who is the audience, what's their job, and what are they trying to do?" gets a fuzzy three-part answer. Ask one piece at a time.
 - **Filling in defaults.** "I'll assume a clean modern aesthetic if you don't have a preference" is exactly the failure mode this skill exists to prevent. Write `TBD — open question` and move on.
 - **Skipping the repeat-back.** Without it, the user never has the chance to say "no, that's not what I meant" until they read the file later. Repeat back every answer, even short ones.
-- **Pulling from training-data clichés.** Words flagged in `docs/anti-patterns.md` (#10–#16) — "modern", "powerful", "intuitive", "delightful", "magical", "empower", "supercharge" — should not appear in your questions or in the written brief unless the user used them and defended them. If you catch yourself drafting one, delete it.
-- **Promising integration with skills that do not exist.** The variants skill is in flight. Reference it as "once it lands" — do not pretend it's callable today.
+- **Pulling from training-data clichés.** Words flagged in `${CLAUDE_PLUGIN_ROOT}/reference/anti-patterns.md` (#10–#16) — "modern", "powerful", "intuitive", "delightful", "magical", "empower", "supercharge" — should not appear in your questions or in the written brief unless the user used them and defended them. If you catch yourself drafting one, delete it.
+- **Regenerating or second-guessing downstream output.** Your job ends at `references/brief.md`. Do not start sketching pages or pre-empting `design-drafts:variants`; a brief full of honest `TBD`s is more useful to it than one padded with your guesses.
 - **Generating the brief without an interview.** If the user says "just write me a brief," refuse and explain why: "The whole point of this skill is to extract things only you know. Otherwise the output is the median landing page in my training set." Then ask the first question.
 - **Ignoring `references/explore.md`.** If the file is present and you cold-interview the user anyway, you are wasting their time and asking them to relitigate decisions they already made. Always check pre-flight; if it exists, recap and confirm rather than restart.
 - **Telling the user to drop files into folders.** The `design-drafts ref add` CLI exists exactly so you can capture references inline. If you find yourself saying "after the interview, drop your screenshots into `references/inspiration/`," stop and run the CLI yourself with the URL or path the user just gave you.
 
 ## See also
 
-- `skills/design-drafts/skills/explore/SKILL.md` — the upstream brainstorming skill. If `references/explore.md` exists, this skill seeds the interview from it instead of cold-asking.
-- `docs/anti-patterns.md` — cited by entry number in the must-not-look-likes section.
-- `docs/conventions/references-protocol.md` — the four-file convention this skill is one half of. The `design-drafts ref add` CLI is the canonical way to add links/screenshots.
-- `skills/design-drafts/skills/brief/example-brief.md` — a sample of the deterministic output for a fictional product. The matching exploration document at `skills/design-drafts/skills/explore/example-explore.md` shows what the input looks like one stage upstream.
+- `design-drafts:explore` — the upstream brainstorming skill. If `references/explore.md` exists, this skill seeds the interview from it instead of cold-asking.
+- `design-drafts:variants` — the downstream skill. Reads the `references/brief.md` you write here (plus `links.md` and `inspiration/`) to generate the actual draft pages.
+- `${CLAUDE_PLUGIN_ROOT}/reference/anti-patterns.md` — cited by entry number in the must-not-look-likes section.
+- `${CLAUDE_PLUGIN_ROOT}/reference/references-protocol.md` — the four-file convention this skill is one half of. The `design-drafts ref add` CLI is the canonical way to add links/screenshots.
+- `${CLAUDE_PLUGIN_ROOT}/skills/brief/example-brief.md` — a sample of the deterministic output for a fictional product. The matching exploration document at `${CLAUDE_PLUGIN_ROOT}/skills/explore/example-explore.md` shows what the input looks like one stage upstream.
