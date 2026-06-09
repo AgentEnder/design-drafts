@@ -1,7 +1,7 @@
 import { parse } from 'yaml';
 import { describe, expect, it } from 'vitest';
 
-import { DEPLOY_WORKFLOW, HOST_MARKER } from './templates';
+import { DEPLOY_WORKFLOW, DRAFT_INDEX_HTML, HOST_MARKER } from './templates';
 
 describe('DEPLOY_WORKFLOW', () => {
   // The workflow is a hand-written template string with escaped `${{ }}`
@@ -34,5 +34,33 @@ describe('DEPLOY_WORKFLOW', () => {
   it('uploads then deploys the Pages artifact', () => {
     expect(DEPLOY_WORKFLOW).toContain('actions/upload-pages-artifact');
     expect(DEPLOY_WORKFLOW).toContain('actions/deploy-pages@v4');
+  });
+});
+
+describe('DRAFT_INDEX_HTML', () => {
+  it('is a complete HTML document', () => {
+    expect(DRAFT_INDEX_HTML).toContain('<!doctype html>');
+    expect(DRAFT_INDEX_HTML.trimEnd()).toMatch(/<\/html>$/);
+  });
+
+  // The scaffold ships the design-drafts overlays so a fresh draft has the
+  // axis switcher and review overlay without any wiring. Pin the major (@0)
+  // to match the package READMEs' recommended CDN reference.
+  it('loads the toolbar overlay from the CDN, pinned to a major', () => {
+    expect(DRAFT_INDEX_HTML).toContain(
+      'https://unpkg.com/@design-drafts/toolbar@0/dist/toolbar.js'
+    );
+  });
+
+  it('loads the annotate overlay from the CDN, pinned to a major', () => {
+    expect(DRAFT_INDEX_HTML).toContain(
+      'https://unpkg.com/@design-drafts/annotate@0/dist/annotate.js'
+    );
+  });
+
+  it('defers both overlay scripts so they never block the draft render', () => {
+    const deferred =
+      DRAFT_INDEX_HTML.match(/<script[^>]*\bdefer\b[^>]*><\/script>/g) ?? [];
+    expect(deferred).toHaveLength(2);
   });
 });
