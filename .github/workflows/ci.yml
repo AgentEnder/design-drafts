@@ -1,0 +1,52 @@
+name: CI
+
+# Manual, conventional-commit-driven release of the publishable packages
+# (@design-drafts/cli, @design-drafts/toolbar, @design-drafts/annotate).
+#
+# `nx release` determines each project's next version independently from the
+# conventional commits touching it, writes per-project changelogs, commits and
+# tags the bump (tag pattern `{projectName}@{version}`), then publishes to npm.
+# Nothing publishes without an explicit run of this workflow.
+
+on:
+  pull_request:
+    branches: ["**"]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history + tags so nx release can read prior tags and derive
+          # conventional-commit version bumps.
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Build publishable packages
+        run: pnpm exec nx run-many -t build,lint,test
