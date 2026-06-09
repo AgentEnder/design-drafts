@@ -21,10 +21,10 @@ You are explicitly NOT writing the brief. You are writing a working document at 
    - If `references/brief.md` already exists, stop and ask: "There's already a brief here, which means you've been past this stage. Do you want me to skip explore entirely, or restart from scratch (the existing brief stays put)?" Do not silently overwrite or undermine an existing brief.
    - If `references/explore.md` exists, ask whether to extend it (continue brainstorming where they left off) or start over.
 
-3. **Read the supporting docs once, silently.**
-   - `docs/anti-patterns.md` — the catalog of defaults to steer concept proposals away from. When you propose theme/layout/copy directions, you are also implicitly proposing what to avoid; cite anti-pattern numbers when relevant ("a darker, flatter take that avoids #1 and #2").
-   - `docs/conventions/axes-and-coordinates.md` — the axes-and-pages model. The axes you brainstorm here will become the `axes` field of `draft.config.json`, so they should be independent dimensions, not co-varying ones.
-   - `docs/conventions/references-protocol.md` — the four-file convention. You will be adding to `links.md` and `inspiration/` via the CLI as the conversation produces references.
+3. **Read the supporting docs once, silently.** These ship with this plugin under `${CLAUDE_PLUGIN_ROOT}/reference/` — read them with the file tools.
+   - `${CLAUDE_PLUGIN_ROOT}/reference/anti-patterns.md` — the catalog of defaults to steer concept proposals away from. When you propose theme/layout/copy directions, you are also implicitly proposing what to avoid; cite anti-pattern numbers when relevant ("a darker, flatter take that avoids #1 and #2").
+   - `${CLAUDE_PLUGIN_ROOT}/reference/axes-and-coordinates.md` — the axes-and-pages model. The axes you brainstorm here will become the `axes` field of `draft.config.json`, so they should be independent dimensions, not co-varying ones.
+   - `${CLAUDE_PLUGIN_ROOT}/reference/references-protocol.md` — the four-file convention. You will be adding to `links.md` and `inspiration/` via the CLI as the conversation produces references.
 
 4. **Set expectations.** Tell the user, in plain words: "This is the brainstorm pass. We'll riff on what this draft could be — themes, layouts, voice, whatever feels relevant — and I'll capture the options we react to. Nothing here is a commitment; that comes later in the brief. If you mention or paste a URL or screenshot, I'll save it as a reference on the fly so we don't have to redo that work."
 
@@ -52,7 +52,7 @@ For each axis, propose **3–5 named concept directions**. Concepts have:
 - A **name** that reads like a stance, not a feature ("Quiet Instrument", "Studio Notebook", "Operations Console" — not "Theme A" or "Dark Mode").
 - A **one-sentence description** that someone could disagree with.
 - A few **keywords** (mood, references, materials).
-- An **anti-direction** — one thing this concept actively pushes against, ideally cited from `docs/anti-patterns.md`.
+- An **anti-direction** — one thing this concept actively pushes against, ideally cited from `${CLAUDE_PLUGIN_ROOT}/reference/anti-patterns.md`.
 
 Example (good): "**Quiet Instrument** — looks like a code editor for postmortems; near-black background, monospace for timestamps, one warm accent. Keywords: editorial, restrained, dense. Pushes against #1 (the indigo-violet hero) and #2 (glow-and-blur dark mode)."
 
@@ -122,7 +122,7 @@ For each axis discussed: candidate concepts the user reacted to. Concepts marked
 
 - **<concept name>** [picked] — <one-sentence description>
   - keywords: <comma-separated mood words>
-  - pushes against: <#N — entry name from `docs/anti-patterns.md`, or free-form>
+  - pushes against: <#N — entry name from `${CLAUDE_PLUGIN_ROOT}/reference/anti-patterns.md`, or free-form>
 - **<concept name>** — <one-sentence description>
   - keywords: <...>
   - pushes against: <...>
@@ -156,7 +156,7 @@ Rules for filling this in:
 
 - **Every section appears, every time.** If a section is empty, write a one-line `None.` or `TBD.` rather than omitting it.
 - **Concepts named, not numbered.** "Quiet Instrument" not "Theme A". The brief skill will treat the names as identity; renaming later breaks the link.
-- **No filler vocabulary.** Words flagged in `docs/anti-patterns.md` (#10–#16) — "modern", "powerful", "intuitive", "delightful", "magical", "empower", "supercharge" — should not appear in concept descriptions or notes unless the user used them and you are quoting them as evidence to push back later. If you catch yourself drafting one, delete it.
+- **No filler vocabulary.** Words flagged in `${CLAUDE_PLUGIN_ROOT}/reference/anti-patterns.md` (#10–#16) — "modern", "powerful", "intuitive", "delightful", "magical", "empower", "supercharge" — should not appear in concept descriptions or notes unless the user used them and you are quoting them as evidence to push back later. If you catch yourself drafting one, delete it.
 - **Picks are explicit.** A concept either has `[picked]` or it doesn't. Do not be ambiguous; the brief skill reads this literally.
 - **References cited as the CLI saved them.** If `design-drafts ref add` named a file `upload-wikimedia-org-foo.png` and you renamed it during the session, list the renamed name. If you didn't rename, list what's actually on disk.
 
@@ -180,8 +180,8 @@ Things that make the skill worse:
 
 ## See also
 
-- `skills/design-drafts/skills/brief/SKILL.md` — the next step. Reads `references/explore.md` to seed the Socratic interview.
-- `skills/design-drafts/skills/explore/example-explore.md` — a sample of the deterministic output for a fictional product.
-- `docs/anti-patterns.md` — cited by entry number when proposing concepts and their anti-directions.
-- `docs/conventions/axes-and-coordinates.md` — what counts as a good axis (independent, few in number, lower-case identifiers).
-- `docs/conventions/references-protocol.md` — the four-file convention; the `design-drafts ref add` CLI command is the canonical way to populate `links.md` and `inspiration/`.
+- `design-drafts:brief` — the next step. Reads `references/explore.md` to seed the Socratic interview.
+- `${CLAUDE_PLUGIN_ROOT}/skills/explore/example-explore.md` — a sample of the deterministic output for a fictional product.
+- `${CLAUDE_PLUGIN_ROOT}/reference/anti-patterns.md` — cited by entry number when proposing concepts and their anti-directions.
+- `${CLAUDE_PLUGIN_ROOT}/reference/axes-and-coordinates.md` — what counts as a good axis (independent, few in number, lower-case identifiers).
+- `${CLAUDE_PLUGIN_ROOT}/reference/references-protocol.md` — the four-file convention; the `design-drafts ref add` CLI command is the canonical way to populate `links.md` and `inspiration/`.

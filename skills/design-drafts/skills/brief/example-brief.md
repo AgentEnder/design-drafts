@@ -40,7 +40,7 @@ See `references/links.md` and `references/inspiration/` for the source material.
 
 ## Must-not-look-likes
 
-Cited by entry number from `docs/anti-patterns.md`:
+Cited by entry number from the anti-pattern catalog:
 
 - **#1 — The indigo-to-violet hero gradient:** The product is meant to feel like an instrument, not a SaaS pitch deck. No gradients anywhere.
 - **#2 — Glassmorphism plus neon glow on dark mode:** This is dark-themed and that anti-pattern is the obvious trap. Flat surfaces only.
