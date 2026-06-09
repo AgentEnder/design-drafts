@@ -65,7 +65,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
 
       - name: Build publishable packages
-        run: pnpm exec nx run-many -t build -p cli toolbar annotate
+        run: pnpm exec nx run-many -t build -p cli toolbar annotate conventions
 
       - name: Release
         env:
