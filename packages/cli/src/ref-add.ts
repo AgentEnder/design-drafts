@@ -8,6 +8,8 @@ import {
 } from 'node:fs';
 import { basename, extname, join, resolve } from 'node:path';
 
+import { resolveDraftDir } from './draft-dir';
+
 const IMAGE_EXTENSIONS = new Set(['.png', '.webp', '.jpg', '.jpeg']);
 const REFERENCES_DIRNAME = 'references';
 const INSPIRATION_DIRNAME = 'inspiration';
@@ -67,16 +69,6 @@ function isUrl(source: string): boolean {
 function looksLikeImageUrl(url: string): boolean {
   const pathname = new URL(url).pathname.toLowerCase();
   return IMAGE_EXTENSIONS.has(extname(pathname));
-}
-
-function resolveDraftDir(explicit: string | undefined): string {
-  const candidate = resolve(explicit ?? process.cwd());
-  if (!existsSync(join(candidate, 'draft.config.json'))) {
-    throw new Error(
-      `No draft.config.json at ${candidate}. Run from inside a draft directory or pass --draft <dir>.`
-    );
-  }
-  return candidate;
 }
 
 function ensureReferencesScaffold(draftDir: string): void {
