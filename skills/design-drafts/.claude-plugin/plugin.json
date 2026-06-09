@@ -1,7 +1,7 @@
 {
   "name": "design-drafts",
-  "version": "0.1.0",
-  "description": "Skills for shaping design drafts: brainstorm axes (explore) and run a Socratic brief interview (brief).",
+  "version": "0.2.0",
+  "description": "Skills for shaping design drafts end to end: brainstorm axes (explore), run a Socratic brief interview (brief), and generate semantic multi-page drafts with a valid manifest (variants).",
   "author": {
     "name": "Craigory Coppola",
     "email": "craigorycoppola@gmail.com"
