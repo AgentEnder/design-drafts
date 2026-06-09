@@ -13,7 +13,7 @@ The second most important rule: **one question at a time.** Do not list five que
 
 ## Before you start
 
-1. **Confirm the working directory.** Look for a `draft.config.json` in the current working directory. If one exists, this is the draft you are briefing — note its `name` and `description` fields and use them as context (do not treat them as the brief itself). If not, ask the user which draft directory they want to brief, or whether they want to create a new one. Do not start interviewing until you know where `references/brief.md` will be written.
+1. **Confirm the working directory.** Look for a `draft.config.json` in the current working directory. If one exists, this is the draft you are briefing — note its `name` and `description` fields and use them as context (do not treat them as the brief itself). If not, ask the user which draft directory they want to brief, or whether they want to create a new one. To scaffold a fresh draft, run `design-drafts init draft <dir>` (omit `<dir>` to use the current directory); it writes `draft.config.json` and a starter `index.html`. Do not start interviewing until you know where `references/brief.md` will be written.
 
 2. **Check whether a brief already exists.** If `references/brief.md` is already present in the draft directory, stop and ask: "There's already a brief here. Do you want to start over, edit specific sections, or just inspect what's there?" Do not overwrite without explicit confirmation.
 
