@@ -15,7 +15,7 @@ You are explicitly NOT writing the brief. You are writing a working document at 
 
 ## Before you start
 
-1. **Confirm the working directory.** Look for a `draft.config.json` in the current working directory. Use its `name` and `description` fields as background context — they're not a brief, but they tell you what the draft is supposed to be. If there is no `draft.config.json`, ask the user where the exploration should live (a draft directory they've already created, or a new one to be created via the upstream Nx generator). Do not start brainstorming until you know where `references/explore.md` will be written.
+1. **Confirm the working directory.** Look for a `draft.config.json` in the current working directory. Use its `name` and `description` fields as background context — they're not a brief, but they tell you what the draft is supposed to be. If there is no `draft.config.json`, ask the user where the exploration should live — a draft directory they've already created, or a new one. To scaffold a new draft, run `design-drafts init draft <dir>` (omit `<dir>` to use the current directory); it writes `draft.config.json` and a starter `index.html` already wired to the toolbar and annotate overlays. Do not start brainstorming until you know where `references/explore.md` will be written.
 
 2. **Check for existing artifacts.**
    - If `references/brief.md` already exists, stop and ask: "There's already a brief here, which means you've been past this stage. Do you want me to skip explore entirely, or restart from scratch (the existing brief stays put)?" Do not silently overwrite or undermine an existing brief.
