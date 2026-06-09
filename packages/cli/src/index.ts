@@ -30,6 +30,7 @@ import { githubRemoteUrl } from './github';
 import { initDraft } from './init/draft';
 import { initHost } from './init/host';
 import { init } from './init/init';
+import { preview } from './preview';
 import { refAdd } from './ref-add';
 import { validateSiteName } from './site-name';
 import { validatePrefix, validateRepo } from './validate';
@@ -445,6 +446,33 @@ const app = cli('design-drafts', {
                 });
               }),
           }),
+      })
+      .command('preview', {
+        description:
+          'Serve a work-in-progress draft directory over HTTP for local viewing',
+        builder: (b) =>
+          b
+            .positional('path', {
+              type: 'string',
+              default: '.',
+              description:
+                'Draft directory to serve (must contain draft.config.json; default: cwd)',
+            })
+            .option('port', {
+              type: 'number',
+              description:
+                'Port to serve on (default: 4321; auto-increments if busy unless set explicitly)',
+            })
+            .option('open', {
+              type: 'boolean',
+              default: true,
+              description:
+                'Open the preview in a browser (use --no-open to just print the URL)',
+            }),
+        handler: (a) =>
+          runHandler(() =>
+            preview({ draft: a.path, port: a.port, open: a.open })
+          ),
       })
       // `push` is the `$0` default, registered LAST: its builder adds the greedy
       // `path` positional, and trailing it in the chain lets cli-forge infer

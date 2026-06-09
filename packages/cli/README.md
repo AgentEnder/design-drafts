@@ -53,6 +53,19 @@ Scaffold a new draft directory locally.
 design-drafts init draft ./my-draft
 ```
 
+### `design-drafts preview [path]`
+
+Serve a work-in-progress draft directory (default `.`) over HTTP so you can view
+it locally before pushing. The directory must contain a `draft.config.json`.
+
+```sh
+design-drafts preview ./my-draft
+```
+
+- `--port <n>` — port to serve on (default `4321`; auto-increments to the next
+  free port unless you set it explicitly).
+- `--no-open` — don't open a browser, just print the URL.
+
 ## Configuration
 
 Shared options (`--repo`, `--site-name`, `--template-ref`) can be supplied via
