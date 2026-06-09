@@ -123,6 +123,9 @@ importers:
         specifier: 'catalog:'
         version: 1.9.2(@clack/prompts@1.2.0)(tsx@4.22.4)
     devDependencies:
+      '@design-drafts/conventions':
+        specifier: workspace:*
+        version: link:../conventions
       '@types/node':
         specifier: 'catalog:'
         version: 18.16.9
