@@ -1,7 +1,13 @@
+import { parseDraftManifest } from '@design-drafts/conventions';
 import { parse } from 'yaml';
 import { describe, expect, it } from 'vitest';
 
-import { DEPLOY_WORKFLOW, DRAFT_INDEX_HTML, HOST_MARKER } from './templates';
+import {
+  DEPLOY_WORKFLOW,
+  DRAFT_INDEX_HTML,
+  HOST_MARKER,
+  draftConfig,
+} from './templates';
 
 describe('DEPLOY_WORKFLOW', () => {
   // The workflow is a hand-written template string with escaped `${{ }}`
@@ -62,5 +68,29 @@ describe('DRAFT_INDEX_HTML', () => {
     const deferred =
       DRAFT_INDEX_HTML.match(/<script[^>]*\bdefer\b[^>]*><\/script>/g) ?? [];
     expect(deferred).toHaveLength(2);
+  });
+});
+
+describe('draftConfig', () => {
+  const json = draftConfig('my-draft', '2026-06-08T12:00:00.000Z');
+
+  // The toolbar silently no-ops on a manifest that fails validation, so the
+  // scaffold MUST satisfy the canonical schema — validate against the real
+  // parser rather than re-asserting field shapes by hand.
+  it('produces a schema-valid draft manifest', () => {
+    const result = parseDraftManifest(json);
+    // Surface the validator's own messages if this ever regresses.
+    expect(result.ok ? [] : result.errors).toEqual([]);
+  });
+
+  it('uses the schema field `name`, not the legacy `siteName`', () => {
+    const parsed = JSON.parse(json);
+    expect(parsed.name).toBe('my-draft');
+    expect(parsed.siteName).toBeUndefined();
+  });
+
+  it('scaffolds a single index.html page so the toolbar has something to render', () => {
+    const parsed = JSON.parse(json);
+    expect(parsed.pages).toEqual([{ coordinates: {}, path: 'index.html' }]);
   });
 });

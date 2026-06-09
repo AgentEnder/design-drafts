@@ -51,7 +51,7 @@ export async function initDraft(opts: InitDraftOptions): Promise<void> {
   console.log(`\nScaffolding draft "${siteName}" in ${targetDir}:`);
   const wroteManifest = writeIfAbsent(
     join(targetDir, 'draft.config.json'),
-    draftConfig(siteName)
+    draftConfig(siteName, new Date().toISOString())
   );
   const wroteIndex = writeIfAbsent(
     join(targetDir, 'index.html'),

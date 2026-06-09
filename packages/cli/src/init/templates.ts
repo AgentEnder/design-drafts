@@ -157,15 +157,24 @@ dist
 `;
 
 /**
- * The starter manifest written by \`init draft\`. The push command reads the
- * \`prompt\` field for the commit trailer.
+ * The starter manifest written by `init draft`. It is a valid DraftManifest
+ * (see `@design-drafts/conventions`): a single-page, axis-free proposal whose
+ * one page is `index.html`. A schema-valid manifest matters because the toolbar
+ * silently no-ops on a manifest missing `name`/`pages`, so a stub with the wrong
+ * shape would leave a fresh draft without a working toolbar. The push command
+ * reads the `prompt` field for the commit trailer; the author fills in `axes`
+ * and additional `pages` as the draft grows.
  */
-export function draftConfig(siteName: string): string {
+export function draftConfig(siteName: string, createdAt: string): string {
   return (
     JSON.stringify(
       {
-        siteName,
+        $schema:
+          'https://design-drafts.dev/schemas/draft-manifest.schema.json',
+        name: siteName,
         prompt: '',
+        pages: [{ coordinates: {}, path: 'index.html' }],
+        createdAt,
       },
       null,
       2

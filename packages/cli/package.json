@@ -44,6 +44,7 @@
     "cli-forge": "catalog:"
   },
   "devDependencies": {
+    "@design-drafts/conventions": "workspace:*",
     "@types/node": "catalog:",
     "tsdown": "^0.21.7",
     "typescript": "catalog:",
