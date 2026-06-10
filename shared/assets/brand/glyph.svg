@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 374 508" role="img"><title>Turnbuckle</title>
+<!-- flat small-size glyph: shield silhouette with the mat band, no text/gloss -->
+<defs>
+  <clipPath id="body"><path d="M178 6 Q187 1 196 6 L364 84 Q371 88 371 97 L371 396 Q371 417 350 428 L195 503 Q187 507 179 503 L24 428 Q3 417 3 396 L3 97 Q3 88 10 84 Z"/></clipPath>
+</defs>
+<path d="M178 6 Q187 1 196 6 L364 84 Q371 88 371 97 L371 396 Q371 417 350 428 L195 503 Q187 507 179 503 L24 428 Q3 417 3 396 L3 97 Q3 88 10 84 Z" fill="#0B0B0C" stroke="#EDECE8" stroke-width="14" stroke-linejoin="round"/>
+<g fill="#EBE9E4">
+  <path d="M140 122 L24 146 L24 168 L140 146 Z"/><path d="M140 206 L24 230 L24 252 L140 230 Z"/><path d="M140 290 L24 314 L24 336 L140 314 Z"/>
+  <path d="M234 122 L350 146 L350 168 L234 146 Z"/><path d="M234 206 L350 230 L350 252 L234 230 Z"/><path d="M234 290 L350 314 L350 336 L234 314 Z"/>
+</g>
+<rect x="165" y="58" width="44" height="350" rx="22" fill="#EDECE8"/>
+<g clip-path="url(#body)">
+  <!-- mat: red chevron trailing at the rope angle, cream top edge -->
+  <path d="M10 392 L181 358 Q187 356.6 193 358 L364 392 L364 520 L10 520 Z" fill="#C5392C"/>
+  <path d="M10 392 L181 358 Q187 356.6 193 358 L364 392" fill="none" stroke="#EDECE8" stroke-width="14"/>
+</g>
+<path d="M178 6 Q187 1 196 6 L364 84 Q371 88 371 97 L371 396 Q371 417 350 428 L195 503 Q187 507 179 503 L24 428 Q3 417 3 396 L3 97 Q3 88 10 84 Z" fill="none" stroke="#EDECE8" stroke-width="14" stroke-linejoin="round"/>
+<g fill="#C5392C">
+  <rect x="129" y="103" width="116" height="62" rx="20"/>
+  <rect x="129" y="187" width="116" height="62" rx="20"/>
+  <rect x="129" y="271" width="116" height="62" rx="20"/>
+</g>
+</svg>

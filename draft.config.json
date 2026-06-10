@@ -1,0 +1,10 @@
+{
+  "$schema": "https://design-drafts.dev/schemas/draft-manifest.schema.json",
+  "name": "Turnbuckle marketing — warm / full-bleed (committed)",
+  "prompt": "references/brief.md",
+  "axes": [],
+  "pages": [
+    { "coordinates": {}, "path": "pages/home/warm-full-bleed.html" }
+  ],
+  "createdAt": "2026-06-09T03:44:34.000Z"
+}

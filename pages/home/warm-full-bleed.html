@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en" data-theme="warm" data-backdrop="full-bleed">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Turnbuckle · Run your promotion like the big leagues</title>
+  <meta name="description" content="Promotion management for independent wrestling. Book the card, keep the roster straight, track every title, and run the night, from your first bingo-hall show to a sold-out stadium." />
+  <link rel="icon" href="../../shared/assets/brand/favicon.ico" sizes="any" />
+  <link rel="icon" href="../../shared/assets/brand/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="../../shared/assets/brand/apple-touch-icon.png" />
+  <script type="importmap">
+  { "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }}
+  </script>
+  <link rel="stylesheet" href="../../shared/styles/tokens.css" />
+  <link rel="stylesheet" href="../../shared/styles/ui.css" />
+  <link rel="stylesheet" href="../../shared/styles/venue.css" />
+  <style>
+    .hero .wrap { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: clamp(1.5rem, 5vw, 4rem); align-items: center; padding-block: clamp(2.5rem, 7vh, 5.5rem); }
+    @media (max-width: 60rem) { .hero .wrap { grid-template-columns: 1fr; } }
+    .hero h1 { font-size: var(--hero-size); margin: 0.7rem 0 0; }
+    .hero h1 .heat { color: var(--crimson); }
+    .hero .sub { margin-top: 1.3rem; max-width: 40ch; }
+    .hero .cta-row { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.8rem; }
+    .hero .note { margin-top: 1rem; color: var(--ink-mute); font-size: 0.88rem; }
+    .problem { background: var(--charcoal); color: #fff; }
+    .problem .wrap { padding-block: clamp(2.2rem, 5vh, 3.5rem); display: flex; flex-wrap: wrap; gap: 1rem 2rem; align-items: center; justify-content: space-between; }
+    .problem h2 { font-size: var(--step-2); max-width: 24ch; }
+    .problem p { color: #cfd2e2; max-width: 34ch; }
+    .scales { background: var(--canvas-2); }
+    .scales .wrap { text-align: center; display: grid; gap: 1rem; justify-items: center; padding-block: clamp(3rem, 7vh, 5rem); }
+    .scales h2 { font-size: var(--step-4); max-width: 18ch; }
+    .scales .heat { color: var(--crimson); }
+    .quote .wrap { display: grid; gap: 1rem; max-width: 50rem; padding-block: clamp(3rem, 7vh, 5rem); }
+    .quote blockquote { font-family: var(--font-display); text-transform: uppercase; font-size: var(--step-3); line-height: 1; margin: 0; }
+    .quote cite { font-style: normal; color: var(--crimson-deep); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.82rem; }
+    .cta-final .wrap { text-align: center; display: grid; gap: 1.2rem; justify-items: center; padding-block: clamp(3rem, 8vh, 5.5rem); }
+    .cta-final h2 { font-size: var(--step-4); }
+    .cta-final form { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
+    .cta-final input { font: inherit; padding: 0.9rem 1.05rem; border: 2px solid var(--ink); border-radius: var(--btn-radius); background: var(--surface); min-width: 17rem; }
+
+    /* ===================== POLISH — scroll timelines + break the grid ===================== */
+
+    /* (1) "Climb" progress bar — driven by the whole page's scroll() timeline */
+    .climb-bar { position: fixed; inset: 0 0 auto 0; height: 3px; z-index: 60; background: linear-gradient(90deg, var(--crimson), var(--gold)); transform-origin: left center; transform: scaleX(0); }
+    @supports (animation-timeline: scroll()) {
+      .climb-bar { animation: climb-grow linear both; animation-timeline: scroll(root block); }
+      @keyframes climb-grow { to { transform: scaleX(1); } }
+    }
+    @supports not (animation-timeline: scroll()) { .climb-bar { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .climb-bar { display: none; } }
+
+    /* (2) Break the grid: asymmetric columns, alternating; cards tilt + a second screen peeks behind */
+    .vsec .feat { grid-template-columns: 1.14fr 0.86fr; column-gap: clamp(1.5rem, 5vw, 5rem); align-items: center; }
+    .vsec .feat.flip { grid-template-columns: 0.86fr 1.14fr; }
+    @media (max-width: 56rem) { .vsec .feat, .vsec .feat.flip { grid-template-columns: 1fr; } }
+
+    .vsec .ui { position: relative; rotate: -1.6deg; transition: rotate .4s ease; will-change: transform; }
+    .vsec .feat.flip .ui { rotate: 1.6deg; }
+    .vsec .ui:hover, .vsec .ui:focus-within { rotate: 0deg; }
+    /* a faint second screen stacked behind for depth */
+    .vsec .ui::after {
+      content: ""; position: absolute; z-index: -1; inset: 0; border-radius: inherit;
+      background: var(--ui-card); border: 1px solid var(--ui-line);
+      transform: translate(20px, 22px) rotate(3.5deg); opacity: .45;
+    }
+    .vsec .feat.flip .ui::after { transform: translate(-20px, 22px) rotate(-3.5deg); }
+    @media (max-width: 56rem) { .vsec .ui, .vsec .feat.flip .ui { rotate: 0deg; } .vsec .ui::after { display: none; } }
+
+    /* (3) Scroll flourishes — NO parallax. Cards rise in once and settle; the
+          scene-break turnbuckle casing turns (tightens) with scroll position. */
+    @supports (animation-timeline: view()) {
+      @media (prefers-reduced-motion: no-preference) {
+        /* cards rise in once, then hold (settles at translateY:0 — no drift) */
+        .vsec .ui { animation: card-in linear both; animation-timeline: view(); animation-range: entry 5% cover 34%; }
+        @keyframes card-in { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+
+        /* the turnbuckle casing rotates (tightens) as the separator crosses the viewport,
+           resolving flat at both ends */
+        /* turnbuckle separators are 3D canvases (shared/turnbuckle.js); no CSS animation here */
+      }
+    }
+
+    /* ===================== BRAND — real Turnbuckle assets (packages/brand-guidelines) =====================
+       Nav/footer use the reduced GLYPH (built for 16–32px chrome) beside the page's own Anton wordmark,
+       so the mark is real but the type stays native. The detailed hex MARK lives at the CTA, where it's
+       large enough to read. Both replace the CSS-pentagon placeholder in shared/ui.css's .brand .glyph. */
+    .brand-glyph { height: 1.6rem; width: auto; flex: none; }
+    .cta-final .brand-mark { width: clamp(3.25rem, 7vw, 4.5rem); height: auto; margin-bottom: 0.2rem; filter: drop-shadow(var(--shadow)); }
+  </style>
+</head>
+<body class="grain">
+  <div class="climb-bar" aria-hidden="true"></div>
+  <!-- shared metallic gradients for the turnbuckle separators -->
+  <a class="sr-only" href="#main">Skip to content</a>
+
+  <header class="site-head" data-annotate-id="nav">
+    <div class="wrap">
+      <a class="brand" href="#main"><img class="brand-glyph" src="../../shared/assets/brand/glyph.svg" alt="" aria-hidden="true" width="374" height="508" />Turnbuckle</a>
+      <nav class="site-nav" aria-label="Primary">
+        <a class="hide-sm" href="#features">Features</a>
+        <a class="hide-sm" href="#scales">Pricing</a>
+        <a href="#waitlist">Waitlist</a>
+        <a class="btn btn-ghost" href="https://app.turnbucklehq.com">Sign in</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- HERO (product, on canvas) -->
+    <section class="hero" data-annotate-id="hero">
+      <div class="wrap">
+        <div>
+          <span class="kicker">Promotion management</span>
+          <h1 class="display">Run your promotion like the <span class="heat">big leagues.</span></h1>
+          <p class="lede sub">One place for your card, your roster, and every title reign. A forty-seat show and a sold-out arena run exactly the same way.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#waitlist">Join the waitlist</a>
+            <a class="btn btn-ghost" href="#features">See it in action</a>
+          </div>
+          <p class="note">Pre-launch. We're letting promoters in a few at a time.</p>
+        </div>
+        <figure class="ui" aria-label="Turnbuckle dashboard: choosing what to do next">
+          <div class="ui-bar"><span class="ui-dot"></span><span class="ui-dot"></span><span class="ui-dot"></span><span class="ui-tab">Turnbuckle · <b>Dashboard</b></span></div>
+          <div class="ui-body">
+            <div class="dash-hero"><p class="promo">Riverside Wrestling Alliance</p><h4>What do you want to do?</h4></div>
+            <div class="qa-grid">
+              <div class="qa"><span aria-hidden="true">📅</span>Events</div>
+              <div class="qa"><span aria-hidden="true">🤼</span>Roster</div>
+              <div class="qa"><span aria-hidden="true">🏆</span>Titles</div>
+            </div>
+            <div class="steps">
+              <p class="ui-h">Suggested next steps</p>
+              <ul>
+                <li><span class="num">1</span>Finish the card for Spring Slam<span class="badge warn" style="margin-left:auto">3 days out</span></li>
+                <li><span class="num">2</span>Assign referees for the title match</li>
+              </ul>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </section>
+
+    <!-- PROBLEM -->
+    <section class="problem" data-annotate-id="problem">
+      <div class="wrap">
+        <h2 class="display">Still running it on a spreadsheet, a group chat, and your memory?</h2>
+        <p>The big promotions don't. Turnbuckle gives you the same grip on your operation at any size.</p>
+      </div>
+    </section>
+
+    <span id="features"></span>
+
+    <!-- FEATURE 1 — booking, backed by THE BINGO HALL -->
+    <section class="vsec v-bingo" data-annotate-id="feat-booking" aria-label="Book the card — at the bingo hall">
+      <div class="vsec-inner wrap">
+        <div class="feat">
+          <div class="feat-copy reveal">
+            <span class="act-tag">Booking</span>
+            <h2 class="display">Book the card, not the chaos</h2>
+            <p>Lay out the night segment by segment and drag it into the order you want. Each match type knows its own rules, so a card that doesn't add up tells you before doors open.</p>
+            <ul class="pts">
+              <li>Drag-to-reorder the run of show</li>
+              <li>Match types with built-in rules</li>
+              <li>A readiness bar that tracks what's still missing</li>
+            </ul>
+          </div>
+          <figure class="ui" aria-label="Event schedule with reorderable segments">
+            <div class="ui-bar"><span class="ui-dot"></span><span class="ui-dot"></span><span class="ui-dot"></span><span class="ui-tab">Spring Slam '26 · <b>Event Schedule</b></span></div>
+            <div class="ui-body">
+              <div class="completion"><div class="row"><span>Card readiness</span><span>80%</span></div><div class="track"><div class="bar-fill" style="width:80%"></div></div></div>
+              <div class="seg"><span class="grip" aria-hidden="true">⠿</span><span class="idx">1</span><span class="seg-title">The Alley Cats vs. Northside Bros<small>Tag Team · 10 min</small></span><span class="badge">Opener</span></div>
+              <div class="seg"><span class="grip" aria-hidden="true">⠿</span><span class="idx">2</span><span class="seg-title">Rev. Diamond vs. Kid Vega<small>Singles · 12 min</small></span><span class="badge">Singles</span></div>
+              <div class="seg"><span class="grip" aria-hidden="true">⠿</span><span class="idx">3</span><span class="seg-title">The Dynasty (c) vs. Wolfpack<small>Tag Team · Tag Titles</small></span><span class="badge indigo">Title</span></div>
+              <div class="seg main"><span class="grip" aria-hidden="true">⠿</span><span class="idx">4</span><span class="seg-title">Atlas vs. "The Comet"<small>Singles · World Title</small></span><span class="badge bad">Main Event</span></div>
+            </div>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- scene break: turnbuckle -->
+    <div class="scene-break" aria-hidden="true"><span class="turnbuckle"><img class="tb-fallback" src="../../shared/assets/turnbuckle-b.png" alt="" /><canvas class="tb3d" width="760" height="240"></canvas></span></div>
+
+    <!-- FEATURE 2 — roster, backed by THE ARMORY -->
+    <section class="vsec v-armory" data-annotate-id="feat-roster" aria-label="Keep the roster straight — at the armory">
+      <div class="vsec-inner wrap">
+        <div class="feat flip">
+          <div class="feat-copy reveal">
+            <span class="act-tag">Roster</span>
+            <h2 class="display">The whole locker room, organized</h2>
+            <p>Every wrestler you book and the gimmicks they play, kept in one roster. See who's an active regular, who's alumni, and who's a one-night guest, then pull up anyone's match history before you book them again.</p>
+            <ul class="pts">
+              <li>Active, alumni, and guest status at a glance</li>
+              <li>The real person and every gimmick they play, linked</li>
+              <li>Match history and title reigns on every wrestler</li>
+            </ul>
+          </div>
+          <figure class="ui" aria-label="Roster of ring personas">
+            <div class="ui-bar"><span class="ui-dot"></span><span class="ui-dot"></span><span class="ui-dot"></span><span class="ui-tab">Turnbuckle · <b>Roster</b></span></div>
+            <div class="ui-body">
+              <p class="ui-h">Ring personas · 24 active</p>
+              <div class="roster-grid">
+                <div class="persona"><div class="pic"><span class="ini" aria-hidden="true">A</span></div><div class="meta"><span class="rn">Atlas</span><span class="aka">aka Marcus Hale</span><span class="badge ok dot">Active</span></div></div>
+                <div class="persona"><div class="pic"><span class="ini" aria-hidden="true">C</span></div><div class="meta"><span class="rn">The Comet</span><span class="aka">aka Marcus Hale</span><span class="badge ok dot">Active</span></div></div>
+                <div class="persona"><div class="pic"><span class="ini" aria-hidden="true">M</span></div><div class="meta"><span class="rn">Mad Maggie</span><span class="aka">aka Dana Pruitt</span><span class="badge info dot">Guest</span></div></div>
+              </div>
+            </div>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- scene break: turnbuckle -->
+    <div class="scene-break" aria-hidden="true"><span class="turnbuckle"><img class="tb-fallback" src="../../shared/assets/turnbuckle-b.png" alt="" /><canvas class="tb3d" width="760" height="240"></canvas></span></div>
+
+    <!-- FEATURE 3 — titles, backed by THE ARENA -->
+    <section class="vsec v-arena" data-annotate-id="feat-titles" aria-label="Track every title — at the arena">
+      <div class="vsec-inner wrap">
+        <div class="feat">
+          <div class="feat-copy reveal">
+            <span class="act-tag">Championships</span>
+            <h2 class="display">Every reign, in the record book</h2>
+            <p>Pull up a title's whole story: current holder, days held, every defense and every vacancy. Deciding who goes over next stops being guesswork.</p>
+            <ul class="pts">
+              <li>Current holder and reign stats at a glance</li>
+              <li>Full lineage log: Inaugural, Win, Defense, Vacancy</li>
+              <li>Linked straight to the match that changed it</li>
+            </ul>
+          </div>
+          <figure class="ui" aria-label="Championship lineage and stats">
+            <div class="ui-bar"><span class="ui-dot"></span><span class="ui-dot"></span><span class="ui-dot"></span><span class="ui-tab">Turnbuckle · <b>World Championship</b></span></div>
+            <div class="ui-body">
+              <div class="title-hero"><span class="crown" aria-hidden="true">♛</span><div><div class="who">Atlas</div><div class="lbl">Reigning · 214 days</div></div></div>
+              <div class="title-stats">
+                <div class="stat"><b>214</b><span>Title age</span></div>
+                <div class="stat"><b>9</b><span>Total reigns</span></div>
+                <div class="stat"><b>6</b><span>Defenses</span></div>
+              </div>
+              <ul class="lineage">
+                <li><span class="rno">#9</span><span class="badge ok">Win</span><span>Atlas def. Rev. Diamond</span></li>
+                <li><span class="rno">#8</span><span class="badge">Defense</span><span>Rev. Diamond over Kid Vega</span></li>
+                <li><span class="rno">#8</span><span class="badge bad">Vacancy</span><span>Title held up — disputed finish</span></li>
+              </ul>
+            </div>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- scene break: turnbuckle -->
+    <div class="scene-break" aria-hidden="true"><span class="turnbuckle"><img class="tb-fallback" src="../../shared/assets/turnbuckle-b.png" alt="" /><canvas class="tb3d" width="760" height="240"></canvas></span></div>
+
+    <!-- FEATURE 4 — show night, backed by THE STADIUM -->
+    <section class="vsec v-stadium" data-annotate-id="feat-dayof" aria-label="Run the night — at the stadium">
+      <div class="vsec-inner wrap">
+        <div class="feat flip">
+          <div class="feat-copy reveal">
+            <span class="act-tag">Show night</span>
+            <h2 class="display">Run the night from one screen</h2>
+            <p>The Command Center is built for the chaos of show day. Check talent in, watch the clock against first bell, start a match timer, and log the finish.</p>
+            <ul class="pts">
+              <li>Staff arrival, doors, first bell, and target end, always in view</li>
+              <li>Tap to check talent in; flag license issues</li>
+              <li>Live match timers and one-tap results</li>
+            </ul>
+          </div>
+          <figure class="ui" aria-label="Day-of command center">
+            <div class="ui-bar"><span class="ui-dot"></span><span class="ui-dot"></span><span class="ui-dot"></span><span class="ui-tab">Spring Slam '26 · <b>Command Center</b></span></div>
+            <div class="ui-body">
+              <div class="timing">
+                <div class="anchor"><span>Staff</span><b>4:00</b></div>
+                <div class="anchor"><span>Doors</span><b>6:30</b></div>
+                <div class="anchor bell"><span>First bell</span><b>7:00</b></div>
+                <div class="anchor"><span>Target end</span><b>9:45</b></div>
+              </div>
+              <div class="queue">
+                <div class="qrow live"><span class="qt">The Dynasty vs. Wolfpack<small>Tag Team · on now</small></span><span class="timer"><span class="pulse" style="color:var(--ok)" aria-hidden="true">● </span>06:12</span><span class="play" aria-hidden="true">▮▮</span></div>
+                <div class="qrow"><span class="qt">Atlas vs. "The Comet"<small>Singles · World Title</small></span><span class="timer">—</span><span class="play" aria-hidden="true">▶</span></div>
+              </div>
+            </div>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCALES / PAYOFF -->
+    <section id="scales" class="scales" data-annotate-id="scales">
+      <div class="wrap">
+        <span class="kicker" style="justify-content:center">Grows with you</span>
+        <h2 class="display">Bingo hall to stadium, <span class="heat">one tool.</span></h2>
+        <p class="lede" style="max-width:46ch">You won't outgrow it, and there's nothing to switch to later. Add shows, talent, and venues, and Turnbuckle keeps pace.</p>
+        <a class="btn btn-primary" href="#waitlist">Get early access</a>
+      </div>
+    </section>
+
+    <!-- QUOTE -->
+    <section class="quote" data-annotate-id="quote">
+      <div class="wrap">
+        <span class="kicker">Why it exists</span>
+        <blockquote>Show day eats the details you swore you'd remember. Turnbuckle keeps them.</blockquote>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section id="waitlist" data-annotate-id="waitlist">
+      <div class="cta-final">
+        <div class="wrap">
+          <img class="brand-mark" src="../../shared/assets/brand/mark.svg" alt="" aria-hidden="true" width="374" height="508" />
+          <span class="kicker" style="justify-content:center">Doors aren't open yet</span>
+          <h2 class="display">Get in line</h2>
+          <p class="lede" style="max-width:38ch;margin-inline:auto">Early access goes out to promoters in batches. Tell us where to send yours.</p>
+          <form action="#" method="post" aria-label="Join the waitlist">
+            <label class="sr-only" for="email">Email address</label>
+            <input id="email" type="email" name="email" placeholder="you@yourpromotion.com" required />
+            <button class="btn btn-primary" type="submit">Join the waitlist</button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot" data-annotate-id="footer">
+    <div class="wrap">
+      <a class="brand" href="#main"><img class="brand-glyph" src="../../shared/assets/brand/glyph.svg" alt="" aria-hidden="true" width="374" height="508" />Turnbuckle</a>
+      <nav aria-label="Footer">
+        <a href="#features">Features</a>
+        <a href="#waitlist">Waitlist</a>
+        <a href="https://x.com/TurnbuckleApp">X</a>
+        <a href="https://instagram.com/turnbucklehq">Instagram</a>
+      </nav>
+      <p class="muted">© 2026 Turnbuckle · turnbucklehq.com</p>
+    </div>
+  </footer>
+
+  <script type="module" src="../../shared/turnbuckle.js"></script>
+  <script src="https://unpkg.com/@design-drafts/toolbar@0/dist/toolbar.js" defer></script>
+  <script src="https://unpkg.com/@design-drafts/annotate@0/dist/annotate.js" defer></script>
+</body>
+</html>

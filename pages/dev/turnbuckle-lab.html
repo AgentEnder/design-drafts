@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Turnbuckle render lab — cylinder + glint</title>
+  <style>
+    :root { --canvas: #fbf4ea; }
+    body { margin: 0; background: var(--canvas); font-family: system-ui, sans-serif; color: #2b2d42; }
+    h1 { font-size: 1.1rem; padding: 1rem 1.5rem 0; margin: 0; }
+    p.note { padding: 0 1.5rem; color: #837c8e; font-size: .85rem; max-width: 60rem; }
+    .row { display: flex; flex-wrap: wrap; gap: 2.5rem 2rem; padding: 1.75rem 1.5rem; align-items: center; }
+    .row.dark { background: #294a73; }
+    .row.dark .label { color: #cfe0f2; }
+    .cell { display: grid; gap: .5rem; justify-items: center; }
+    .label { font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #9e0b23; }
+    .turnbuckle { position: relative; display: block; width: 340px; }
+    .turnbuckle.sm { width: 210px; }
+    .tb-base { display: block; width: 100%; height: auto; overflow: visible; }
+    /* the body silhouette never changes; a glint sweeps to read as rotation */
+    .tb-shine {
+      position: absolute; inset: 0; margin: auto; width: 36.5%; height: 46%;
+      border-radius: 999px; pointer-events: none; mix-blend-mode: screen;
+      background-image: linear-gradient(180deg, transparent 40%, rgba(255,255,255,.92) 50%, transparent 60%);
+      background-size: 100% 320%; background-repeat: no-repeat; background-position: center var(--sy, 50%);
+    }
+    .s-top   .tb-shine { --sy: 6%; }
+    .s-mid   .tb-shine { --sy: 50%; }
+    .s-low   .tb-shine { --sy: 92%; }
+    .s-none  .tb-shine { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Turnbuckle render lab — cylinder + glint</h1>
+  <p class="note">Body silhouette is constant (a cylinder doesn't change size as it spins about its long axis); the glint sweeps vertically to read as rotation. Full-length threaded rods. Glint shown frozen at top / mid / low positions, plus a no-glint reference.</p>
+
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute"><defs>
+    <linearGradient id="galv" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#eef1f5"/><stop offset="22%" stop-color="#cdd2da"/>
+      <stop offset="50%" stop-color="#a9afb9"/><stop offset="63%" stop-color="#9298a3"/>
+      <stop offset="82%" stop-color="#c2c7cf"/><stop offset="100%" stop-color="#878d98"/>
+    </linearGradient>
+    <linearGradient id="galvRod" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f1f4f8"/><stop offset="30%" stop-color="#cbd0d8"/>
+      <stop offset="52%" stop-color="#969ca7"/><stop offset="66%" stop-color="#b1b7c0"/><stop offset="100%" stop-color="#7c828d"/>
+    </linearGradient>
+    <radialGradient id="eyeFill" cx="40%" cy="34%" r="72%">
+      <stop offset="0%" stop-color="#eef1f6"/><stop offset="48%" stop-color="#b4bac4"/><stop offset="100%" stop-color="#787e89"/>
+    </radialGradient>
+    <radialGradient id="eyeHole" cx="50%" cy="44%" r="60%">
+      <stop offset="0%" stop-color="#4a505a"/><stop offset="100%" stop-color="#868c96"/>
+    </radialGradient>
+    <linearGradient id="winShade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5b616b" stop-opacity=".55"/><stop offset="42%" stop-color="#5b616b" stop-opacity=".08"/><stop offset="100%" stop-color="#23272e" stop-opacity=".5"/>
+    </linearGradient>
+    <pattern id="threads" width="7" height="34" patternUnits="userSpaceOnUse" patternTransform="skewX(-22)">
+      <rect x="0" width="2.6" height="34" fill="#ffffff" opacity=".34"/>
+      <rect x="3.4" width="2.6" height="34" fill="#3a3f47" opacity=".42"/>
+    </pattern>
+    <mask id="winMask">
+      <rect x="108" y="28" width="124" height="48" rx="23" fill="#fff"/>
+      <rect x="138" y="40" width="64" height="24" rx="11" fill="#000"/>
+    </mask>
+    <filter id="ground" x="-30%" y="-35%" width="160%" height="200%">
+      <feDropShadow dx="0" dy="2.4" stdDeviation="2.4" flood-color="#10131a" flood-opacity=".4"/>
+    </filter>
+  </defs></svg>
+
+  <div class="row" id="rowLight"></div>
+  <div class="row dark" id="rowDark"></div>
+  <div class="row" id="rowSmall"></div>
+
+  <script>
+    const TB = `
+      <svg class="tb-base" viewBox="0 0 340 104">
+        <g filter="url(#ground)">
+          <circle cx="34" cy="52" r="19" fill="url(#eyeFill)" stroke="#5a606a" stroke-width="1"/>
+          <circle cx="34" cy="52" r="8.5" fill="url(#eyeHole)"/>
+          <path d="M21 45 A19 19 0 0 1 44 40" fill="none" stroke="#fff" stroke-width="2.6" opacity=".6" stroke-linecap="round"/>
+        </g>
+        <g filter="url(#ground)">
+          <circle cx="306" cy="52" r="19" fill="url(#eyeFill)" stroke="#5a606a" stroke-width="1"/>
+          <circle cx="306" cy="52" r="8.5" fill="url(#eyeHole)"/>
+          <path d="M293 45 A19 19 0 0 1 316 40" fill="none" stroke="#fff" stroke-width="2.6" opacity=".6" stroke-linecap="round"/>
+        </g>
+        <g filter="url(#ground)">
+          <rect x="52" y="44" width="114" height="16" rx="3" fill="url(#galvRod)"/>
+          <rect x="52" y="44" width="114" height="16" rx="3" fill="url(#threads)"/>
+          <rect x="174" y="44" width="114" height="16" rx="3" fill="url(#galvRod)"/>
+          <rect x="174" y="44" width="114" height="16" rx="3" fill="url(#threads)"/>
+        </g>
+        <g filter="url(#ground)">
+          <rect x="108" y="28" width="124" height="48" rx="23" fill="url(#galv)" mask="url(#winMask)"/>
+          <rect x="138" y="40" width="64" height="24" rx="11" fill="url(#winShade)"/>
+          <rect x="138" y="40" width="64" height="24" rx="11" fill="none" stroke="#5b616b" stroke-width="1.4" opacity=".55"/>
+          <rect x="140" y="32.5" width="60" height="2.6" rx="1.3" fill="#fff" opacity=".7"/>
+          <rect x="140" y="69" width="60" height="2.2" rx="1.1" fill="#1b1f26" opacity=".3"/>
+          <ellipse cx="120" cy="46" rx="6" ry="13" fill="#fff" opacity=".2"/>
+          <ellipse cx="220" cy="46" rx="6" ry="13" fill="#fff" opacity=".2"/>
+        </g>
+      </svg>
+      <span class="tb-shine"></span>`;
+    const states = [['no glint','s-none'],['glint top','s-top'],['glint mid','s-mid'],['glint low','s-low']];
+    function fill(rowId, klass){
+      const row = document.getElementById(rowId);
+      states.forEach(([lbl,s])=>{
+        const cell = document.createElement('div'); cell.className='cell';
+        cell.innerHTML = `<span class="label">${lbl}</span><span class="turnbuckle ${s} ${klass}">${TB}</span>`;
+        row.appendChild(cell);
+      });
+    }
+    fill('rowLight','');
+    fill('rowDark','');
+    fill('rowSmall','sm');
+  </script>
+</body>
+</html>
