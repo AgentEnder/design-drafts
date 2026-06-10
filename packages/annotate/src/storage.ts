@@ -68,23 +68,19 @@ export function loadAnnotations(): Annotation[] {
   return safeRead();
 }
 
-// Enumerate every annotation set in localStorage for this origin, keyed by
-// the page URL. Used by the panel to surface annotations made on sibling
-// draft pages so reviewers can see the whole session at once.
-export function loadAnnotationsByUrl(): Map<string, Annotation[]> {
+// Enumerate every annotation set in localStorage that belongs to `scope`,
+// keyed by the page URL. `scope` is the draft root (the directory holding the
+// manifest), so the panel surfaces annotations made on sibling pages of *this*
+// draft — not every draft that happens to share the origin (multiple drafts are
+// deployed under one GitHub Pages origin at different sub-paths).
+export function loadAnnotationsByUrl(scope: string): Map<string, Annotation[]> {
   const out = new Map<string, Annotation[]>();
   try {
-    const origin = window.location.origin;
     for (let i = 0; i < window.localStorage.length; i++) {
       const key = window.localStorage.key(i);
       if (!key || !key.startsWith(STORAGE_PREFIX)) continue;
       const url = key.slice(STORAGE_PREFIX.length);
-      try {
-        const parsed = new URL(url);
-        if (parsed.origin !== origin) continue;
-      } catch {
-        continue;
-      }
+      if (!url.startsWith(scope)) continue;
       const raw = window.localStorage.getItem(key);
       if (!raw) continue;
       try {

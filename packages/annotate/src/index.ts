@@ -13,6 +13,11 @@
 //      the panel.
 //   4. Deactivation: stop listening, hide overlay, keep storage intact.
 
+import {
+  discoverManifest,
+  draftRoot,
+} from '@design-drafts/conventions/discover';
+
 import { pickAtPoint, type PickResult } from './picker.js';
 import {
   buildSelector,
@@ -58,6 +63,15 @@ export interface AnnotateOverlayOptions {
   triggerElement?: HTMLElement | null;
 }
 
+// Minimal "is this a draft manifest" gate for root discovery. Annotate only
+// needs to confirm a manifest is present to locate the draft root — the toolbar
+// owns the fuller shape check — so we keep this cheap and dependency-free.
+function isManifestLike(raw: unknown): raw is { name: string } {
+  if (!raw || typeof raw !== 'object') return false;
+  const v = raw as { name?: unknown; pages?: unknown };
+  return typeof v.name === 'string' && Array.isArray(v.pages);
+}
+
 class AnnotateOverlay {
   private host: HTMLElement | null = null;
   private root: ShadowRoot | null = null;
@@ -83,6 +97,12 @@ class AnnotateOverlay {
   private pinLayer: HTMLElement | null = null;
 
   private active = false;
+  // The draft this page belongs to, used to scope which sibling pages' annotations
+  // appear in the panel. Defaults to the origin (every page on the host) until the
+  // manifest is found, then narrows to the draft root so co-deployed drafts don't
+  // bleed into each other. Resolved lazily on first activation.
+  private draftScope: string = window.location.origin + '/';
+  private scopeRequested = false;
   private hovered: PickResult | null = null;
   private composing: { selector: SelectorBundle; element: Element } | null =
     null;
@@ -146,8 +166,22 @@ class AnnotateOverlay {
     return this.active;
   }
 
+  // Find the draft root once, the first time the overlay is used. Until it
+  // resolves the panel is origin-scoped (a harmless superset); on success it
+  // narrows and re-renders any open panel.
+  private ensureDraftScope(): void {
+    if (this.scopeRequested) return;
+    this.scopeRequested = true;
+    void discoverManifest(window.location.href, isManifestLike).then((found) => {
+      if (!found) return;
+      this.draftScope = draftRoot(found.manifestUrl);
+      if (this.panelBodyEl) this.renderPanel();
+    });
+  }
+
   activate(): void {
     if (this.active) return;
+    this.ensureDraftScope();
     this.mount();
     this.active = true;
     document.addEventListener('pointermove', this.onPointerMove, true);
@@ -534,7 +568,7 @@ class AnnotateOverlay {
     if (!this.panelBodyEl || !this.panelTabsEl) return;
 
     const currentUrl = currentPageUrl();
-    const allByUrl = loadAnnotationsByUrl();
+    const allByUrl = loadAnnotationsByUrl(this.draftScope);
     // Always show the current page as a tab even if it has no annotations
     // yet — the panel doubles as an empty-state prompt.
     if (!allByUrl.has(currentUrl)) allByUrl.set(currentUrl, []);

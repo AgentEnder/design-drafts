@@ -116,6 +116,9 @@ importers:
 
   packages/annotate:
     devDependencies:
+      '@design-drafts/conventions':
+        specifier: workspace:*
+        version: link:../conventions
       '@types/node':
         specifier: 'catalog:'
         version: 18.16.9
