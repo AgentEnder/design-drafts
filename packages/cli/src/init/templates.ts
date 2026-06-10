@@ -197,10 +197,10 @@ export const DRAFT_INDEX_HTML = `<!doctype html>
 
     <!--
       design-drafts overlays, loaded from the CDN — no build step, no file to copy:
-        - toolbar:  switches between the axes declared in draft.config.json
+        - toolbar:  switches between the axes declared in design-drafts.config.json
         - annotate: lets reviewers leave comments anchored to the page
       Both are inert until they have something to do (the toolbar needs a
-      draft.config.json; annotate waits for ?annotate=1 or its toggle), so they
+      design-drafts.config.json; annotate waits for ?annotate=1 or its toggle), so they
       are safe to keep on every page. Pinned to the current major (@0); drop a
       tag to remove that overlay, or bump the pin when you upgrade. See each
       package's README for self-hosting and version options.

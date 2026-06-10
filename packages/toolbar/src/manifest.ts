@@ -7,18 +7,21 @@ export interface ResolvedManifest {
 }
 
 /**
- * Fetch the draft manifest from `/draft.config.json`. Returns null if the file
- * is missing or unparseable — callers should treat that as "this isn't a
- * draft page, do nothing".
+ * Fetch the draft manifest from `/design-drafts.config.json`. Returns null if
+ * the file is missing or unparseable — callers should treat that as "this isn't
+ * a draft page, do nothing".
  *
  * Note: full schema validation lives in `@design-drafts/conventions`'s
  * `parseDraftManifest`, but it pulls in ajv (~100KB) which would blow the
  * toolbar bundle budget. We do a minimal structural shape check instead and
- * trust that anything served at `/draft.config.json` was written by tooling
- * that already ran the strict validator.
+ * trust that anything served at `/design-drafts.config.json` was written by
+ * tooling that already ran the strict validator.
  */
 export async function loadManifest(): Promise<ResolvedManifest | null> {
-  const manifestUrl = new URL('/draft.config.json', window.location.origin);
+  const manifestUrl = new URL(
+    '/design-drafts.config.json',
+    window.location.origin
+  );
   let response: Response;
   try {
     response = await fetch(manifestUrl.href, { cache: 'no-cache' });

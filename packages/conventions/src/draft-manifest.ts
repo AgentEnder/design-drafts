@@ -154,7 +154,7 @@ export const DraftManifestSchema = Type.Object(
     $id: 'https://design-drafts.dev/schemas/draft-manifest.schema.json',
     title: 'DraftManifest',
     description:
-      'Machine-readable description of a design draft. Lives at the root of a draft directory as draft.config.json. A draft is a proposal made up of one or more axes; each page is a specific combination of axis choices realised as an HTML file.',
+      'Machine-readable description of a design draft. Lives at the root of a draft directory as design-drafts.config.json. A draft is a proposal made up of one or more axes; each page is a specific combination of axis choices realised as an HTML file.',
     additionalProperties: false,
   }
 );

@@ -8,7 +8,6 @@ export const CONFIG_FILENAME = 'design-drafts.config.json';
 export const DEFAULT_PREFIX = 'drafts/';
 
 export const homeConfigPath = join(homedir(), CONFIG_FILENAME);
-export const localConfigPath = join(process.cwd(), CONFIG_FILENAME);
 
 // JsonFile() walks up from cwd and only finds the nearest match, which means
 // the home-level config is invisible when cwd isn't under $HOME. Register an
@@ -55,27 +54,6 @@ export async function promptForValue(
   if (typeof value !== 'string') {
     process.exit(1);
   }
-  return value;
-}
-
-export async function promptAndPersist(
-  existing: string | undefined,
-  argKey: string,
-  configPath: string,
-  promptMessage: string,
-  // Optional extra check, run in the prompt so an invalid value is re-prompted
-  // and never persisted. Returns an error message, or undefined when valid.
-  validate?: (value: string) => string | undefined
-): Promise<string> {
-  if (existing) return existing;
-
-  const value = await promptForValue(existing, argKey, promptMessage, validate);
-
-  writeFileSync(
-    configPath,
-    JSON.stringify({ ...readConfig(configPath), [argKey]: value }, null, 2) +
-      '\n'
-  );
   return value;
 }
 

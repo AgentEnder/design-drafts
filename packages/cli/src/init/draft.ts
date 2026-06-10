@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 
-import { localConfigPath, promptAndPersist } from '../config';
+import { promptForValue } from '../config';
 import { slugifySiteName, validateSiteName } from '../site-name';
 import { draftConfig, DRAFT_INDEX_HTML } from './templates';
 
@@ -29,10 +29,9 @@ export async function initDraft(opts: InitDraftOptions): Promise<void> {
     mkdirSync(targetDir, { recursive: true });
   }
 
-  let siteName = await promptAndPersist(
+  let siteName = await promptForValue(
     opts.siteName,
     'site-name',
-    localConfigPath,
     'Site name for this draft:'
   );
 
@@ -50,7 +49,7 @@ export async function initDraft(opts: InitDraftOptions): Promise<void> {
   // scaffold.
   console.log(`\nScaffolding draft "${siteName}" in ${targetDir}:`);
   const wroteManifest = writeIfAbsent(
-    join(targetDir, 'draft.config.json'),
+    join(targetDir, 'design-drafts.config.json'),
     draftConfig(siteName, new Date().toISOString())
   );
   const wroteIndex = writeIfAbsent(

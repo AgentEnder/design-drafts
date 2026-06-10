@@ -74,7 +74,7 @@ describe('createPreviewServer', () => {
 
   beforeEach(async () => {
     dir = mkdtempSync(join(tmpdir(), 'design-drafts-preview-'));
-    writeFileSync(join(dir, 'draft.config.json'), '{}');
+    writeFileSync(join(dir, 'design-drafts.config.json'), '{}');
     writeFileSync(join(dir, 'index.html'), '<h1>home</h1>');
     mkdirSync(join(dir, 'pages', 'sub'), { recursive: true });
     writeFileSync(join(dir, 'pages', 'sub', 'p.html'), '<h1>nested</h1>');
@@ -134,7 +134,7 @@ describe('createPreviewServer with no root index.html', () => {
 
   beforeEach(async () => {
     dir = mkdtempSync(join(tmpdir(), 'design-drafts-preview-noindex-'));
-    writeFileSync(join(dir, 'draft.config.json'), '{}');
+    writeFileSync(join(dir, 'design-drafts.config.json'), '{}');
     writeFileSync(join(dir, 'about.html'), '<h1>about</h1>');
 
     server = createPreviewServer(dir);

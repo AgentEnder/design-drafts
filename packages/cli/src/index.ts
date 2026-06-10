@@ -12,15 +12,12 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 
-import { cli, ConfigurationProviders } from 'cli-forge';
+import { cli } from 'cli-forge';
 
 import pkg from '../package.json';
 import {
-  CONFIG_FILENAME,
   homeJsonProvider,
-  localConfigPath,
   persistHomeConfigValue,
-  promptAndPersist,
   promptForValue,
   resolvePrefix,
 } from './config';
@@ -32,7 +29,7 @@ import { initHost } from './init/host';
 import { init } from './init/init';
 import { preview } from './preview';
 import { refAdd } from './ref-add';
-import { validateSiteName } from './site-name';
+import { slugifySiteName, validateSiteName } from './site-name';
 import { validatePrefix, validateRepo } from './validate';
 
 const CLI_VERSION: string = pkg.version;
@@ -151,6 +148,45 @@ function readManifestPrompt(
   return prompt.replace(/\s+/g, ' ');
 }
 
+/** Reads the manifest's human-readable `name` so the push can derive a
+ * site-name from it. Returns undefined when there is no manifest, it doesn't
+ * parse, or it has no usable `name`. */
+function readManifestName(manifestPath: string): string | undefined {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(manifestPath, 'utf-8'));
+  } catch {
+    return undefined;
+  }
+  if (!parsed || typeof parsed !== 'object') return undefined;
+  const name = (parsed as Record<string, unknown>).name;
+  return typeof name === 'string' && name.trim() ? name : undefined;
+}
+
+/**
+ * Resolves the site-name (the branch/preview directory name) for a push.
+ *
+ * Precedence: an explicit `--site-name` wins; otherwise we derive it from the
+ * manifest's `name` by slugifying it (so "Toolbar redesign demo" becomes
+ * "toolbar-redesign-demo"). Only when there is no manifest to read from do we
+ * fall back to prompting. The manifest is the single per-draft store now, so we
+ * never persist the answer to a separate file.
+ */
+async function resolveSiteName(
+  explicit: string | undefined,
+  manifestPath: string
+): Promise<string> {
+  if (explicit) return explicit;
+
+  const fromManifest = readManifestName(manifestPath);
+  if (fromManifest) {
+    const slug = slugifySiteName(fromManifest);
+    if (slug) return slug;
+  }
+
+  return promptForValue(undefined, 'site-name', 'Site name for this preview:');
+}
+
 function sanitizeAuthorName(name: string): string {
   // git's `Name <email>` author format treats `<` and `>` as delimiters.
   // Replace them with parentheses so we never produce a malformed line.
@@ -175,7 +211,7 @@ interface CommitMessageOptions {
  *     source-repo: <repo>
  *     author: <Name <email>>
  *     prompt: <one-line summary or path>
- *     draft-config-sha: <sha256 of draft.config.json>
+ *     draft-config-sha: <sha256 of design-drafts.config.json>
  *
  * Each trailer line is omitted when its data is unavailable (no source git
  * repo, no manifest, no `prompt` field, etc.). The site-name subject line is
@@ -228,14 +264,16 @@ async function pushHandler(args: PushArgs): Promise<void> {
     'GitHub repo (org/repo):',
     (v) => (validateRepo(v).ok ? undefined : 'use "owner/name" form')
   );
-  const siteName = await promptAndPersist(
-    args['site-name'],
-    'site-name',
-    localConfigPath,
-    'Site name for this preview:'
-  );
-  const prefix = resolvePrefix(args.prefix);
   const sourcePath = resolve(args.path ?? '.');
+  if (!existsSync(sourcePath)) {
+    console.error(`Path does not exist: ${sourcePath}`);
+    process.exit(1);
+  }
+  // The manifest is the single per-draft config; derive the site-name from its
+  // `name` unless an explicit --site-name overrides it.
+  const manifestPath = join(sourcePath, 'design-drafts.config.json');
+  const siteName = await resolveSiteName(args['site-name'], manifestPath);
+  const prefix = resolvePrefix(args.prefix);
 
   const validation = validateSiteName(siteName);
   if (!validation.ok) {
@@ -259,16 +297,10 @@ async function pushHandler(args: PushArgs): Promise<void> {
     process.exit(1);
   }
 
-  if (!existsSync(sourcePath)) {
-    console.error(`Path does not exist: ${sourcePath}`);
-    process.exit(1);
-  }
-
   // Capture metadata about the SOURCE path before we copy it into a tmpdir.
   // The tmpdir gets a fresh `git init` and won't carry the source repo's
   // history, remotes, or config — so we have to read all of that from the
   // user's actual working directory.
-  const manifestPath = join(sourcePath, 'draft.config.json');
   const metadata = getSourceMetadata(sourcePath);
   const draftConfigSha = hashManifest(manifestPath);
   const prompt = readManifestPrompt(manifestPath, sourcePath);
@@ -342,8 +374,10 @@ const app = cli('design-drafts', {
           'Ref of the canonical repo to scaffold the host site from (default: matching version tag, else main)',
       })
       .env({ prefix: 'DESIGN_DRAFTS' })
+      // Only the home config feeds CLI defaults (repo, prefix). There is no
+      // per-project options file: a draft's `design-drafts.config.json` IS the
+      // manifest, read explicitly where needed, not merged as CLI options.
       .config(homeJsonProvider)
-      .config(ConfigurationProviders.JsonFile(CONFIG_FILENAME))
       .command('init', {
         description:
           'Set up a host (if needed) and scaffold a draft, ready to publish',
@@ -429,7 +463,7 @@ const app = cli('design-drafts', {
                 .option('draft', {
                   type: 'string',
                   description:
-                    'Path to the draft directory containing draft.config.json (default: cwd).',
+                    'Path to the draft directory containing design-drafts.config.json (default: cwd).',
                 }),
             handler: (a) =>
               runHandler(() => {
@@ -456,7 +490,7 @@ const app = cli('design-drafts', {
               type: 'string',
               default: '.',
               description:
-                'Draft directory to serve (must contain draft.config.json; default: cwd)',
+                'Draft directory to serve (must contain design-drafts.config.json; default: cwd)',
             })
             .option('port', {
               type: 'number',
