@@ -6,8 +6,8 @@ the design choices declared in a draft's `draft.config.json`.
 A draft is described as a set of **axes** (e.g. `theme`, `layout`, `page`)
 and a sparse list of **pages**, where each page records the axis coordinates
 it represents. The toolbar renders one switcher per axis, highlights the
-choices that match the page you're currently on, and disables choices that
-have no matching neighbour from your current coordinate.
+choices that match the page you're currently on, and auto-routes to the nearest
+page when you pick a choice that wasn't drafted at the current coordinate.
 
 The toolbar is a router with a UI: every page in the manifest is a real HTML
 file, and switching simply navigates to it. There is no client-side CSS
@@ -39,17 +39,19 @@ The script:
 1. Fetches `/draft.config.json`. If it 404s or is malformed, the script exits
    silently — safe to ship on any page.
 2. Renders an unobtrusive bar at the bottom of the viewport with one switcher
-   per axis declared in the manifest. The axis name (or its `description`) is
-   the section label.
+   per axis declared in the manifest. Each axis and choice is shown by its
+   `label` (falling back to a humanised form of its `name`); the longer
+   `description` becomes a tooltip.
 3. Determines the current page by matching the URL against each page's `path`,
    then for each axis highlights the choice the current page sits on.
-4. Disables choices that have no neighbour at the current coordinates — i.e.
-   when no page exists with the same coordinates except that axis flipped to
-   the candidate choice. Sparse coverage is fine; you simply can't navigate
-   to a combination that wasn't drafted.
+4. **Auto-routes sparse choices.** Picking a choice with no exact one-axis
+   neighbour navigates to the nearest page that demonstrates it (the one that
+   moves the fewest other axes) and notes what else changed, e.g. "also sets
+   Theme → Calm". A choice is disabled only when no page uses it at all.
 5. On selecting a different choice, navigates to the matching page's file.
    The current querystring is preserved so shareable URLs survive page
-   switches.
+   switches; after an auto-route, the axes that moved briefly highlight on the
+   destination page.
 
 ## Visibility
 
@@ -64,11 +66,17 @@ contenteditable regions.
 
 ## What it looks like
 
-A single 44-pixel-tall bar centered along the bottom edge with a thin
-hairline border, solid near-black surface (no backdrop blur), and one
-restrained accent color on the active selection. Each axis is a labeled
-native `<select>`, which keeps keyboard and screen-reader behavior
-correct without re-implementing dropdown logic.
+A compact bar centered along the bottom edge: a light "paper" surface with a
+hairline border and a soft elevation shadow (so it reads cleanly over both light
+and dark pages), system sans type, and one restrained accent on the active
+selection. Each axis is a button that opens a small custom listbox; going custom
+lets each choice carry a secondary "also sets …" hint for auto-routed
+combinations, and the listbox implements the keyboard and ARIA behavior
+(`aria-activedescendant`, arrow keys, type-ahead, Esc) a native `<select>` would
+otherwise provide.
+
+Plugins slotted into the bar (e.g. `<dd-annotations>`) inherit the bar's theme
+through the `--dd-*` CSS custom properties declared on the host element.
 
 ## Build
 

@@ -1,0 +1,67 @@
+{
+  "name": "Toolbar redesign demo",
+  "description": "A tiny local draft for iterating on the variant toolbar. The `media` axis is deliberately sparse — `illustration` is only demonstrated under the `calm` theme — so the sparse/auto-route behaviour has something to chew on.",
+  "axes": [
+    {
+      "name": "theme",
+      "label": "Theme",
+      "description": "Overall visual temperament of the hero — calm vs loud vs editorial.",
+      "choices": [
+        {
+          "name": "calm",
+          "label": "Calm",
+          "description": "Soft neutrals, generous whitespace, understated type."
+        },
+        {
+          "name": "bold",
+          "label": "Bold",
+          "description": "High-contrast dark canvas with a single saturated accent."
+        },
+        {
+          "name": "editorial",
+          "label": "Editorial",
+          "description": "Serif-forward, magazine-style with rules and captions."
+        }
+      ]
+    },
+    {
+      "name": "media",
+      "label": "Media",
+      "description": "What fills the hero's visual slot.",
+      "choices": [
+        {
+          "name": "photo",
+          "label": "Photo",
+          "description": "Full-bleed photographic background."
+        },
+        {
+          "name": "illustration",
+          "label": "Illustration",
+          "description": "Flat vector illustration — only demonstrated under the Calm theme, so it is unreachable from Bold/Editorial by flipping one axis."
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "coordinates": { "theme": "calm", "media": "photo" },
+      "path": "index.html",
+      "description": "Canonical combination — the toolbar's home base."
+    },
+    {
+      "coordinates": { "theme": "bold", "media": "photo" },
+      "path": "bold-photo.html",
+      "description": "Dark page — tests the light/paper bar's contrast over a dark hero."
+    },
+    {
+      "coordinates": { "theme": "editorial", "media": "photo" },
+      "path": "editorial-photo.html"
+    },
+    {
+      "coordinates": { "theme": "calm", "media": "illustration" },
+      "path": "calm-illustration.html",
+      "description": "The only page with media=illustration. Selecting Illustration from Bold/Editorial must auto-route here and also flip Theme to Calm."
+    }
+  ],
+  "createdAt": "2026-06-09T00:00:00.000Z"
+}

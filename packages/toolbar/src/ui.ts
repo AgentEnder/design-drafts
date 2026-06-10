@@ -1,9 +1,10 @@
 import type { DraftAxis, DraftManifest } from '@design-drafts/conventions';
+import { renderAxisControl, type DropdownChoice } from './dropdown.js';
 import {
   findCurrentPage,
-  findNeighbourPage,
-  indexPagesByCoords,
+  humanizeName,
   pageHref,
+  resolveChoiceTarget,
 } from './manifest.js';
 import { TOOLBAR_STYLES } from './styles.js';
 
@@ -14,6 +15,10 @@ export interface ToolbarHandles {
   isTucked: () => boolean;
   destroy: () => void;
 }
+
+/** sessionStorage key carrying which axes moved across an auto-route, so the
+ * destination page can briefly highlight them. */
+const ROUTE_HIGHLIGHT_KEY = 'dd-toolbar-routed';
 
 /**
  * Populates an already-existing host element (a `<dd-toolbar>` custom
@@ -37,8 +42,7 @@ export function populateToolbar(
   if (existingHandles) return existingHandles;
 
   setTucked(host, initiallyTucked);
-  const shadow =
-    host.shadowRoot ?? host.attachShadow({ mode: 'open' });
+  const shadow = host.shadowRoot ?? host.attachShadow({ mode: 'open' });
 
   const style = document.createElement('style');
   style.textContent = TOOLBAR_STYLES;
@@ -53,15 +57,18 @@ export function populateToolbar(
   const brand = document.createElement('div');
   brand.className = 'brand';
   brand.title = manifest.name;
-  brand.innerHTML = `<span class="dot" aria-hidden="true"></span><span>drafts</span>`;
+  brand.innerHTML = `<span class="dot" aria-hidden="true"></span><span>Drafts</span>`;
   bar.appendChild(brand);
 
   const currentPage = findCurrentPage(manifest, manifestUrl);
   const currentCoords = currentPage?.coordinates ?? {};
-  const pageIndex = indexPagesByCoords(manifest.pages);
+  const axes = manifest.axes ?? [];
+  const labels = makeLabelResolver(axes);
 
-  for (const axis of manifest.axes ?? []) {
-    bar.appendChild(renderAxis(axis, currentCoords, pageIndex, manifestUrl));
+  for (const axis of axes) {
+    bar.appendChild(
+      renderAxis(axis, currentCoords, manifest, manifestUrl, labels)
+    );
   }
 
   // Plugin slot: light-DOM children of the host (e.g. `<dd-annotations>`)
@@ -71,6 +78,8 @@ export function populateToolbar(
   bar.appendChild(slot);
 
   bar.appendChild(renderHideAction(host));
+
+  applyRouteHighlight(bar);
 
   const handles: ToolbarHandles = {
     host,
@@ -91,84 +100,124 @@ interface HostWithHandles extends HTMLElement {
   __ddToolbarHandles?: ToolbarHandles;
 }
 
+interface LabelResolver {
+  axisLabel: (axisName: string) => string;
+  choiceLabel: (axisName: string, choiceName: string) => string;
+}
+
+/**
+ * Resolve display labels for axes and choices. Prefers the manifest's explicit
+ * `label`, falling back to a humanised form of the identifier `name`.
+ */
+function makeLabelResolver(axes: DraftAxis[]): LabelResolver {
+  const byName = new Map(axes.map((a) => [a.name, a]));
+  return {
+    axisLabel: (axisName) => {
+      const axis = byName.get(axisName);
+      return axis?.label ?? humanizeName(axisName);
+    },
+    choiceLabel: (axisName, choiceName) => {
+      const choice = byName
+        .get(axisName)
+        ?.choices.find((c) => c.name === choiceName);
+      return choice?.label ?? humanizeName(choiceName);
+    },
+  };
+}
+
 function renderAxis(
   axis: DraftAxis,
   currentCoords: Record<string, string>,
-  pageIndex: Map<string, import('@design-drafts/conventions').DraftPage>,
-  manifestUrl: URL
+  manifest: DraftManifest,
+  manifestUrl: URL,
+  labels: LabelResolver
 ): HTMLElement {
-  const group = document.createElement('div');
-  group.className = 'group';
-  group.dataset.axis = axis.name;
-
   const currentChoice = currentCoords[axis.name];
-  const onAxis = currentChoice !== undefined;
-  if (onAxis) group.dataset.active = 'true';
 
-  const labelText = (axis.description ?? axis.name).toUpperCase();
+  const choices: DropdownChoice[] = axis.choices.map((choice) => {
+    const target = resolveChoiceTarget(
+      axis.name,
+      choice.name,
+      currentCoords,
+      manifest.pages
+    );
+    // Sparse coverage: reaching this choice means moving other axes too. Spell
+    // out which, so the cross-axis jump isn't a surprise.
+    const hint =
+      target && target.changedAxes.length > 0
+        ? 'also sets ' +
+          target.changedAxes
+            .map((c) => `${labels.axisLabel(c.axis)} → ${labels.choiceLabel(c.axis, c.value)}`)
+            .join(', ')
+        : undefined;
 
-  const label = document.createElement('div');
-  label.className = 'group-label';
-  label.textContent = labelText;
-  group.appendChild(label);
-
-  const select = document.createElement('select');
-  select.setAttribute('aria-label', labelText);
-
-  // Map option value (the choice name) to its href so we can navigate on
-  // change. Disabled options are present but have no href entry.
-  const hrefByChoice = new Map<string, string>();
-
-  if (!onAxis) {
-    // The current page doesn't sit on this axis. Show a placeholder so the
-    // <select> still reads "no selection" rather than auto-picking choice 0.
-    const placeholder = document.createElement('option');
-    placeholder.value = '';
-    placeholder.textContent = `Select ${axis.name}…`;
-    placeholder.selected = true;
-    placeholder.disabled = true;
-    select.appendChild(placeholder);
-  }
-
-  for (const choice of axis.choices) {
-    const option = document.createElement('option');
-    option.value = choice.name;
-    option.textContent = choice.description ?? choice.name;
-
-    if (onAxis) {
-      const target = findNeighbourPage(
-        axis,
-        choice.name,
-        currentCoords,
-        pageIndex
-      );
-      if (target) {
-        hrefByChoice.set(choice.name, pageHref(target, manifestUrl));
-      } else {
-        option.disabled = true;
-      }
-      if (choice.name === currentChoice) option.selected = true;
-    } else {
-      // Off-axis: every choice is unreachable from here without picking
-      // values for the missing axes. Disable rather than guess.
-      option.disabled = true;
-    }
-
-    select.appendChild(option);
-  }
-
-  select.addEventListener('change', () => {
-    const href = hrefByChoice.get(select.value);
-    if (href) window.location.href = href;
+    return {
+      value: choice.name,
+      label: choice.label ?? humanizeName(choice.name),
+      hint,
+      title: choice.description,
+      href: target ? pageHref(target.page, manifestUrl) : undefined,
+      selected: choice.name === currentChoice,
+    };
   });
 
-  group.appendChild(select);
+  return renderAxisControl({
+    axisName: axis.name,
+    axisLabel: labels.axisLabel(axis.name),
+    axisTitle: axis.description,
+    active: currentChoice !== undefined,
+    valueLabel:
+      currentChoice !== undefined
+        ? labels.choiceLabel(axis.name, currentChoice)
+        : null,
+    choices,
+    onSelect: (choice) => {
+      if (choice.href === undefined) return;
+      const target = resolveChoiceTarget(
+        axis.name,
+        choice.value,
+        currentCoords,
+        manifest.pages
+      );
+      const changedAxisNames = target
+        ? [axis.name, ...target.changedAxes.map((c) => c.axis)]
+        : [axis.name];
+      rememberRoute(choice.href, changedAxisNames);
+      window.location.href = choice.href;
+    },
+  });
+}
 
-  const underline = document.createElement('div');
-  underline.className = 'underline';
-  group.appendChild(underline);
+/** Record, for the next page load, which axes the upcoming navigation moves. */
+function rememberRoute(href: string, axisNames: string[]): void {
+  try {
+    const path = new URL(href, window.location.href).pathname;
+    sessionStorage.setItem(
+      ROUTE_HIGHLIGHT_KEY,
+      JSON.stringify({ path, axes: axisNames })
+    );
+  } catch {
+    // sessionStorage may be unavailable (privacy mode); the highlight is a
+    // nicety, so skip silently.
+  }
+}
 
-  return group;
+/** On load, flash the axis groups that the auto-route moved, then forget it. */
+function applyRouteHighlight(bar: HTMLElement): void {
+  let payload: { path: string; axes: string[] } | null = null;
+  try {
+    const raw = sessionStorage.getItem(ROUTE_HIGHLIGHT_KEY);
+    if (raw) payload = JSON.parse(raw);
+    sessionStorage.removeItem(ROUTE_HIGHLIGHT_KEY);
+  } catch {
+    return;
+  }
+  if (!payload || payload.path !== window.location.pathname) return;
+
+  for (const axisName of payload.axes) {
+    const group = bar.querySelector(`.group[data-axis="${CSS.escape(axisName)}"]`);
+    group?.classList.add('just-changed');
+  }
 }
 
 function renderHideAction(host: HTMLElement): HTMLElement {
@@ -176,6 +225,7 @@ function renderHideAction(host: HTMLElement): HTMLElement {
   wrap.className = 'actions';
   const button = document.createElement('button');
   button.type = 'button';
+  button.className = 'hide';
   button.setAttribute('aria-label', 'Hide toolbar');
   button.title = 'Hide (Cmd/Ctrl + .) — peek by moving mouse to bottom edge';
   button.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>`;

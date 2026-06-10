@@ -5,7 +5,12 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { contentTypeFor, createPreviewServer, resolveServedFile } from './preview';
+import {
+  collectHtmlPages,
+  contentTypeFor,
+  createPreviewServer,
+  resolveServedFile,
+} from './preview';
 
 describe('contentTypeFor', () => {
   it('maps known extensions', () => {
@@ -111,8 +116,71 @@ describe('createPreviewServer', () => {
     expect(res.status).toBe(404);
   });
 
-  it('returns 404 for a directory without an index.html', async () => {
+  it('serves a generated page index for a directory without an index.html', async () => {
     const res = await fetch(`${baseUrl}/pages/sub/`);
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('text/html; charset=utf-8');
+    const html = await res.text();
+    // The fallback lists every page in the draft, linked root-absolute.
+    expect(html).toContain('href="/pages/sub/p.html"');
+    expect(html).toContain('href="/pages/withindex/index.html"');
+  });
+});
+
+describe('createPreviewServer with no root index.html', () => {
+  let dir: string;
+  let server: ReturnType<typeof createPreviewServer>;
+  let baseUrl: string;
+
+  beforeEach(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'design-drafts-preview-noindex-'));
+    writeFileSync(join(dir, 'draft.config.json'), '{}');
+    writeFileSync(join(dir, 'about.html'), '<h1>about</h1>');
+
+    server = createPreviewServer(dir);
+    await new Promise<void>((res) => server.listen(0, '127.0.0.1', res));
+    const { port } = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${port}`;
+  });
+
+  afterEach(async () => {
+    await new Promise<void>((res) => server.close(() => res()));
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('serves a generated page index at the root', async () => {
+    const res = await fetch(`${baseUrl}/`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('text/html; charset=utf-8');
+    expect(await res.text()).toContain('href="/about.html"');
+  });
+});
+
+describe('collectHtmlPages', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'design-drafts-collect-'));
+    writeFileSync(join(dir, 'b.html'), '');
+    writeFileSync(join(dir, 'a.html'), '');
+    writeFileSync(join(dir, 'styles.css'), '');
+    mkdirSync(join(dir, 'pages', 'sub'), { recursive: true });
+    writeFileSync(join(dir, 'pages', 'sub', 'p.html'), '');
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('returns html pages as sorted, root-relative POSIX paths', () => {
+    expect(collectHtmlPages(dir)).toEqual([
+      'a.html',
+      'b.html',
+      'pages/sub/p.html',
+    ]);
+  });
+
+  it('ignores non-html files', () => {
+    expect(collectHtmlPages(dir)).not.toContain('styles.css');
   });
 });

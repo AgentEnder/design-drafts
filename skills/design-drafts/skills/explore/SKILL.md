@@ -47,6 +47,25 @@ Capture the result for the `## Premise` section verbatim. Do not paraphrase into
 
 This is where the menu-of-options work happens. Walk through the axes that are likely to matter for this draft. For most marketing-style drafts that's `theme`, `layout`, and `voice`. For internal tools it's often `theme`, `density`, and `entry-state`. For docs it's `theme`, `layout`, and `nav-shape`. Pick what fits and tell the user what you picked: "I'm going to riff on three axes: theme, layout, and voice. Tell me to swap one out if those aren't the dimensions you care about."
 
+**The page's job is the floor under every axis, not an axis itself.** Axes are
+aesthetic dimensions — *how* the page looks and reads. They are not what the page
+has to *accomplish*. A marketing page still has to show the product and give a
+reason to buy; a docs page still has to get someone to the answer. Keep the
+premise's takeaway (from Phase 1) in view: if every concept you're proposing is a
+mood or a skin and none of them is about doing the page's job, you've drifted into
+decoration. The fastest way drafts go wrong here is optimizing "which vibe" while
+nobody held onto "and it still has to sell the thing" — the downstream skill then
+builds beautiful pages that all forget the point.
+
+**Several dimensions the user cares about = several axes. Don't fold them into
+one.** If the user wants to compare themes *and* layouts *and* motion treatments,
+that is three axes the toolbar can switch independently — not one mega-axis called
+`structure` whose choices each bundle a theme + layout + motion together. Bundled
+axes look thorough but produce a single one-dimensional sweep where the reviewer
+can't isolate "what if I keep this layout but try the other theme?" If you notice
+all the picks landing under one axis while the user keeps naming distinct things
+to vary, split them apart and name each axis.
+
 For each axis, propose **3–5 named concept directions**. Concepts have:
 
 - A **name** that reads like a stance, not a feature ("Quiet Instrument", "Studio Notebook", "Operations Console" — not "Theme A" or "Dark Mode").
@@ -176,6 +195,8 @@ Things that make the skill worse:
 - **Skipping the CLI for references.** If the user pastes a URL and you write it into `## References gathered` without running `design-drafts ref add`, the references protocol breaks: the URL is in `explore.md` but not in `links.md`, and the variants skill / `frontend-design` won't see it. Always run the CLI; the doc points *at* what the CLI captured.
 - **Pulling from training-data clichés.** This skill exists to widen the design space, not to recreate the median landing page. If a concept description rhymes with the anti-pattern catalog, replace it. If you can't, drop the concept.
 - **Converging too early.** "OK so we're going with Quiet Instrument, here is your plan" — wrong skill, wrong moment. Convergence is the brief's job. End the session with picks plus open threads, not with a finished design.
+- **Collapsing every variation into one swept axis.** If the user wants to compare several distinct dimensions and you capture them as one axis (`structure`) whose choices bundle theme + layout + motion together, the downstream draft becomes a single one-dimensional sweep, not the independent-axis comparison the toolbar is built for. When the user keeps naming distinct things to vary, those are distinct axes — name them separately.
+- **Proposing only skins.** If every axis and concept is about mood/palette/typography and none touches what the page has to *accomplish*, you've optimized decoration over job. The page's job is the floor (Phase 1's takeaway); keep it in view while you riff on aesthetics.
 - **Generating the explore doc without a conversation.** If the user says "just brainstorm something for me," refuse and explain: the value of this skill is your reactions to my proposals — without you in the loop, I will produce the median draft. Then ask the first question.
 
 ## See also

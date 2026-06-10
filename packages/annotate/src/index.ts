@@ -948,6 +948,9 @@ function isQueryParamActive(): boolean {
  */
 const ANNOTATE_TAG = 'dd-annotations';
 
+// In integrated mode the trigger lives inside the toolbar's bar, so it reads
+// the toolbar's `--dd-*` theming vars (which cascade through the light-DOM slot)
+// to match its surface. Fallbacks keep it legible on a dark bar / standalone.
 const TRIGGER_STYLES = `
 :host { display: inline-flex; }
 .trigger {
@@ -955,24 +958,23 @@ const TRIGGER_STYLES = `
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0 12px;
+  padding: 0 13px;
   background: transparent;
   border: 0;
   font: inherit;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #9b9ba0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dd-text-dim, #9b9ba0);
   cursor: pointer;
   white-space: nowrap;
 }
-.trigger:hover { color: #f5f5f5; }
+.trigger:hover { color: var(--dd-text, #f5f5f5); }
 .trigger.active { color: #f97316; }
 .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #6b6b70;
+  background: var(--dd-text-dim, #6b6b70);
 }
 .trigger.active .dot { background: #f97316; }
 `;

@@ -37,12 +37,14 @@
   },
   "scripts": {
     "build": "tsdown",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@design-drafts/conventions": "workspace:*",
     "tsdown": "^0.21.7",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "nx": {
     "name": "toolbar"

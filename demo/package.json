@@ -1,0 +1,14 @@
+{
+  "name": "@design-drafts/demo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local-only draft for iterating on the toolbar and annotate overlays against the built workspace packages. Serve with `design-drafts preview demo` (or any static server rooted here) and refresh after rebuilding the packages.",
+  "dependencies": {
+    "@design-drafts/cli": "workspace:*",
+    "@design-drafts/annotate": "workspace:*",
+    "@design-drafts/toolbar": "workspace:*"
+  },
+  "scripts": {
+    "preview": "design-drafts preview"
+  }
+}

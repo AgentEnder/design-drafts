@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo · Editorial · Photo</title>
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font: 18px/1.7 Georgia, "Times New Roman", serif;
+        color: #1d1b18;
+        background: #fbfaf7;
+      }
+      .coord {
+        position: fixed; top: 12px; left: 12px;
+        font: 12px ui-monospace, monospace; color: #999185;
+        background: rgba(255,255,255,0.7); padding: 4px 8px; border-radius: 6px;
+      }
+      main { max-width: 760px; margin: 0 auto; padding: 16vh 24px 24vh; }
+      .eyebrow { font-family: ui-monospace, monospace; letter-spacing: 0.16em; text-transform: uppercase; font-size: 11px; color: #9a7b4f; margin: 0 0 14px; padding-bottom: 14px; border-bottom: 1px solid #ddd6c9; }
+      h1 { font-size: clamp(2.4rem, 6vw, 3.8rem); line-height: 1.08; margin: 14px 0 24px; font-weight: 400; letter-spacing: -0.01em; }
+      p.lead { font-size: 1.25rem; max-width: 60ch; color: #3a352d; font-style: italic; }
+      .cta { display: inline-block; margin-top: 28px; font-family: ui-monospace, monospace; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: #1d1b18; text-decoration: none; border-bottom: 2px solid #9a7b4f; padding-bottom: 2px; }
+    </style>
+  </head>
+  <body>
+    <div class="coord">theme: editorial &nbsp;·&nbsp; media: photo</div>
+    <main data-annotate-id="hero">
+      <p class="eyebrow" data-annotate-id="eyebrow">Editorial · Photo</p>
+      <h1 data-annotate-id="headline">A considered, magazine-style take.</h1>
+      <p class="lead" data-annotate-id="lead">
+        Serif type, hairline rules, and captions. Like Bold, this page has no
+        Illustration neighbour — choosing <strong>Media → Illustration</strong>
+        should route to Calm · Illustration and reflect the Theme change.
+      </p>
+      <a class="cta" href="#" data-annotate-id="cta">Read more</a>
+    </main>
+
+    <dd-toolbar><dd-annotations></dd-annotations></dd-toolbar>
+    <script src="./node_modules/@design-drafts/toolbar/dist/toolbar.js" defer></script>
+    <script src="./node_modules/@design-drafts/annotate/dist/annotate.js" defer></script>
+  </body>
+</html>

@@ -102,6 +102,18 @@ importers:
         specifier: 'catalog:'
         version: 8.0.16(@types/node@18.16.9)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.22.4)(yaml@2.8.3)
 
+  demo:
+    dependencies:
+      '@design-drafts/annotate':
+        specifier: workspace:*
+        version: link:../packages/annotate
+      '@design-drafts/cli':
+        specifier: workspace:*
+        version: link:../packages/cli
+      '@design-drafts/toolbar':
+        specifier: workspace:*
+        version: link:../packages/toolbar
+
   packages/annotate:
     devDependencies:
       '@types/node':
@@ -212,6 +224,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.4(@types/node@18.16.9)(vite@8.0.16(@types/node@18.16.9)(esbuild@0.28.0)(jiti@2.6.1)(tsx@4.22.4)(yaml@2.8.3))
 
 packages:
 

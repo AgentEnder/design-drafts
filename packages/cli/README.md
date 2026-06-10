@@ -66,6 +66,11 @@ design-drafts preview ./my-draft
   free port unless you set it explicitly).
 - `--no-open` — don't open a browser, just print the URL.
 
+When a requested directory has no `index.html` (e.g. a draft whose pages are
+`about.html`, `pricing.html`, … with no home page yet), the server returns a
+generated index linking to every `.html` page in the draft so you can navigate
+without one.
+
 ## Configuration
 
 Shared options (`--repo`, `--site-name`, `--template-ref`) can be supplied via

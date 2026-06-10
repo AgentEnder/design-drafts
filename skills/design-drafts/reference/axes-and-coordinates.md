@@ -55,13 +55,43 @@ cleanly.
 
 1. **Coverage is sparse by default.** Axes `theme × layout × variant` =
    2×2×3 = 12 possible points; you do not have to build all 12. Build the 4–8
-   that show the trade-offs you care about. The toolbar greys out switcher
-   choices that have no neighbour from the current coordinate.
+   that show the trade-offs you care about. The toolbar auto-routes to the
+   nearest page that demonstrates a choice, and greys a choice out only when no
+   page uses it at all.
 2. **Every page specifies every axis.** This is enforced by the validator. It
    lets the toolbar always answer "what are this page's coordinates?" without
    guessing. Use `none` for axes that don't apply to a page.
 3. **Paths are unique.** Two pages can't point at the same file. Choice-name
    values within `coordinates` must match a `name` declared on that axis.
+
+## Sparse coverage and auto-route
+
+The toolbar handles sparse grids by **auto-routing**. When you select a choice
+that has no page at the current coordinate (same on every axis but the one you
+flipped), the toolbar jumps to the *nearest* page that demonstrates that choice —
+the one that forces the fewest other axes to change — and shows what else moved
+("also sets Theme → Calm"). Ties break toward the closest page, then the
+earliest-declared in `pages[]`, which is why the canonical combination goes
+first. So a choice paired with only one value of another axis is **still
+reachable**; there are no greyed-out dead ends from scattered coverage.
+
+A choice is disabled only when **no page uses it at all**. That's the one real
+trap left: declare a choice on an axis but never build a page with it, and it
+shows up permanently greyed. So the rule shrinks to: **every choice must appear
+on at least one page.**
+
+Two things still make a draft nicer to review, even though they're no longer
+correctness requirements:
+
+- **Full cross** for small grids. A 2×2 or 2×3 is only four to six pages — just
+  build them all, and every switch is a clean one-axis flip with no sideways
+  jump.
+- **Connected sparse** if you drop combinations. Keep the set connected (sweep
+  one axis against a fixed baseline — a "plus sign" through the grid) rather than
+  scattering far-apart corners. Auto-route still reaches the corners, but from a
+  connected set each jump moves only one or two axes, so the "also sets …" hint
+  stays short and the change stays legible. Scattered corners make auto-route
+  rewrite several axes at once.
 
 ## The manifest shape (`draft.config.json`)
 
@@ -72,7 +102,7 @@ Lives at the root of the draft directory. Fields:
 | `name` | ✅ | human-readable label, non-empty string |
 | `pages` | ✅ | array, **at least one** `{ coordinates, path, description? }` |
 | `createdAt` | ✅ | ISO 8601 timestamp (`2026-06-08T12:00:00.000Z`) |
-| `axes` | optional | array of `{ name, description?, choices: [{ name, description? }] }` |
+| `axes` | optional | array of `{ name, label?, description?, choices: [{ name, label?, description? }] }` |
 | `description` | optional | longer explanation of what the draft explores |
 | `prompt` | optional | the brief — free text, or a path like `references/brief.md` |
 | `source` | optional | `{ sha?, repo?, author? }` provenance |
@@ -84,6 +114,10 @@ Constraints worth remembering:
   (e.g. `siteName`) makes the manifest invalid and the toolbar silently no-ops.
 - **Axis names** match `^[a-z][a-z0-9_-]*$` (must start with a lowercase letter).
   **Choice names** match `^[a-z0-9][a-z0-9_-]*$` (may also start with a digit).
+- **`label` vs `name` vs `description`.** `name` is the slug used in coordinates
+  and URLs. `label` is the short human text the toolbar shows (e.g. `"Cinematic"`)
+  — set it; without it the toolbar humanises the slug, which is only a rough
+  guess. `description` is prose shown as a tooltip, never as the primary label.
 - **`path` is relative**, must not start with `/`, and must not escape the draft
   root with `..`. Absolute paths break in deployment (they resolve to the site
   root, not the draft root).
@@ -98,15 +132,20 @@ Constraints worth remembering:
   "axes": [
     {
       "name": "theme",
+      "label": "Theme",
       "description": "Overall palette and mood",
       "choices": [
-        { "name": "dark", "description": "Near-black, one warm accent" },
-        { "name": "light", "description": "Paper-white, ink type" }
+        { "name": "dark", "label": "Dark", "description": "Near-black, one warm accent" },
+        { "name": "light", "label": "Light", "description": "Paper-white, ink type" }
       ]
     },
     {
       "name": "layout",
-      "choices": [{ "name": "split" }, { "name": "stacked" }]
+      "label": "Layout",
+      "choices": [
+        { "name": "split", "label": "Split" },
+        { "name": "stacked", "label": "Stacked" }
+      ]
     }
   ],
   "pages": [
@@ -118,9 +157,12 @@ Constraints worth remembering:
 }
 ```
 
-This is sparse on purpose: `theme:light × layout:stacked` was not built, so the
-toolbar disables that combination. The first entry in `pages[]` is the default
-the toolbar loads on a fresh visit — put the canonical combination first.
+This is sparse on purpose: `theme:light × layout:stacked` was not built. Both
+its choices still appear elsewhere, so selecting `stacked` from `light-split`
+auto-routes to `dark-stacked` (and notes "also sets Theme → Dark"). The first
+entry in `pages[]` is the default the toolbar loads on a fresh visit, and the
+tie-breaker when a choice is reachable from several pages — put the canonical
+combination first.
 
 ### The smallest legal manifest
 

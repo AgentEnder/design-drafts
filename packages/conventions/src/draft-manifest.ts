@@ -20,11 +20,19 @@ const AxisChoiceSchema = Type.Object(
       pattern: '^[a-z0-9][a-z0-9_-]*$',
       minLength: 1,
       description:
-        'Identifier for this choice on its axis. Used in page coordinates and visible in the toolbar.',
+        'Identifier for this choice on its axis. Used in page coordinates and as the toolbar URL value.',
     }),
+    label: Type.Optional(
+      Type.String({
+        minLength: 1,
+        description:
+          'Short, human-friendly name shown in the toolbar (e.g. "Cinematic"). Keep it to a couple of words. Falls back to a humanised form of `name` when omitted.',
+      })
+    ),
     description: Type.Optional(
       Type.String({
-        description: 'Optional longer description shown in the toolbar switcher.',
+        description:
+          'Optional longer explanation shown as a tooltip / secondary line in the toolbar. Prose, not a label — the toolbar never renders it as the primary text.',
       })
     ),
   },
@@ -34,9 +42,17 @@ const AxisChoiceSchema = Type.Object(
 const AxisSchema = Type.Object(
   {
     name: AxisIdentifier,
+    label: Type.Optional(
+      Type.String({
+        minLength: 1,
+        description:
+          'Short, human-friendly name for this axis shown in the toolbar (e.g. "Theme"). Falls back to a humanised form of `name` when omitted.',
+      })
+    ),
     description: Type.Optional(
       Type.String({
-        description: 'Optional longer description of what this axis represents.',
+        description:
+          'Optional longer explanation of what this axis represents, shown as a tooltip in the toolbar. Prose, not a label.',
       })
     ),
     choices: Type.Array(AxisChoiceSchema, {

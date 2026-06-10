@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
-import { readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
-import { extname, isAbsolute, join, relative, resolve } from 'node:path';
+import { extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import { resolveDraftDir } from './draft-dir';
 import { CliError } from './errors';
@@ -76,6 +76,75 @@ export function resolveServedFile(
   return candidate;
 }
 
+/**
+ * Recursively collects every `.html` file beneath `dir`, returned as
+ * root-relative POSIX paths (e.g. `pages/sub/p.html`) sorted for stable output.
+ * Used to build the generated index when a directory has no index.html.
+ */
+export function collectHtmlPages(dir: string): string[] {
+  const pages: string[] = [];
+  const walk = (current: string): void => {
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      const abs = join(current, entry.name);
+      if (entry.isDirectory()) {
+        walk(abs);
+      } else if (entry.isFile() && extname(entry.name).toLowerCase() === '.html') {
+        pages.push(relative(dir, abs).split(sep).join('/'));
+      }
+    }
+  };
+  walk(dir);
+  return pages.sort();
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * Renders a fallback index page that links to every `.html` page in the draft,
+ * shown when the requested directory has no index.html of its own. Links are
+ * root-absolute so they resolve regardless of which directory was requested.
+ */
+export function renderDirectoryIndex(draftDir: string): string {
+  const pages = collectHtmlPages(draftDir);
+  const items = pages.length
+    ? pages
+        .map((page) => `        <li><a href="/${page}">${escapeHtml(page)}</a></li>`)
+        .join('\n')
+    : '        <li class="empty">No pages found in this draft yet.</li>';
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Draft pages</title>
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; margin: 3rem auto; max-width: 40rem; padding: 0 1rem; }
+      h1 { font-size: 1.25rem; }
+      ul { list-style: none; padding: 0; }
+      li { margin: 0.25rem 0; }
+      a { color: #2563eb; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .empty { color: #6b7280; }
+    </style>
+  </head>
+  <body>
+    <h1>Draft pages</h1>
+    <p>No <code>index.html</code> here — listing the pages in this draft:</p>
+    <ul>
+${items}
+    </ul>
+  </body>
+</html>
+`;
+}
+
 /** Builds the static file server for a draft directory without binding it to a
  * port, so it can be exercised directly in tests. */
 export function createPreviewServer(draftDir: string): Server {
@@ -90,9 +159,18 @@ export function createPreviewServer(draftDir: string): Server {
     try {
       let filePath = safePath;
       if (statSync(filePath).isDirectory()) {
-        // Directory requests serve index.html; statSync throws below if absent.
-        filePath = join(filePath, 'index.html');
-        statSync(filePath);
+        const indexPath = join(filePath, 'index.html');
+        if (!existsSync(indexPath)) {
+          // No index.html here — serve a generated listing of the draft's pages.
+          const listing = renderDirectoryIndex(draftDir);
+          res.writeHead(200, {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Content-Length': Buffer.byteLength(listing),
+          });
+          res.end(listing);
+          return;
+        }
+        filePath = indexPath;
       }
       const body = readFileSync(filePath);
       res.writeHead(200, {
