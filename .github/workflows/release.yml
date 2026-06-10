@@ -26,6 +26,11 @@ on:
         required: false
         type: boolean
         default: false
+      publish-only:
+        description: "Set to true if only running the `publish` operation (e.g. when a previous run failed after versioning)"
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: release
@@ -85,6 +90,9 @@ jobs:
           fi
           if [ "${{ inputs.first-release }}" = "true" ]; then
             FLAGS="$FLAGS --first-release"
+          fi
+          if [ "${{ inputs.publish-only }}" = "true" ]; then
+            FLAGS="publish $FLAGS"
           fi
           echo "Running: nx release $FLAGS"
           pnpm exec nx release $FLAGS
