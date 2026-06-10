@@ -30,8 +30,15 @@
       "fallbackCurrentVersionResolver": "disk"
     },
     "changelog": {
-      "projectChangelogs": true,
+      "projectChangelogs": {
+        "createRelease": "github"
+      },
       "workspaceChangelog": false
+    },
+    "git": {
+      "push": true,
+      "commit": true,
+      "tag": true
     }
   },
   "plugins": [
