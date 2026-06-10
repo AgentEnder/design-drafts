@@ -1,0 +1,204 @@
+/* ============================================================================
+   Turnbuckle marketing — tokens & themes
+   3 themes via [data-theme]; motion via [data-motion]. Layout is per-page markup.
+   Brand is fixed (crimson/charcoal/gold); each theme retunes canvas, type, edges.
+   ========================================================================== */
+
+@import url("https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800;900&display=swap");
+
+:root {
+  /* fixed brand */
+  --crimson: #c8102e;
+  --crimson-deep: #9e0b23;
+  --charcoal: #2b2d42;
+  --gold: #f2a900;
+  --gold-deep: #c98a00;
+
+  /* product-UI semantic colors (same in every theme so shots read as a real app) */
+  --ui-bg: #f4f5f7;
+  --ui-card: #ffffff;
+  --ui-ink: #15161d;
+  --ui-mute: #6b7280;
+  --ui-line: #e5e7eb;
+  --ui-line-2: #eef0f3;
+  --ui-radius: 12px;
+  --ok: #16a34a;        --ok-bg: #dcfce7;
+  --warn: #d97706;      --warn-bg: #fef3c7;
+  --bad: #dc2626;       --bad-bg: #fee2e2;
+  --info: #2563eb;      --info-bg: #dbeafe;
+  --indigo: #4f46e5;    --indigo-bg: #e0e7ff;
+
+  /* fluid type scale */
+  --step--1: 0.86rem;
+  --step-0: 1.02rem;
+  --step-1: 1.2rem;
+  --step-2: clamp(1.35rem, 1.1rem + 1vw, 1.75rem);
+  --step-3: clamp(1.9rem, 1.4rem + 2vw, 2.9rem);
+  --step-4: clamp(2.6rem, 1.8rem + 3.6vw, 4.6rem);
+  --maxw: 76rem;
+}
+
+/* ---------- THEME: warm (Notion-approachable) ---------- */
+[data-theme="warm"] {
+  --canvas: #fcf8f2;
+  --canvas-2: #f6efe4;
+  --surface: #ffffff;
+  --ink: #2b2d42;
+  --ink-soft: #565a72;
+  --ink-mute: #8b8fa3;
+  --line: #ece4d6;
+  --accent: var(--crimson);
+  --accent-soft: color-mix(in srgb, var(--crimson) 12%, transparent);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow: 0 22px 50px -32px rgba(80, 50, 10, 0.5);
+  --shadow-card: 0 1px 0 0 var(--line), 0 14px 30px -22px rgba(60, 40, 12, 0.35);
+  --font-display: "Anton", system-ui, sans-serif;
+  --display-tt: uppercase;
+  --display-ls: 0.005em;
+  --hero-size: clamp(2.7rem, 1.8rem + 4vw, 5rem);
+  --btn-radius: 999px;
+}
+
+/* ---------- THEME: bold (Framer big-league) ---------- */
+[data-theme="bold"] {
+  --canvas: #ffffff;
+  --canvas-2: #f3f3f5;
+  --surface: #ffffff;
+  --ink: #141420;
+  --ink-soft: #43445a;
+  --ink-mute: #8488a0;
+  --line: #e6e6ec;
+  --accent: var(--crimson);
+  --accent-soft: color-mix(in srgb, var(--crimson) 10%, transparent);
+  --radius: 6px;
+  --radius-sm: 4px;
+  --shadow: 0 30px 60px -30px rgba(20, 20, 32, 0.45);
+  --shadow-card: 8px 8px 0 0 var(--charcoal);
+  --font-display: "Anton", system-ui, sans-serif;
+  --display-tt: uppercase;
+  --display-ls: 0.01em;
+  --hero-size: clamp(3.4rem, 2rem + 7vw, 8rem);
+  --btn-radius: 0px;
+}
+
+/* ---------- THEME: print (editorial / territory) ---------- */
+[data-theme="print"] {
+  --canvas: #f4efe2;
+  --canvas-2: #ece4d2;
+  --surface: #fbf8f0;
+  --ink: #1c1a17;
+  --ink-soft: #46423a;
+  --ink-mute: #7c766a;
+  --line: #cbbfa6;
+  --accent: var(--crimson);
+  --accent-soft: color-mix(in srgb, var(--crimson) 10%, transparent);
+  --radius: 0px;
+  --radius-sm: 0px;
+  --shadow: none;
+  --shadow-card: 0 0 0 1.5px var(--ink);
+  --font-display: "Anton", "Times New Roman", serif;
+  --display-tt: uppercase;
+  --display-ls: 0.01em;
+  --hero-size: clamp(3rem, 1.9rem + 5vw, 6rem);
+  --btn-radius: 0px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-size: var(--step-0);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3 { margin: 0; line-height: 0.98; }
+p { margin: 0; }
+img, svg { display: block; max-width: 100%; }
+a { color: var(--crimson-deep); }
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: var(--display-tt);
+  letter-spacing: var(--display-ls);
+  line-height: 0.9;
+}
+
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+.wrap { width: 100%; max-width: var(--maxw); margin-inline: auto; padding-inline: clamp(1.25rem, 4vw, 2.75rem); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* print theme paper grain */
+[data-theme="print"] body, [data-theme="print"] .grain { position: relative; }
+[data-theme="print"] .grain::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.05; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ===================== REVEALS / LIVE UI =====================
+   Gentle scroll-reveals + live UI. No scroll-snap. */
+[data-backdrop] .reveal { opacity: 0; transform: translateY(22px); }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    [data-backdrop] .reveal {
+      animation: reveal-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 2% cover 24%;
+    }
+    @keyframes reveal-rise { to { opacity: 1; transform: none; } }
+    /* live: completion bar fills into view */
+    [data-backdrop] .bar-fill { animation: bar-grow linear both; animation-timeline: view(); animation-range: entry 0% cover 40%; }
+    @keyframes bar-grow { from { transform: scaleX(0.05); } to { transform: scaleX(1); } }
+  }
+}
+/* JS-off / no view-timeline fallback: everything visible */
+@supports not (animation-timeline: view()) {
+  [data-backdrop] .reveal { opacity: 1; transform: none; }
+}
+/* the "LIVE" pulse runs on a plain loop */
+[data-backdrop] .pulse { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  .reveal { opacity: 1 !important; transform: none !important; }
+}
+
+/* ===================== CHROME ===================== */
+.brand { display: inline-flex; align-items: center; gap: 0.55rem; font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; font-size: 1.25rem; color: var(--ink); text-decoration: none; }
+.brand .glyph { width: 1.55rem; height: 1.55rem; flex: none; background: var(--crimson); clip-path: polygon(50% 0, 100% 38%, 82% 100%, 18% 100%, 0 38%); display: grid; place-items: center; }
+.brand .glyph::after { content: ""; width: 0.4rem; height: 0.4rem; background: var(--canvas); border-radius: 50%; }
+
+.site-head { position: sticky; top: 0; z-index: 50; background: color-mix(in srgb, var(--canvas) 85%, transparent); backdrop-filter: saturate(1.1) blur(10px); border-bottom: 1px solid var(--line); }
+.site-head .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.85rem; }
+.site-nav { display: flex; align-items: center; gap: clamp(0.6rem, 2vw, 1.6rem); }
+.site-nav a:not(.btn) { color: var(--ink-soft); text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+.site-nav a:not(.btn):hover { color: var(--ink); }
+@media (max-width: 40rem) { .site-nav .hide-sm { display: none; } }
+
+.btn { display: inline-flex; align-items: center; gap: 0.55ch; font-weight: 700; font-size: 1rem; line-height: 1; padding: 0.9rem 1.4rem; border: 2px solid var(--charcoal); background: var(--charcoal); color: #fff; text-decoration: none; cursor: pointer; border-radius: var(--btn-radius); transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease; }
+.btn:hover { transform: translateY(-2px); }
+.btn-primary { background: var(--crimson); border-color: var(--crimson); }
+.btn-primary:hover { box-shadow: 0 10px 24px -10px var(--crimson); }
+.btn-ghost { background: transparent; color: var(--ink); }
+.btn-ghost:hover { background: var(--ink); color: var(--canvas); }
+
+.site-foot { border-top: 1px solid var(--line); background: var(--canvas-2); margin-top: 2rem; }
+.site-foot .wrap { display: flex; flex-wrap: wrap; gap: 1.25rem 2.5rem; align-items: center; justify-content: space-between; padding-block: 2.5rem; }
+.site-foot nav { display: flex; gap: 1.1rem; flex-wrap: wrap; }
+.site-foot nav a { color: var(--ink-soft); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+.site-foot .muted { color: var(--ink-mute); font-size: 0.86rem; }
+
+/* shared section rhythm */
+.section { padding-block: clamp(3rem, 7vh, 6rem); }
+.kicker { display: inline-block; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; color: var(--crimson-deep); }
+.lede { font-size: var(--step-2); color: var(--ink-soft); }

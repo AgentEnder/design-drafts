@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Turnbuckle 3D lab</title>
+  <style>
+    body { margin: 0; background: #fbf4ea; font-family: system-ui, sans-serif; color: #2b2d42; }
+    h1 { font-size: 1.05rem; padding: 1rem 1.5rem 0; margin: 0; }
+    p.note { padding: 0 1.5rem; color: #837c8e; font-size: .85rem; }
+    .stage { padding: 1rem 1.5rem; }
+    .stage.dark { background: #294a73; }
+    canvas { width: 960px; max-width: 100%; height: 320px; display: block; }
+    .small canvas { width: 280px; height: 110px; }
+  </style>
+  <script type="importmap">
+  { "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }}
+  </script>
+</head>
+<body>
+  <h1>Turnbuckle 3D lab</h1>
+  <p class="note">Procedural WebGL turnbuckle. The body rotates about its long axis (real rotation, constant silhouette). Use ?angle=NN or the auto-spin. <span id="status"></span></p>
+  <div class="stage"><canvas id="c1"></canvas></div>
+  <div class="stage dark"><canvas id="c2"></canvas></div>
+  <div class="stage small"><canvas id="c3"></canvas></div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    // single source of truth — the SAME model the marketing separators render
+    import { buildTurnbuckle, studioEnv } from '../../shared/turnbuckle.js';
+
+    const status = document.getElementById('status');
+
+    function makeScene(canvas) {
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+      const resize = () => { const r = canvas.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); cam.aspect = r.width / r.height; cam.updateProjectionMatrix(); };
+      const scene = new THREE.Scene();
+      scene.environment = studioEnv(THREE, renderer);
+      const cam = new THREE.PerspectiveCamera(22, 3, 0.1, 100);
+      cam.position.set(0, 1.4, 17); cam.lookAt(0, 0, 0);
+      scene.add(new THREE.AmbientLight(0xffffff, 0.14));
+      const key = new THREE.DirectionalLight(0xffffff, 0.6); key.position.set(-4, 6, 8); scene.add(key);
+      const { root, body } = buildTurnbuckle(THREE);
+      scene.add(root);
+      resize();
+      return { renderer, scene, cam, body, resize };
+    }
+
+    const scenes = [];
+    try {
+      ['c1', 'c2', 'c3'].forEach(id => scenes.push(makeScene(document.getElementById(id))));
+      window.addEventListener('resize', () => scenes.forEach(s => { s.resize(); s.renderer.render(s.scene, s.cam); }));
+      const forced = new URL(location).searchParams.get('angle');
+      let t = 0;
+      function frame() {
+        t += 0.012;
+        scenes.forEach(s => {
+          s.body.rotation.x = forced != null ? (forced * Math.PI / 180) : t;
+          s.renderer.render(s.scene, s.cam);
+        });
+        if (forced == null) requestAnimationFrame(frame);
+      }
+      frame();
+      window.setAngle = (deg) => scenes.forEach(s => { s.body.rotation.x = deg * Math.PI / 180; s.renderer.render(s.scene, s.cam); });
+      status.textContent = 'WebGL OK';
+    } catch (e) {
+      status.textContent = 'WebGL error: ' + e.message;
+      console.error(e);
+    }
+  </script>
+</body>
+</html>
