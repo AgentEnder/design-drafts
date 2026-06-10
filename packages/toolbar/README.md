@@ -1,7 +1,7 @@
 # @design-drafts/toolbar
 
 A framework-agnostic, single-file toolbar that lets reviewers switch between
-the design choices declared in a draft's `draft.config.json`.
+the design choices declared in a draft's `design-drafts.config.json`.
 
 A draft is described as a set of **axes** (e.g. `theme`, `layout`, `page`)
 and a sparse list of **pages**, where each page records the axis coordinates
@@ -36,7 +36,7 @@ relatively:
 
 The script:
 
-1. Fetches `/draft.config.json`. If it 404s or is malformed, the script exits
+1. Fetches `/design-drafts.config.json`. If it 404s or is malformed, the script exits
    silently — safe to ship on any page.
 2. Renders an unobtrusive bar at the bottom of the viewport with one switcher
    per axis declared in the manifest. Each axis and choice is shown by its

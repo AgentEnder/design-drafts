@@ -56,7 +56,7 @@ design-drafts init draft ./my-draft
 ### `design-drafts preview [path]`
 
 Serve a work-in-progress draft directory (default `.`) over HTTP so you can view
-it locally before pushing. The directory must contain a `draft.config.json`.
+it locally before pushing. The directory must contain a `design-drafts.config.json`.
 
 ```sh
 design-drafts preview ./my-draft

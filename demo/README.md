@@ -19,7 +19,7 @@ so they always point at the current source — you just need to rebuild.
 pnpm --filter @design-drafts/toolbar build
 pnpm --filter @design-drafts/annotate build
 
-# 2. serve this directory (draft.config.json must be at the served root)
+# 2. serve this directory (design-drafts.config.json must be at the served root)
 node packages/cli/bin.js preview demo
 # …or any static server rooted in demo/, e.g. `python3 -m http.server` from here
 ```

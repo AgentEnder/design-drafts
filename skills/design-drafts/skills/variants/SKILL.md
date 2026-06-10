@@ -1,12 +1,12 @@
 ---
 name: design-drafts:variants
-description: Generate an actual design draft — semantic, multi-page HTML plus a valid `draft.config.json` — from a `references/brief.md` (and the references gathered alongside it). Reads the brief, the annotated `links.md`, and the `inspiration/` screenshots, plans a small set of axes and pages, and writes complete HTML files wired to the toolbar and annotate overlays. Use when a draft directory has a `references/brief.md` but no pages yet, when the user says "build the draft", "generate the variants", "turn the brief into pages", "make the draft from this brief", or when `design-drafts:brief` has just finished and the user wants the actual design. Do NOT use to write the brief itself — that is `design-drafts:brief`.
+description: Generate an actual design draft — semantic, multi-page HTML plus a valid `design-drafts.config.json` — from a `references/brief.md` (and the references gathered alongside it). Reads the brief, the annotated `links.md`, and the `inspiration/` screenshots, plans a small set of axes and pages, and writes complete HTML files wired to the toolbar and annotate overlays. Use when a draft directory has a `references/brief.md` but no pages yet, when the user says "build the draft", "generate the variants", "turn the brief into pages", "make the draft from this brief", or when `design-drafts:brief` has just finished and the user wants the actual design. Do NOT use to write the brief itself — that is `design-drafts:brief`.
 ---
 
 # design-drafts:variants
 
 You turn a brief into a real, reviewable design draft: a handful of complete
-HTML pages across a small set of axes, plus a valid `draft.config.json` the
+HTML pages across a small set of axes, plus a valid `design-drafts.config.json` the
 toolbar can read. This is the step that produces the thing reviewers look at.
 
 Two rules govern everything below:
@@ -27,10 +27,10 @@ Two rules govern everything below:
 
 ## Before you start
 
-1. **Confirm the working directory.** Find `draft.config.json` in the draft
+1. **Confirm the working directory.** Find `design-drafts.config.json` in the draft
    directory (the cwd, or a path the user names). If there is no draft directory
    yet, scaffold one with `design-drafts init draft <dir>` — it writes a valid
-   starter `draft.config.json` and an `index.html` already wired to the overlays.
+   starter `design-drafts.config.json` and an `index.html` already wired to the overlays.
    You will rewrite both as you generate.
 
 2. **Require a brief.** Read `references/brief.md`. If it is missing, stop and
@@ -70,7 +70,7 @@ Two rules govern everything below:
      dodges one ("asymmetric hero to avoid #6").
    - `${CLAUDE_PLUGIN_ROOT}/reference/axes-and-coordinates.md` — the manifest
      model: what makes a good axis, how `pages[]` and `coordinates` work, the
-     on-disk layout, and the exact `draft.config.json` shape. You will follow
+     on-disk layout, and the exact `design-drafts.config.json` shape. You will follow
      this when writing the manifest.
    - `${CLAUDE_PLUGIN_ROOT}/reference/references-protocol.md` — the authority on
      what lives in `references/`: what `links.md` annotations mean, why
@@ -246,7 +246,7 @@ Follow the convention in `${CLAUDE_PLUGIN_ROOT}/reference/axes-and-coordinates.m
 
 ```
 my-draft/
-  draft.config.json
+  design-drafts.config.json
   pages/<page>/<combo>.html      # e.g. pages/home/dark-split.html
   shared/styles/tokens.css       # CSS every page links
   shared/assets/...              # shared images, fonts
@@ -259,7 +259,7 @@ my-draft/
 - Share what's reused (tokens, base styles) in `shared/`; keep single-use assets
   next to the page that uses them.
 
-## Writing `draft.config.json`
+## Writing `design-drafts.config.json`
 
 Write a manifest that validates against the schema (see
 `${CLAUDE_PLUGIN_ROOT}/reference/axes-and-coordinates.md` for the full shape). It
@@ -411,7 +411,7 @@ convergence *after* the user has chosen.
 - `design-drafts:explore` — the brainstorm before the brief. Not read by this
   skill, but it's where the axes were first proposed.
 - `${CLAUDE_PLUGIN_ROOT}/reference/axes-and-coordinates.md` — the manifest model
-  and `draft.config.json` shape. Follow it when writing the manifest.
+  and `design-drafts.config.json` shape. Follow it when writing the manifest.
 - `${CLAUDE_PLUGIN_ROOT}/reference/anti-patterns.md` — the catalog to steer away
   from, cited by entry number.
 - `${CLAUDE_PLUGIN_ROOT}/reference/references-protocol.md` — what lives in

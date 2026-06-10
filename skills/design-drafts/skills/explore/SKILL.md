@@ -1,6 +1,6 @@
 ---
 name: design-drafts:explore
-description: Brainstorm a draft from a vague seed (project name, half-formed pitch, "I dunno, something for incident timelines") into named concept options per axis, captured into `references/explore.md` so the brief skill can consume them. Use when the user has a draft name or rough idea but does not yet have answers to "who, what, why, what should it not look like" — i.e. before `design-drafts:brief`. Triggers include "I'm starting a new draft and only have the name", "let's brainstorm what this could be", "give me theme/layout/voice ideas for X", or being invoked from inside a directory that contains a `draft.config.json` but no `references/brief.md` and no `references/explore.md`.
+description: Brainstorm a draft from a vague seed (project name, half-formed pitch, "I dunno, something for incident timelines") into named concept options per axis, captured into `references/explore.md` so the brief skill can consume them. Use when the user has a draft name or rough idea but does not yet have answers to "who, what, why, what should it not look like" — i.e. before `design-drafts:brief`. Triggers include "I'm starting a new draft and only have the name", "let's brainstorm what this could be", "give me theme/layout/voice ideas for X", or being invoked from inside a directory that contains a `design-drafts.config.json` but no `references/brief.md` and no `references/explore.md`.
 ---
 
 # design-drafts:explore
@@ -15,7 +15,7 @@ You are explicitly NOT writing the brief. You are writing a working document at 
 
 ## Before you start
 
-1. **Confirm the working directory.** Look for a `draft.config.json` in the current working directory. Use its `name` and `description` fields as background context — they're not a brief, but they tell you what the draft is supposed to be. If there is no `draft.config.json`, ask the user where the exploration should live — a draft directory they've already created, or a new one. To scaffold a new draft, run `design-drafts init draft <dir>` (omit `<dir>` to use the current directory); it writes `draft.config.json` and a starter `index.html` already wired to the toolbar and annotate overlays. Do not start brainstorming until you know where `references/explore.md` will be written.
+1. **Confirm the working directory.** Look for a `design-drafts.config.json` in the current working directory. Use its `name` and `description` fields as background context — they're not a brief, but they tell you what the draft is supposed to be. If there is no `design-drafts.config.json`, ask the user where the exploration should live — a draft directory they've already created, or a new one. To scaffold a new draft, run `design-drafts init draft <dir>` (omit `<dir>` to use the current directory); it writes `design-drafts.config.json` and a starter `index.html` already wired to the toolbar and annotate overlays. Do not start brainstorming until you know where `references/explore.md` will be written.
 
 2. **Check for existing artifacts.**
    - If `references/brief.md` already exists, stop and ask: "There's already a brief here, which means you've been past this stage. Do you want me to skip explore entirely, or restart from scratch (the existing brief stays put)?" Do not silently overwrite or undermine an existing brief.
@@ -23,7 +23,7 @@ You are explicitly NOT writing the brief. You are writing a working document at 
 
 3. **Read the supporting docs once, silently.** These ship with this plugin under `${CLAUDE_PLUGIN_ROOT}/reference/` — read them with the file tools.
    - `${CLAUDE_PLUGIN_ROOT}/reference/anti-patterns.md` — the catalog of defaults to steer concept proposals away from. When you propose theme/layout/copy directions, you are also implicitly proposing what to avoid; cite anti-pattern numbers when relevant ("a darker, flatter take that avoids #1 and #2").
-   - `${CLAUDE_PLUGIN_ROOT}/reference/axes-and-coordinates.md` — the axes-and-pages model. The axes you brainstorm here will become the `axes` field of `draft.config.json`, so they should be independent dimensions, not co-varying ones.
+   - `${CLAUDE_PLUGIN_ROOT}/reference/axes-and-coordinates.md` — the axes-and-pages model. The axes you brainstorm here will become the `axes` field of `design-drafts.config.json`, so they should be independent dimensions, not co-varying ones.
    - `${CLAUDE_PLUGIN_ROOT}/reference/references-protocol.md` — the four-file convention. You will be adding to `links.md` and `inspiration/` via the CLI as the conversation produces references.
 
 4. **Set expectations.** Tell the user, in plain words: "This is the brainstorm pass. We'll riff on what this draft could be — themes, layouts, voice, whatever feels relevant — and I'll capture the options we react to. Nothing here is a commitment; that comes later in the brief. If you mention or paste a URL or screenshot, I'll save it as a reference on the fly so we don't have to redo that work."

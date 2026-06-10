@@ -8,7 +8,7 @@ A draft without references converges on the [anti-pattern catalog](./anti-patter
 
 ```
 my-draft/
-  draft.config.json
+  design-drafts.config.json
   index.html
   references/
     brief.md
@@ -91,7 +91,7 @@ The command routes the input by shape:
 - **A direct image URL** ending in `.png`, `.webp`, `.jpg`, or `.jpeg` — downloaded into `references/inspiration/`. If `--note` is supplied, a cross-referencing line is also added to `links.md` pointing at the saved file. Filename is derived from the URL when `--name` is not supplied; the CLI nudges you to rename, since per this protocol the filename **is** the citation.
 - **A local image path** — copied into `references/inspiration/`. Pass `--name <descriptive>` because the original filename (e.g. `Screenshot 2026-05-08.png`) is rarely a useful citation.
 
-Default draft directory is the cwd. Pass `--draft <dir>` to point at a sibling draft. The CLI errors out cleanly if no `draft.config.json` is found — references are always scoped to a specific draft.
+Default draft directory is the cwd. Pass `--draft <dir>` to point at a sibling draft. The CLI errors out cleanly if no `design-drafts.config.json` is found — references are always scoped to a specific draft.
 
 If you are populating `references/` by hand, you can do that too — the CLI is convenience, not enforcement. The shape on disk is what matters.
 
@@ -103,7 +103,7 @@ The directory is for the author and the skills running locally, not for the peop
 
 Depending on your CLI version, `references/` may still be force-pushed with the rest of the draft. If you care about reference material not appearing in the deployed preview, strip the directory before running the CLI (or gitignore it on the branch you push).
 
-The `prompt` field in `draft.config.json` may point at `references/brief.md` (see `axes-and-coordinates.md` for the manifest shape). That reference is by relative path; it does not require the file to be published, but it does mean a reader trying to follow the link from a deployed manifest will get a 404 until the brief is either inlined or the publishing decision changes. Inline the brief into the manifest's `prompt` field if you want it visible in the deployed draft.
+The `prompt` field in `design-drafts.config.json` may point at `references/brief.md` (see `axes-and-coordinates.md` for the manifest shape). That reference is by relative path; it does not require the file to be published, but it does mean a reader trying to follow the link from a deployed manifest will get a 404 until the brief is either inlined or the publishing decision changes. Inline the brief into the manifest's `prompt` field if you want it visible in the deployed draft.
 
 ## When to skip references
 

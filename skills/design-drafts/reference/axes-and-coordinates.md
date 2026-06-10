@@ -3,13 +3,13 @@
 A draft is a small slice of design space. You name the dimensions (**axes**),
 enumerate the values each can take (**choices**), and then list the specific
 points you actually built (**pages**). The toolbar reads this model from
-`draft.config.json` and renders one switcher per axis; switching a choice
+`design-drafts.config.json` and renders one switcher per axis; switching a choice
 navigates to the page that holds that combination.
 
 This file is the reference for two things:
 
 1. **What makes a good axis** — used when brainstorming (`design-drafts:explore`).
-2. **How to write a valid `draft.config.json`** — used when generating the draft
+2. **How to write a valid `design-drafts.config.json`** — used when generating the draft
    (`design-drafts:variants`).
 
 ## The model in one picture
@@ -93,7 +93,7 @@ correctness requirements:
   stays short and the change stays legible. Scattered corners make auto-route
   rewrite several axes at once.
 
-## The manifest shape (`draft.config.json`)
+## The manifest shape (`design-drafts.config.json`)
 
 Lives at the root of the draft directory. Fields:
 
@@ -183,7 +183,7 @@ recommended layout:
 
 ```
 my-draft/
-  draft.config.json
+  design-drafts.config.json
   pages/
     <page>/
       <other-coords-joined-with-dash>.html

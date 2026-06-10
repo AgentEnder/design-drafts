@@ -1,7 +1,7 @@
 # Recommended Draft Directory Layout
 
 A draft is just a static directory the CLI publishes verbatim. The toolbar and
-the index site only know about the files listed in `draft.config.json`; nothing
+the index site only know about the files listed in `design-drafts.config.json`; nothing
 walks the filesystem. So the layout below is a *convention*, not a contract —
 it exists because it makes manifests boring to write and diffs easy to read.
 
@@ -43,7 +43,7 @@ The schema lets `path` be any relative HTML file under the draft root. The recom
 
 ```
 my-draft/
-  draft.config.json
+  design-drafts.config.json
   pages/
     <page>/
       <other-coords-joined-with-dash>.html
@@ -73,7 +73,7 @@ This is deliberate. Drafts are produced by agents writing arbitrary static outpu
 
 ## How the toolbar discovers entries
 
-The toolbar reads `draft.config.json` and renders one switcher per axis. It does **not** scan `pages/` looking for HTML files. A file on disk that isn't referenced in the manifest is invisible to the toolbar — which is useful for keeping work-in-progress around without exposing it.
+The toolbar reads `design-drafts.config.json` and renders one switcher per axis. It does **not** scan `pages/` looking for HTML files. A file on disk that isn't referenced in the manifest is invisible to the toolbar — which is useful for keeping work-in-progress around without exposing it.
 
 Concretely:
 
@@ -126,7 +126,7 @@ A quick exploration with one axis and a handful of choices:
 
 ```
 my-quick-draft/
-  draft.config.json
+  design-drafts.config.json
   pages/
     home/
       a.html

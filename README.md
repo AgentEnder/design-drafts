@@ -4,19 +4,19 @@ Publish static design explorations as browsable, shareable previews — and let
 reviewers switch between every design choice with a toolbar and leave feedback
 inline.
 
-A **draft** is a plain directory of HTML files plus a `draft.config.json`
+A **draft** is a plain directory of HTML files plus a `design-drafts.config.json`
 manifest. You push it with one command; a GitHub Action deploys it to a
 per-draft URL on GitHub Pages. The published preview carries a small toolbar
 that lets a reviewer flip between themes, layouts, and any other dimension you
 defined — because each of those is a real HTML file the toolbar navigates to.
 
 ```
-your draft dir            CLI                 GitHub                gh-pages
-──────────────       ─────────────       ──────────────       ─────────────────
-draft.config.json    design-drafts  ──▶  branch              ──▶  /<draft-name>/
-pages/*.html           (force-push)      drafts/<name>            + index site
-references/                              ▼                        + toolbar.js
-                                         Deploy Preview workflow
+your draft dir                CLI                 GitHub                gh-pages
+─────────────────────────     ─────────────       ──────────────       ─────────────────
+design-drafts.config.json     design-drafts  ──▶  branch              ──▶  /<draft-name>/
+pages/*.html                    (force-push)      drafts/<name>            + index site
+references/                                        ▼                        + toolbar.js
+                                                   Deploy Preview workflow
 ```
 
 There is no build step and no template expansion. What you have on disk is what
@@ -82,8 +82,8 @@ directory:
 design-drafts init
 ```
 
-This walks you through creating the host repo, then writes a `draft.config.json`
-and a placeholder `index.html`. The two halves are also available on their own:
+This walks you through creating the host repo, then writes a
+`design-drafts.config.json` and a placeholder `index.html`. The two halves are also available on their own:
 
 | Command                  | What it does                                              |
 | ------------------------ | --------------------------------------------------------- |
@@ -93,7 +93,7 @@ and a placeholder `index.html`. The two halves are also available on their own:
 ### 2. Build the draft
 
 Replace the placeholder `index.html` with your real pages, fill in the axes and
-pages in `draft.config.json`, and (recommended) add a `references/brief.md` so
+pages in `design-drafts.config.json`, and (recommended) add a `references/brief.md` so
 agents and reviewers know the intent. See
 [`docs/conventions/references-protocol.md`](docs/conventions/references-protocol.md).
 
@@ -133,7 +133,7 @@ Every published page carries two framework-agnostic, single-file scripts:
 ### Toolbar — switch between design choices
 
 A 44px bar at the bottom of the viewport with one `<select>` per axis. It reads
-`draft.config.json`, highlights the current page's coordinates, and disables
+`design-drafts.config.json`, highlights the current page's coordinates, and disables
 choices with no drafted neighbour. Selecting a different choice navigates to the
 matching file (preserving the querystring).
 
@@ -162,20 +162,21 @@ reviewers have one place to find them. It is rebuilt on every deploy.
 ## Configuration
 
 `push` resolves each value from, in order: a CLI flag, an env var
-(`DESIGN_DRAFTS_*`), the per-project `design-drafts.config.json`, then the global
-`~/.design-drafts.config.json`. Missing required values are prompted for and the
-answer is persisted.
+(`DESIGN_DRAFTS_*`), then the global `~/design-drafts.config.json`. The site name
+is the exception — it's derived from the manifest's `name` (slugified), so a
+draft's `design-drafts.config.json` is the only place it lives. Missing required
+values are prompted for; `--repo` and `--prefix` are persisted globally.
 
 | Setting     | Flag          | Notes                                                            |
 | ----------- | ------------- | ---------------------------------------------------------------- |
 | Host repo   | `--repo`      | `owner/name`. Saved globally **after** a successful push.        |
-| Site name   | `--site-name` | Becomes the branch/preview directory name. Saved per-project.    |
-| Branch prefix | `--prefix`  | Default `drafts/`. Pass `""` to push without a prefix.           |
+| Site name   | `--site-name` | Branch/preview directory name. Defaults to the manifest's `name` (slugified); the flag overrides. |
+| Branch prefix | `--prefix`  | Default `drafts/`. Pass `""` to push without a prefix. Saved globally. |
 | Template ref | `--template-ref` | Ref of this repo used to scaffold the host workflow.         |
 
 Each push also records source metadata in the commit message (source SHA, repo,
-author, the manifest's `prompt`, and a hash of `draft.config.json`) so a preview
-is traceable back to what produced it.
+author, the manifest's `prompt`, and a hash of `design-drafts.config.json`) so a
+preview is traceable back to what produced it.
 
 ---
 

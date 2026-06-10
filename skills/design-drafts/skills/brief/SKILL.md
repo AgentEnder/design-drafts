@@ -1,6 +1,6 @@
 ---
 name: design-drafts:brief
-description: Interview the user about a draft they want to create — audience, intent, must-include / must-not-look-likes, voice, and visual references — and write a structured brief to `references/brief.md` in the draft directory. If `references/explore.md` exists (from `design-drafts:explore`), use it to seed the interview instead of cold-asking. Use when starting a new design draft from a clear premise, when an explore session has already produced concept picks, when a draft directory is missing `references/brief.md`, or any time another draft-producing skill (e.g. `design-drafts:variants`, `frontend-design`) needs a brief to consume. Triggers include "start a new draft", "brief me on this draft", "I need help shaping this draft", "write the brief", "we finished exploring, write the brief", or being invoked from inside a directory that contains a `draft.config.json` but no `references/brief.md`.
+description: Interview the user about a draft they want to create — audience, intent, must-include / must-not-look-likes, voice, and visual references — and write a structured brief to `references/brief.md` in the draft directory. If `references/explore.md` exists (from `design-drafts:explore`), use it to seed the interview instead of cold-asking. Use when starting a new design draft from a clear premise, when an explore session has already produced concept picks, when a draft directory is missing `references/brief.md`, or any time another draft-producing skill (e.g. `design-drafts:variants`, `frontend-design`) needs a brief to consume. Triggers include "start a new draft", "brief me on this draft", "I need help shaping this draft", "write the brief", "we finished exploring, write the brief", or being invoked from inside a directory that contains a `design-drafts.config.json` but no `references/brief.md`.
 ---
 
 # design-drafts:brief
@@ -13,7 +13,7 @@ The second most important rule: **one question at a time.** Do not list five que
 
 ## Before you start
 
-1. **Confirm the working directory.** Look for a `draft.config.json` in the current working directory. If one exists, this is the draft you are briefing — note its `name` and `description` fields and use them as context (do not treat them as the brief itself). If not, ask the user which draft directory they want to brief, or whether they want to create a new one. To scaffold a fresh draft, run `design-drafts init draft <dir>` (omit `<dir>` to use the current directory); it writes `draft.config.json` and a starter `index.html`. Do not start interviewing until you know where `references/brief.md` will be written.
+1. **Confirm the working directory.** Look for a `design-drafts.config.json` in the current working directory. If one exists, this is the draft you are briefing — note its `name` and `description` fields and use them as context (do not treat them as the brief itself). If not, ask the user which draft directory they want to brief, or whether they want to create a new one. To scaffold a fresh draft, run `design-drafts init draft <dir>` (omit `<dir>` to use the current directory); it writes `design-drafts.config.json` and a starter `index.html`. Do not start interviewing until you know where `references/brief.md` will be written.
 
 2. **Check whether a brief already exists.** If `references/brief.md` is already present in the draft directory, stop and ask: "There's already a brief here. Do you want to start over, edit specific sections, or just inspect what's there?" Do not overwrite without explicit confirmation.
 
@@ -199,7 +199,7 @@ Rules for filling this in:
 ## After writing
 
 1. Show the user the file path and a one-line summary of what was captured. Do not paste the whole file back at them — they were just on the phone with you.
-2. Print the next step exactly as: ``Next: hand this brief to `design-drafts:variants`. It reads `references/brief.md` (plus `links.md` and `inspiration/`) and generates the draft pages with a valid `draft.config.json`. (`frontend-design` can also read `references/brief.md` directly if you'd rather drive generation that way.)``
+2. Print the next step exactly as: ``Next: hand this brief to `design-drafts:variants`. It reads `references/brief.md` (plus `links.md` and `inspiration/`) and generates the draft pages with a valid `design-drafts.config.json`. (`frontend-design` can also read `references/brief.md` directly if you'd rather drive generation that way.)``
 3. If the user mentioned references during the interview that you did not capture inline (because they spoke faster than you could run the CLI), list them now and ask: "Want me to run `design-drafts ref add` for these now? URLs need a `--note`; screenshots need a descriptive `--name`." Do not finish the session with references stranded in the conversation.
 
 ## Anti-patterns for this skill itself
