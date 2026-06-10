@@ -1,6 +1,6 @@
 {
   "name": "@design-drafts/annotate",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Framework-agnostic annotation overlay for static draft previews. Drop in via a <script> tag.",
   "license": "MIT",
   "type": "module",
@@ -50,7 +50,9 @@
     "name": "annotate",
     "targets": {
       "build": {
-        "outputs": ["{projectRoot}/dist"]
+        "outputs": [
+          "{projectRoot}/dist"
+        ]
       }
     }
   }
