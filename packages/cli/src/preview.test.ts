@@ -1,4 +1,11 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -9,6 +16,8 @@ import {
   collectHtmlPages,
   contentTypeFor,
   createPreviewServer,
+  ensureDraftIndex,
+  renderDirectoryIndex,
   resolveServedFile,
 } from './preview';
 
@@ -153,6 +162,64 @@ describe('createPreviewServer with no root index.html', () => {
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('text/html; charset=utf-8');
     expect(await res.text()).toContain('href="/about.html"');
+  });
+});
+
+describe('renderDirectoryIndex', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'design-drafts-render-'));
+    writeFileSync(join(dir, 'about.html'), '');
+    mkdirSync(join(dir, 'pages'), { recursive: true });
+    writeFileSync(join(dir, 'pages', 'p.html'), '');
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('links root-absolute by default (for the preview server)', () => {
+    const html = renderDirectoryIndex(dir);
+    expect(html).toContain('href="/about.html"');
+    expect(html).toContain('href="/pages/p.html"');
+  });
+
+  it('links relative when rootAbsoluteLinks is false (for a deploy base path)', () => {
+    const html = renderDirectoryIndex(dir, { rootAbsoluteLinks: false });
+    expect(html).toContain('href="about.html"');
+    expect(html).toContain('href="pages/p.html"');
+    expect(html).not.toContain('href="/');
+  });
+});
+
+describe('ensureDraftIndex', () => {
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'design-drafts-ensure-'));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('writes a relative-link index when none exists', () => {
+    writeFileSync(join(dir, 'about.html'), '');
+    ensureDraftIndex(dir);
+
+    const indexPath = join(dir, 'index.html');
+    expect(existsSync(indexPath)).toBe(true);
+    const html = readFileSync(indexPath, 'utf-8');
+    // Relative links so they resolve under the gh-pages /<site>/ base path.
+    expect(html).toContain('href="about.html"');
+    expect(html).not.toContain('href="/about.html"');
+  });
+
+  it('leaves an existing index.html untouched', () => {
+    writeFileSync(join(dir, 'index.html'), '<h1>mine</h1>');
+    ensureDraftIndex(dir);
+    expect(readFileSync(join(dir, 'index.html'), 'utf-8')).toBe('<h1>mine</h1>');
   });
 });
 

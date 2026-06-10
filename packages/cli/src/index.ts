@@ -27,7 +27,7 @@ import { githubRemoteUrl } from './github';
 import { initDraft } from './init/draft';
 import { initHost } from './init/host';
 import { init } from './init/init';
-import { preview } from './preview';
+import { ensureDraftIndex, preview } from './preview';
 import { refAdd } from './ref-add';
 import { slugifySiteName, validateSiteName } from './site-name';
 import { validatePrefix, validateRepo } from './validate';
@@ -321,6 +321,12 @@ async function pushHandler(args: PushArgs): Promise<void> {
 
   try {
     cpSync(sourcePath, tmpDir, { recursive: true });
+    // Bake a page listing into drafts that ship no index.html of their own.
+    // The preview server fakes one per request, but gh-pages serves static
+    // files only, so without this the deployed draft root 404s when linked
+    // from the site index. Runs before the workflow embed so the listing never
+    // includes the `.github/` dir (which the deploy step strips out anyway).
+    ensureDraftIndex(tmpDir);
     await embedDeployWorkflow(repo, tmpDir);
     // Create the draft branch as the initial branch in one step — avoids git's
     // "using 'master'" hint and a redundant checkout.

@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import { extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
@@ -105,16 +105,35 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
+export interface DirectoryIndexOptions {
+  /**
+   * When `true` (the default), page links are root-absolute (`/page.html`) so
+   * they resolve no matter which subdirectory URL was requested — correct for
+   * the preview server, which serves this same listing for any index-less dir.
+   *
+   * When `false`, links are relative (`page.html`) so they resolve under a
+   * deploy base path — correct for the index baked into a pushed draft, which
+   * gh-pages serves from a `/<site>/` subdirectory.
+   */
+  rootAbsoluteLinks?: boolean;
+}
+
 /**
  * Renders a fallback index page that links to every `.html` page in the draft,
- * shown when the requested directory has no index.html of its own. Links are
- * root-absolute so they resolve regardless of which directory was requested.
+ * shown when the requested directory has no index.html of its own.
  */
-export function renderDirectoryIndex(draftDir: string): string {
+export function renderDirectoryIndex(
+  draftDir: string,
+  options: DirectoryIndexOptions = {}
+): string {
+  const { rootAbsoluteLinks = true } = options;
   const pages = collectHtmlPages(draftDir);
   const items = pages.length
     ? pages
-        .map((page) => `        <li><a href="/${page}">${escapeHtml(page)}</a></li>`)
+        .map((page) => {
+          const href = rootAbsoluteLinks ? `/${page}` : page;
+          return `        <li><a href="${href}">${escapeHtml(page)}</a></li>`;
+        })
         .join('\n')
     : '        <li class="empty">No pages found in this draft yet.</li>';
 
@@ -143,6 +162,22 @@ ${items}
   </body>
 </html>
 `;
+}
+
+/**
+ * Bakes a generated page-listing index onto disk at `dir/index.html` when the
+ * directory has none of its own. The preview server synthesises this listing
+ * per request, but gh-pages serves static files only — a draft directory with
+ * no `index.html` 404s there — so `push` calls this to persist the listing into
+ * the branch content. Links are relative so they resolve under the `/<site>/`
+ * base path the draft is deployed to. No-op when an index already exists.
+ */
+export function ensureDraftIndex(dir: string): void {
+  const indexPath = join(dir, 'index.html');
+  if (existsSync(indexPath)) {
+    return;
+  }
+  writeFileSync(indexPath, renderDirectoryIndex(dir, { rootAbsoluteLinks: false }));
 }
 
 /** Builds the static file server for a draft directory without binding it to a
