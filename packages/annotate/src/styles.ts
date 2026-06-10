@@ -1,9 +1,11 @@
 // Styles for the annotate shadow root. Inlined as a string so the package
 // ships a single bundle with no separate CSS file.
 //
-// Visual brief: restrained palette, near-black surface, single accent,
-// no gradients, no glassmorphism. Sits alongside the toolbar without
-// competing visually.
+// Visual brief: light "paper" surfaces, hairline borders, soft elevation
+// shadows, system sans, one restrained accent. Matches the toolbar package so
+// the two read as one system. The overlay mounts as its own page-positioned
+// shadow root (not inside <dd-toolbar>), so it can't inherit the toolbar's
+// --dd-* vars — these constants mirror the toolbar's palette directly.
 
 // Z-index strategy: the toolbar package owns the bottom of the viewport at
 // z-index 2147483000. Annotate uses 2147483100 for its overlay (one notch
@@ -11,12 +13,19 @@
 // still below browser UI like devtools and native dialogs. The host root
 // element itself has no painted box; only its descendants render anything.
 
-export const ACCENT = '#f97316';
-export const SURFACE = '#0b0b0c';
-export const SURFACE_2 = '#161618';
-export const BORDER = '#26262a';
-export const TEXT = '#f5f5f5';
-export const TEXT_MUTED = '#9b9ba0';
+export const ACCENT = '#4f46e5';
+export const ACCENT_SOFT = 'rgba(79, 70, 229, 0.14)';
+export const ON_ACCENT = '#ffffff';
+export const SURFACE = '#fbfaf8';
+export const SURFACE_2 = '#ffffff';
+export const SURFACE_SUNK = '#f1efea';
+export const BORDER = 'rgba(0, 0, 0, 0.12)';
+export const BORDER_SOFT = 'rgba(0, 0, 0, 0.08)';
+export const TEXT = '#1d1d20';
+export const TEXT_MUTED = '#6b6b70';
+export const DANGER = '#dc2626';
+export const SHADOW =
+  '0 10px 30px -8px rgba(0, 0, 0, 0.35), 0 2px 6px -2px rgba(0, 0, 0, 0.16)';
 
 export const Z_BASE = 2147483100;
 
@@ -27,7 +36,7 @@ export const STYLES = `
   inset: 0;
   pointer-events: none;
   z-index: ${Z_BASE};
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, ui-sans-serif, sans-serif;
   font-size: 13px;
   line-height: 1.4;
   color: ${TEXT};
@@ -56,10 +65,10 @@ button:focus-visible {
   position: absolute;
   pointer-events: none;
   border: 2px dashed ${ACCENT};
-  border-radius: 2px;
+  border-radius: 3px;
   transition: opacity 80ms linear;
   opacity: 0;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
 
 .outline.visible {
@@ -69,9 +78,9 @@ button:focus-visible {
 .flash {
   position: absolute;
   pointer-events: none;
-  background: rgba(249, 115, 22, 0.22);
+  background: ${ACCENT_SOFT};
   border: 2px solid ${ACCENT};
-  border-radius: 2px;
+  border-radius: 3px;
   animation: dd-flash 1100ms ease-out;
   z-index: 1;
 }
@@ -89,11 +98,11 @@ button:focus-visible {
   top: -22px;
   left: -2px;
   background: ${ACCENT};
-  color: ${SURFACE};
+  color: ${ON_ACCENT};
   font-size: 11px;
   font-weight: 600;
   padding: 2px 6px;
-  border-radius: 2px;
+  border-radius: 4px;
   white-space: nowrap;
   letter-spacing: 0.01em;
 }
@@ -105,14 +114,14 @@ button:focus-visible {
   height: 22px;
   border-radius: 50% 50% 50% 2px;
   background: ${ACCENT};
-  color: ${SURFACE};
+  color: ${ON_ACCENT};
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
   transform: translate(-50%, -100%);
   transition: transform 120ms ease;
 }
@@ -133,7 +142,7 @@ button:focus-visible {
 
 .pin.stale {
   background: ${TEXT_MUTED};
-  color: ${SURFACE};
+  color: ${ON_ACCENT};
 }
 
 .composer {
@@ -142,29 +151,38 @@ button:focus-visible {
   z-index: 3;
   background: ${SURFACE};
   border: 1px solid ${BORDER};
-  border-radius: 4px;
-  padding: 8px;
+  border-radius: 11px;
+  padding: 10px;
   width: 280px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  box-shadow: ${SHADOW};
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.composer textarea {
+.composer textarea,
+textarea.field {
   font: inherit;
+  width: 100%;
   color: ${TEXT};
   background: ${SURFACE_2};
   border: 1px solid ${BORDER};
-  border-radius: 3px;
+  border-radius: 7px;
   padding: 6px 8px;
   resize: vertical;
   min-height: 64px;
   outline: none;
 }
 
-.composer textarea:focus {
+.composer textarea::placeholder,
+textarea.field::placeholder {
+  color: ${TEXT_MUTED};
+}
+
+.composer textarea:focus,
+textarea.field:focus {
   border-color: ${ACCENT};
+  box-shadow: 0 0 0 3px ${ACCENT_SOFT};
 }
 
 .composer-actions {
@@ -175,32 +193,33 @@ button:focus-visible {
 
 .btn {
   pointer-events: auto;
-  padding: 5px 10px;
-  border-radius: 3px;
+  padding: 5px 11px;
+  border-radius: 7px;
   font-size: 12px;
   font-weight: 500;
   border: 1px solid ${BORDER};
   background: ${SURFACE_2};
   color: ${TEXT};
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
 .btn:hover {
-  background: ${BORDER};
+  background: ${SURFACE_SUNK};
 }
 
 .btn.primary {
   background: ${ACCENT};
   border-color: ${ACCENT};
-  color: ${SURFACE};
+  color: ${ON_ACCENT};
 }
 
 .btn.primary:hover {
   background: ${ACCENT};
-  filter: brightness(1.1);
+  filter: brightness(1.08);
 }
 
 .btn.danger {
-  color: #ef6464;
+  color: ${DANGER};
 }
 
 .btn.ghost {
@@ -211,7 +230,7 @@ button:focus-visible {
 
 .btn.ghost:hover {
   color: ${TEXT};
-  background: ${SURFACE_2};
+  background: ${SURFACE_SUNK};
 }
 
 .panel {
@@ -223,10 +242,10 @@ button:focus-visible {
   max-height: calc(100vh - 32px - 56px);
   background: ${SURFACE};
   border: 1px solid ${BORDER};
-  border-radius: 4px;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: ${SHADOW};
   overflow: hidden;
   z-index: 2;
 }
@@ -246,15 +265,15 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
-  border-bottom: 1px solid ${BORDER};
+  padding: 11px 13px;
+  border-bottom: 1px solid ${BORDER_SOFT};
 }
 
 .panel-tabs {
   display: flex;
   gap: 4px;
-  padding: 6px 8px;
-  border-bottom: 1px solid ${BORDER};
+  padding: 7px 9px;
+  border-bottom: 1px solid ${BORDER_SOFT};
   overflow-x: auto;
   scrollbar-width: thin;
   scrollbar-color: ${BORDER} transparent;
@@ -265,10 +284,10 @@ button:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
+  padding: 4px 9px;
   background: transparent;
   border: 1px solid ${BORDER};
-  border-radius: 3px;
+  border-radius: 999px;
   font: inherit;
   font-size: 11px;
   color: ${TEXT_MUTED};
@@ -276,6 +295,7 @@ button:focus-visible {
   white-space: nowrap;
   flex-shrink: 0;
   max-width: 180px;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
 .panel-tab-label {
@@ -284,17 +304,19 @@ button:focus-visible {
 }
 
 .panel-tab:hover {
-  border-color: ${ACCENT};
+  border-color: ${BORDER};
+  background: ${SURFACE_SUNK};
   color: ${TEXT};
 }
 
 .panel-tab.active {
   border-color: ${ACCENT};
+  background: ${ACCENT_SOFT};
   color: ${ACCENT};
 }
 
 .panel-tab-count {
-  background: ${SURFACE_2};
+  background: ${SURFACE_SUNK};
   color: ${TEXT_MUTED};
   border-radius: 10px;
   padding: 0 6px;
@@ -304,15 +326,13 @@ button:focus-visible {
 
 .panel-tab.active .panel-tab-count {
   background: ${ACCENT};
-  color: ${SURFACE};
+  color: ${ON_ACCENT};
 }
 
 .panel-title {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: ${TEXT_MUTED};
+  color: ${TEXT};
 }
 
 .panel-body {
@@ -328,8 +348,8 @@ button:focus-visible {
 }
 
 .entry {
-  padding: 10px 12px;
-  border-bottom: 1px solid ${BORDER};
+  padding: 10px 13px;
+  border-bottom: 1px solid ${BORDER_SOFT};
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -354,7 +374,7 @@ button:focus-visible {
   height: 18px;
   border-radius: 50%;
   background: ${ACCENT};
-  color: ${SURFACE};
+  color: ${ON_ACCENT};
   font-size: 10px;
   font-weight: 700;
 }
@@ -394,19 +414,19 @@ button:focus-visible {
   background: ${SURFACE};
   color: ${TEXT};
   border: 1px solid ${BORDER};
-  border-radius: 3px;
-  padding: 6px 10px;
+  border-radius: 9px;
+  padding: 6px 11px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .toggle:hover {
-  border-color: ${ACCENT};
+  background: ${SURFACE_SUNK};
 }
 
 .toggle.active {

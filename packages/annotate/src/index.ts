@@ -638,18 +638,9 @@ class AnnotateOverlay {
 
     if (this.editing?.id === annotation.id) {
       const textarea = document.createElement('textarea');
+      textarea.className = 'field';
       textarea.value = annotation.comment;
       textarea.rows = 3;
-      Object.assign(textarea.style, {
-        width: '100%',
-        minHeight: '64px',
-        padding: '6px 8px',
-        background: '#161618',
-        color: '#f5f5f5',
-        border: '1px solid #26262a',
-        borderRadius: '3px',
-        font: 'inherit',
-      });
 
       const actions = document.createElement('div');
       actions.className = 'entry-actions';
@@ -969,14 +960,14 @@ const TRIGGER_STYLES = `
   white-space: nowrap;
 }
 .trigger:hover { color: var(--dd-text, #f5f5f5); }
-.trigger.active { color: #f97316; }
+.trigger.active { color: var(--dd-accent, #4f46e5); }
 .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: var(--dd-text-dim, #6b6b70);
 }
-.trigger.active .dot { background: #f97316; }
+.trigger.active .dot { background: var(--dd-accent, #4f46e5); }
 `;
 
 class DesignDraftsAnnotations extends HTMLElement {
