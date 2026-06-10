@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Turnbuckle 3D lab</title>
+  <style>
+    body { margin: 0; background: #fbf4ea; font-family: system-ui, sans-serif; color: #2b2d42; }
+    h1 { font-size: 1.05rem; padding: 1rem 1.5rem 0; margin: 0; }
+    p.note { padding: 0 1.5rem; color: #837c8e; font-size: .85rem; }
+    .stage { padding: 1rem 1.5rem; }
+    .stage.dark { background: #294a73; }
+    canvas { width: 960px; max-width: 100%; height: 320px; display: block; }
+    .small canvas { width: 280px; height: 110px; }
+  </style>
+  <script type="importmap">
+  { "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }}
+  </script>
+</head>
+<body>
+  <h1>Turnbuckle 3D lab</h1>
+  <p class="note">Procedural WebGL turnbuckle. The body rotates about its long axis (real rotation, constant silhouette). Use ?angle=NN or the auto-spin. <span id="status"></span></p>
+  <div class="stage"><canvas id="c1"></canvas></div>
+  <div class="stage dark"><canvas id="c2"></canvas></div>
+  <div class="stage small"><canvas id="c3"></canvas></div>
+
+  <script type="module">
+    import * as THREE from 'three';
+
+    const status = document.getElementById('status');
+
+    // studio environment: bright sky → horizon → dark floor + two window highlights
+    function studioEnv(renderer) {
+      const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 512; const c = cv.getContext('2d');
+      const g = c.createLinearGradient(0, 0, 0, 512);
+      g.addColorStop(0, '#fbfcfe'); g.addColorStop(.42, '#cfd6df'); g.addColorStop(.5, '#eef3f8'); g.addColorStop(.58, '#9aa2ad'); g.addColorStop(1, '#3c4047');
+      c.fillStyle = g; c.fillRect(0, 0, 1024, 512);
+      for (const cx of [300, 660]) { const rg = c.createRadialGradient(cx, 150, 8, cx, 150, 150); rg.addColorStop(0, 'rgba(255,255,255,0.95)'); rg.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = rg; c.fillRect(cx - 170, 0, 340, 320); }
+      const tex = new THREE.CanvasTexture(cv); tex.mapping = THREE.EquirectangularReflectionMapping; tex.colorSpace = THREE.SRGBColorSpace;
+      const p = new THREE.PMREMGenerator(renderer); const t = p.fromEquirectangular(tex).texture; tex.dispose(); p.dispose(); return t;
+    }
+
+    // --- procedural thread bump map (diagonal ridges) ---
+    function threadBump() {
+      const s = 128, cv = document.createElement('canvas'); cv.width = cv.height = s;
+      const x = cv.getContext('2d');
+      x.fillStyle = '#808080'; x.fillRect(0, 0, s, s);
+      for (let i = -s; i < s * 2; i += 9) {
+        const g = x.createLinearGradient(i, 0, i + 9, 0);
+        g.addColorStop(0, '#3a3a3a'); g.addColorStop(.5, '#f0f0f0'); g.addColorStop(1, '#3a3a3a');
+        x.strokeStyle = g; x.lineWidth = 7;
+        x.beginPath(); x.moveTo(i, 0); x.lineTo(i + 26, s); x.stroke();
+      }
+      const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(6, 1); return t;
+    }
+
+    function roundedShape(w, h, r) {
+      const s = new THREE.Shape();
+      s.moveTo(-w / 2 + r, -h / 2);
+      s.lineTo(w / 2 - r, -h / 2); s.absarc(w / 2 - r, -h / 2 + r, r, -Math.PI / 2, 0);
+      s.lineTo(w / 2, h / 2 - r); s.absarc(w / 2 - r, h / 2 - r, r, 0, Math.PI / 2);
+      s.lineTo(-w / 2 + r, h / 2); s.absarc(-w / 2 + r, h / 2 - r, r, Math.PI / 2, Math.PI);
+      s.lineTo(-w / 2, -h / 2 + r); s.absarc(-w / 2 + r, -h / 2 + r, r, Math.PI, Math.PI * 1.5);
+      return s;
+    }
+    function roundedHole(w, h, r) {
+      const p = new THREE.Path();
+      p.moveTo(-w / 2 + r, -h / 2);
+      p.lineTo(w / 2 - r, -h / 2); p.absarc(w / 2 - r, -h / 2 + r, r, -Math.PI / 2, 0);
+      p.lineTo(w / 2, h / 2 - r); p.absarc(w / 2 - r, h / 2 - r, r, 0, Math.PI / 2);
+      p.lineTo(-w / 2 + r, h / 2); p.absarc(-w / 2 + r, h / 2 - r, r, Math.PI / 2, Math.PI);
+      p.lineTo(-w / 2, -h / 2 + r); p.absarc(-w / 2 + r, -h / 2 + r, r, Math.PI, Math.PI * 1.5);
+      return p;
+    }
+
+    function buildTurnbuckle() {
+      // galvanized spangle texture (mottle + faint scratches) → matte, non-flat metal
+      function galvTex() {
+        const s = 256, cv = document.createElement('canvas'); cv.width = cv.height = s; const x = cv.getContext('2d');
+        x.fillStyle = '#8a8a8a'; x.fillRect(0, 0, s, s);
+        for (let i = 0; i < 2800; i++) { const v = 110 + (Math.random() * 120 | 0); x.fillStyle = `rgba(${v},${v},${v},${Math.random() * 0.5 + 0.15})`; x.beginPath(); x.arc(Math.random() * s, Math.random() * s, Math.random() * 2.3 + 0.4, 0, 7); x.fill(); }
+        for (let i = 0; i < 40; i++) { x.strokeStyle = `rgba(225,225,225,${Math.random() * 0.22})`; x.lineWidth = Math.random() * 1.1 + 0.3; const x0 = Math.random() * s, y0 = Math.random() * s, a = Math.random() * Math.PI, l = Math.random() * 60 + 20; x.beginPath(); x.moveTo(x0, y0); x.lineTo(x0 + Math.cos(a) * l, y0 + Math.sin(a) * l); x.stroke(); }
+        const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(4, 4); return t;
+      }
+      const tex = galvTex();
+      const metal = new THREE.MeshStandardMaterial({ color: 0xc9ccd2, metalness: 0.82, roughness: 0.5, roughnessMap: tex, bumpMap: tex, bumpScale: 0.012, envMapIntensity: 1.1 });
+      const root = new THREE.Group();
+
+      // open frame body — flat stock: straight rails, ~30° inward bend at each end, rounded tips
+      function forgedShape() {
+        const H = 0.66, xb = 1.4, slope = Math.tan(Math.PI / 9), tipR = 0.18;
+        const xtc = xb + (H - tipR) / slope, X = xtc + tipR, N = 72;
+        const yTop = x => { const ax = Math.abs(x); if (ax <= xb) return H; const ylin = H - (ax - xb) * slope; if (ylin > tipR) return ylin; const dx = ax - xtc; return Math.max(0, Math.sqrt(Math.max(0, tipR * tipR - dx * dx))); };
+        const sh = new THREE.Shape(); sh.moveTo(-X, 0);
+        for (let i = 0; i <= N; i++) { const x = -X + (i / N) * 2 * X; sh.lineTo(x, yTop(x)); }
+        for (let i = N; i >= 0; i--) { const x = -X + (i / N) * 2 * X; sh.lineTo(x, -yTop(x)); }
+        sh.closePath(); return sh;
+      }
+      const shape = forgedShape();
+      // window follows the same flat-stock contour (angled ends), inset — not a circular stadium
+      (function () {
+        const H = 0.36, xb = 1.15, slope = Math.tan(Math.PI / 9), tipR = 0.1, xtc = xb + (H - tipR) / slope, X = xtc + tipR, N = 60;
+        const yTop = x => { const ax = Math.abs(x); if (ax <= xb) return H; const yl = H - (ax - xb) * slope; if (yl > tipR) return yl; const dx = ax - xtc; return Math.max(0, Math.sqrt(Math.max(0, tipR * tipR - dx * dx))); };
+        const ph = new THREE.Path(); ph.moveTo(-X, 0);
+        for (let i = 0; i <= N; i++) { const x = -X + (i / N) * 2 * X; ph.lineTo(x, yTop(x)); }
+        for (let i = N; i >= 0; i--) { const x = -X + (i / N) * 2 * X; ph.lineTo(x, -yTop(x)); }
+        ph.closePath(); shape.holes.push(ph);
+      })();
+      const frameGeo = new THREE.ExtrudeGeometry(shape, { depth: 0.55, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.08, bevelSegments: 2, steps: 1 });
+      frameGeo.center();
+      const body = new THREE.Mesh(frameGeo, metal); root.add(body);
+
+      // REAL thread geometry: a lathed triangular profile = sharp machine threads (not a coil)
+      function threadedRod(len, rad, pitch, depth) {
+        const steps = Math.max(64, Math.round(len / pitch) * 10), pts = [];
+        pts.push(new THREE.Vector2(0, -len / 2)); // solid flat end cap
+        for (let i = 0; i <= steps; i++) {
+          const y = -len / 2 + (i / steps) * len;
+          const frac = (y / pitch) - Math.floor(y / pitch), tri = 1 - Math.abs(frac * 2 - 1);
+          pts.push(new THREE.Vector2(rad - depth * 0.5 + tri * depth, y));
+        }
+        pts.push(new THREE.Vector2(0, len / 2)); // solid flat end cap
+        return new THREE.LatheGeometry(pts, 48);
+      }
+      // threaded shaft (threads cut on this side only), backed out with a gap at center
+      const threadGeo = threadedRod(3.6, 0.2, 0.1, 0.03);
+      [-1, 1].forEach(s => { const m = new THREE.Mesh(threadGeo, metal); m.rotation.z = Math.PI / 2; m.position.x = s * 2.25; root.add(m); });
+
+      // forged eye: clean single-direction hook — neck tangent to loop bottom, circles ~95% (small gap), capped tip
+      function makeEye() {
+        // forged TEARDROP eye: smooth parametric egg (fat at the far end, pinched at the neck),
+        // swept ~88% to leave a clear opening where the tip rests near the shank. Centered on the axis.
+        const g = new THREE.Group(), rr = 0.19, cx = 0.86, baseR = 0.46, k = 0.27;
+        const Rf = a => baseR * (1 + k * Math.cos(a));        // big toward far (+x), pinched toward neck (-x)
+        const a0 = Math.PI * 0.82, sweep = -Math.PI * 2 * 0.88, steps = 96;
+        const pts = [new THREE.Vector3(-0.25, 0, 0), new THREE.Vector3(0, 0, 0)]; let tip = null; // lead-in sits in the shaft → tangent entry
+        for (let i = 0; i <= steps; i++) { const a = a0 + (i / steps) * sweep, R = Rf(a); tip = new THREE.Vector3(cx + R * Math.cos(a), R * Math.sin(a), 0); pts.push(tip); }
+        g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 200, rr, 22, false), metal));
+        const cap = new THREE.Mesh(new THREE.SphereGeometry(rr, 16, 12), metal); cap.position.copy(tip); g.add(cap);
+        return g;
+      }
+      { const e = makeEye(); e.position.x = 4.05; root.add(e); }
+      { const e = makeEye(); e.position.x = -4.05; e.scale.x = -1; root.add(e); }
+      return { root, body };
+    }
+
+    function makeScene(canvas) {
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+      const resize = () => { const r = canvas.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); cam.aspect = r.width / r.height; cam.updateProjectionMatrix(); };
+      const scene = new THREE.Scene();
+      scene.environment = studioEnv(renderer);
+      const cam = new THREE.PerspectiveCamera(22, 3, 0.1, 100);
+      cam.position.set(0, 1.4, 17); cam.lookAt(0, 0, 0);
+      scene.add(new THREE.AmbientLight(0xffffff, 0.14));
+      const key = new THREE.DirectionalLight(0xffffff, 0.6); key.position.set(-4, 6, 8); scene.add(key);
+      const { root, body } = buildTurnbuckle();
+      scene.add(root);
+      resize();
+      return { renderer, scene, cam, body, resize };
+    }
+
+    const scenes = [];
+    try {
+      ['c1', 'c2', 'c3'].forEach(id => scenes.push(makeScene(document.getElementById(id))));
+      window.addEventListener('resize', () => scenes.forEach(s => { s.resize(); s.renderer.render(s.scene, s.cam); }));
+      const forced = new URL(location).searchParams.get('angle');
+      let t = 0;
+      function frame() {
+        t += 0.012;
+        scenes.forEach(s => {
+          s.body.rotation.x = forced != null ? (forced * Math.PI / 180) : t;
+          s.renderer.render(s.scene, s.cam);
+        });
+        if (forced == null) requestAnimationFrame(frame);
+      }
+      frame();
+      window.setAngle = (deg) => scenes.forEach(s => { s.body.rotation.x = deg * Math.PI / 180; s.renderer.render(s.scene, s.cam); });
+      status.textContent = 'WebGL OK';
+    } catch (e) {
+      status.textContent = 'WebGL error: ' + e.message;
+      console.error(e);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+/* ============================================================================
+   Turnbuckle marketing — venue images AS CONTENT BACKGROUNDS
+   Each product-feature section (.vsec) is backed by its venue image; the
+   escalation (bingo → armory → arena → stadium) plays out behind the content
+   as you scroll. Two treatments via [data-backdrop]:
+     full-bleed   — image dominant + dark scrim, light text (cinematic)
+     bleeding-band — image faint, masked to fade into the canvas, dark text (editorial)
+   ========================================================================== */
+
+:root {
+  --venue-bingo:   url("../assets/venue-bingo.png");
+  --venue-armory:  url("../assets/venue-armory.png");
+  --venue-arena:   url("../assets/venue-arena.png");
+  --venue-stadium: url("../assets/venue-stadium.png");
+}
+
+/* -----------------------------------------------------------------
+   SCENE BREAK — a wordless canvas breather between venue images.
+   Just enough to keep the full-bleed photos from butting together;
+   the growth is told by the imagery, not by labels.
+   ----------------------------------------------------------------- */
+.scene-break { background: var(--canvas); padding-block: clamp(1.9rem, 5.5vh, 3.25rem); }
+/* realistic turnbuckle SVG: chrome eye-bolts + threaded rods + a steel sleeve
+   whose casing (.tb-body group) turns in 3D to "tighten" on scroll */
+.tb-defs { position: absolute; width: 0; height: 0; }
+.scene-break .turnbuckle { position: relative; display: block; width: clamp(170px, 40vw, 290px); margin-inline: auto; }
+.scene-break .tb-base { display: block; width: 100%; height: auto; overflow: visible; }
+/* turnbuckle: real-time 3D canvas (shared/turnbuckle.js), photoreal image fallback */
+.scene-break .turnbuckle { display: block; width: clamp(200px, 46vw, 360px); margin-inline: auto; }
+.scene-break .tb-fallback { display: block; width: 100%; height: auto; }
+.scene-break .tb3d { display: none; width: 100%; height: auto; aspect-ratio: 19 / 6; }
+
+/* a feature section that carries a venue background */
+.vsec { position: relative; isolation: isolate; }
+.vsec-inner { padding-block: clamp(3rem, 9vh, 6.5rem); }
+
+/* the image layer (behind everything in the section) */
+.vsec::before {
+  content: ""; position: absolute; inset: 0; z-index: -2;
+  background-size: cover; background-position: center;
+}
+.v-bingo::before   { background-image: var(--venue-bingo); }
+.v-armory::before  { background-image: var(--venue-armory); }
+.v-arena::before   { background-image: var(--venue-arena); }
+.v-stadium::before { background-image: var(--venue-stadium); }
+
+/* the small "act" tag that names the venue inline with the feature */
+.vsec .act-tag { display: inline-flex; align-items: center; gap: 0.6ch; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; font-size: 0.72rem; }
+.vsec .act-tag .seats { font-weight: 700; letter-spacing: 0.02em; }
+
+/* =================================================================
+   FULL-BLEED — image dominant, dark scrim, light text
+   ================================================================= */
+[data-backdrop="full-bleed"] .vsec { color: #fff; }
+[data-backdrop="full-bleed"] .vsec::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(8,6,12,0.55) 0%, rgba(8,6,12,0.45) 45%, rgba(8,6,12,0.7) 100%),
+    radial-gradient(120% 90% at 30% 50%, rgba(8,6,12,0.35), transparent 70%);
+}
+[data-backdrop="full-bleed"] .vsec-inner { padding-block: clamp(3.5rem, 11vh, 8rem); }
+[data-backdrop="full-bleed"] .vsec .act-tag { color: var(--gold); }
+[data-backdrop="full-bleed"] .vsec .feat-copy h2 { color: #fff; text-shadow: 0 2px 18px rgba(0,0,0,0.5); }
+[data-backdrop="full-bleed"] .vsec .feat-copy p { color: #e9e7f0; }
+[data-backdrop="full-bleed"] .vsec .feat-copy .pts li { color: #fff; }
+[data-backdrop="full-bleed"] .vsec .feat-copy .tier-tag { color: var(--gold); }
+/* product card gets a lift so it reads as sitting "on stage" */
+[data-backdrop="full-bleed"] .vsec .ui { box-shadow: 0 40px 80px -30px rgba(0,0,0,0.8); }
+
+/* =================================================================
+   BLEEDING BAND — image faint + masked into canvas, dark text
+   ================================================================= */
+[data-backdrop="bleeding-band"] .vsec::before {
+  opacity: 0.42;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 20%, #000 80%, transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0%, #000 20%, #000 80%, transparent 100%);
+}
+/* a canvas veil keeps body text legible over the faint image */
+[data-backdrop="bleeding-band"] .vsec::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(180deg,
+    var(--canvas) 0%,
+    color-mix(in srgb, var(--canvas) 62%, transparent) 26%,
+    color-mix(in srgb, var(--canvas) 62%, transparent) 74%,
+    var(--canvas) 100%);
+}
+[data-backdrop="bleeding-band"] .vsec .act-tag { color: var(--crimson-deep); }
+[data-backdrop="bleeding-band"] .vsec-inner { padding-block: clamp(3.5rem, 10vh, 7rem); }
