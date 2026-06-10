@@ -1,4 +1,5 @@
 import type { DraftManifest, DraftPage } from '@design-drafts/conventions';
+import { discoverManifest } from '@design-drafts/conventions/discover';
 
 export interface ResolvedManifest {
   manifest: DraftManifest;
@@ -7,38 +8,23 @@ export interface ResolvedManifest {
 }
 
 /**
- * Fetch the draft manifest from `/design-drafts.config.json`. Returns null if
- * the file is missing or unparseable — callers should treat that as "this isn't
- * a draft page, do nothing".
+ * Locate and fetch the draft manifest by walking up from the current page (see
+ * `@design-drafts/conventions/discover`). Returns null when no draft root is
+ * found — callers should treat that as "this isn't a draft page, do nothing".
  *
  * Note: full schema validation lives in `@design-drafts/conventions`'s
  * `parseDraftManifest`, but it pulls in ajv (~100KB) which would blow the
  * toolbar bundle budget. We do a minimal structural shape check instead and
- * trust that anything served at `/design-drafts.config.json` was written by
- * tooling that already ran the strict validator.
+ * trust that anything served as the manifest was written by tooling that
+ * already ran the strict validator.
  */
 export async function loadManifest(): Promise<ResolvedManifest | null> {
-  const manifestUrl = new URL(
-    '/design-drafts.config.json',
-    window.location.origin
+  const found = await discoverManifest(
+    window.location.href,
+    isDraftManifestShape
   );
-  let response: Response;
-  try {
-    response = await fetch(manifestUrl.href, { cache: 'no-cache' });
-  } catch {
-    return null;
-  }
-  if (!response.ok) return null;
-
-  let raw: unknown;
-  try {
-    raw = await response.json();
-  } catch {
-    return null;
-  }
-
-  if (!isDraftManifestShape(raw)) return null;
-  return { manifest: raw, manifestUrl };
+  if (!found) return null;
+  return { manifest: found.manifest, manifestUrl: found.manifestUrl };
 }
 
 function isDraftManifestShape(value: unknown): value is DraftManifest {
