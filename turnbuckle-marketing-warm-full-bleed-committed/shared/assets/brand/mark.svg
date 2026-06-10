@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 374 508" role="img"><title>Turnbuckle</title>
+<defs>
+  <radialGradient id="field" cx="0.5" cy="0.45" r="0.75">
+    <stop offset="0" stop-color="#191B1D"/><stop offset="0.8" stop-color="#1E2022"/><stop offset="1" stop-color="#292B2E"/>
+  </radialGradient>
+  <linearGradient id="postg" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#ABA89F"/><stop offset="0.3" stop-color="#EFEDE6"/>
+    <stop offset="0.5" stop-color="#FBFAF6"/><stop offset="0.72" stop-color="#DFDCD3"/>
+    <stop offset="1" stop-color="#97948B"/>
+  </linearGradient>
+  <linearGradient id="padg" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#C04A3B"/><stop offset="0.4" stop-color="#A92E22"/>
+    <stop offset="0.75" stop-color="#8E2419"/><stop offset="1" stop-color="#741D13"/>
+  </linearGradient>
+  <linearGradient id="sleeveg" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#F8F6F0"/><stop offset="0.55" stop-color="#DDDAD1"/><stop offset="1" stop-color="#969288"/>
+  </linearGradient>
+  <linearGradient id="moundg" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#7E776F"/><stop offset="0.6" stop-color="#5C5650"/><stop offset="1" stop-color="#46413C"/>
+  </linearGradient>
+  <linearGradient id="bannerg" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#D26A5C"/><stop offset="0.28" stop-color="#B73E30"/>
+    <stop offset="0.68" stop-color="#9C2C20"/><stop offset="1" stop-color="#7B2117"/>
+  </linearGradient>
+  <filter id="blur3" x="-60%" y="-60%" width="220%" height="220%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="3"/></filter>
+
+  <clipPath id="fieldClip">
+    <path d="M180 34 Q187 31 194 34 L338 102 Q343 106 343 112 L343 382 Q343 396 328 404 L191 470 Q187 472 183 470 L46 404 Q31 396 31 382 L31 112 Q31 106 36 102 Z"/>
+  </clipPath>
+  <clipPath id="bannerClip">
+    <path d="M180 46 Q187 43 194 46 L325 110 Q331 114 331 123 L331 382 Q331 398 316 405 L191 458 Q187 460 183 458 L58 405 Q43 398 43 382 L43 123 Q43 114 49 110 Z"/>
+  </clipPath>
+
+  <g id="padunit">
+    <!-- sleeve collars at the pad edges -->
+    <rect x="126" y="12" width="16" height="32" rx="6" fill="url(#sleeveg)" stroke="#8A867C" stroke-width="0.8"/>
+    <rect x="232" y="12" width="16" height="32" rx="6" fill="url(#sleeveg)" stroke="#8A867C" stroke-width="0.8"/>
+    <!-- contact shadow under pad -->
+    <rect x="147" y="51" width="80" height="9" fill="#000000" opacity="0.4" filter="url(#blur3)"/>
+    <!-- pad body -->
+    <rect x="139" y="3" width="96" height="50" rx="16" fill="url(#padg)" stroke="#1A0806" stroke-width="3"/>
+    <!-- inner seam -->
+    <rect x="145" y="9" width="84" height="38" rx="12" fill="none" stroke="#5E120C" stroke-width="2.5" opacity="0.8"/>
+    <!-- gloss: soft sheen then bright wrap highlight around the top-left -->
+    <path d="M224 12 L165 12 Q152 12 152 26 L152 32" fill="none" stroke="#C8473A" stroke-width="11" stroke-linecap="round" opacity="0.55"/>
+    <path d="M218 10.5 L164 10.5 Q150.5 10.5 150.5 25 L150.5 30" fill="none" stroke="#F2DFD6" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+    <!-- bottom inner shadow -->
+    <path d="M156 46.5 L220 46.5" fill="none" stroke="#3F0B07" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+  </g>
+</defs>
+
+<!-- outer border body -->
+<path d="M178 6 Q187 1 196 6 L364 84 Q371 88 371 97 L371 396 Q371 417 350 428 L193 504 Q187 508 181 504 L24 428 Q3 417 3 396 L3 97 Q3 88 10 84 Z" fill="#16181A"/>
+<!-- cream keyline -->
+<path d="M179 25 Q187 21 195 25 L347 96 Q352 100 352 107 L352 388 Q352 404 335 413 L191 480 Q187 483 183 480 L39 413 Q22 404 22 388 L22 107 Q22 100 27 96 Z" fill="none" stroke="#EDECE8" stroke-width="8.5"/>
+<!-- field -->
+<path d="M180 34 Q187 31 194 34 L338 102 Q343 106 343 112 L343 382 Q343 396 328 404 L191 470 Q187 472 183 470 L46 404 Q31 396 31 382 L31 112 Q31 106 36 102 Z" fill="url(#field)"/>
+
+<g clip-path="url(#fieldClip)">
+  <!-- ropes: tapered (thick at sleeve, butt-end at keyline), sagging down-outward -->
+  <g fill="#55554F">
+    <path d="M132 128 L14 151 L14 163 L132 142 Z"/><path d="M132 209.5 L14 232.5 L14 244.5 L132 223.5 Z"/><path d="M132 291 L14 314 L14 326 L132 305 Z"/>
+    <path d="M242 128 L360 151 L360 163 L242 142 Z"/><path d="M242 209.5 L360 232.5 L360 244.5 L242 223.5 Z"/><path d="M242 291 L360 314 L360 326 L242 305 Z"/>
+  </g>
+  <g fill="#EBE9E4">
+    <path d="M132 125.5 L14 148.5 L14 158 L132 137.5 Z"/><path d="M132 207 L14 230 L14 239.5 L132 219 Z"/><path d="M132 288.5 L14 311.5 L14 321 L132 300.5 Z"/>
+    <path d="M242 125.5 L360 148.5 L360 158 L242 137.5 Z"/><path d="M242 207 L360 230 L360 239.5 L242 219 Z"/><path d="M242 288.5 L360 311.5 L360 321 L242 300.5 Z"/>
+  </g>
+
+  <!-- mound: gray flare behind the post foot -->
+  <path d="M168 326 Q152 352 118 368 L256 368 Q222 352 206 326 Z" fill="url(#moundg)"/>
+
+  <!-- post -->
+  <rect x="171" y="65" width="32" height="300" rx="16" fill="url(#postg)"/>
+
+  <!-- pads -->
+  <use href="#padunit" transform="translate(0 104)"/>
+  <use href="#padunit" transform="translate(0 185.5)"/>
+  <use href="#padunit" transform="translate(0 267)"/>
+
+  <!-- banner: cream underlay, red band, dark bottom rim -->
+  <g clip-path="url(#bannerClip)">
+    <path d="M24 378 L180 347 Q187 345.5 194 347 L350 378 L350 426 Q250 450 187 459 Q124 450 24 426 Z" fill="#EFE9E1"/>
+    <path d="M30 388 L181 358 Q187 356.8 193 358 L344 388 L344 434 Q250 462 187 472 Q124 462 30 434 Z" fill="url(#bannerg)"/>
+    <path d="M344 432 Q250 460 187 470 Q124 460 30 432" fill="none" stroke="#5B1912" stroke-width="6"/>
+  </g>
+
+  <!-- - HQ - -->
+  <rect x="99" y="414" width="30" height="10" rx="5" fill="#F0E4DC" transform="rotate(-11.3 114 419)"/>
+  <rect x="245" y="414" width="30" height="10" rx="5" fill="#F0E4DC" transform="rotate(11.3 260 419)"/>
+  <text x="187" y="436" text-anchor="middle" textLength="92" lengthAdjust="spacingAndGlyphs" font-family="'Archivo','Archivo Narrow','Arial Narrow',sans-serif" font-stretch="condensed" font-weight="800" font-size="52" letter-spacing="1" fill="#F2E8E0" transform="translate(187 417) scale(1 0.92) translate(-187 -417)">HQ</text>
+</g>
+</svg>
