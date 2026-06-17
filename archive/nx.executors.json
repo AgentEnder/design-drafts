@@ -1,0 +1,20 @@
+{
+  "targetDefaults": {
+    "@nx/vitest:test": {
+      "cache": "true",
+      "inputs": ["..."],
+      "outputs": ["..."],
+      "options": {
+        "...": "..."
+      }
+    },
+    "@nx/jest:test": {
+      "cache": "true",
+      "inputs": ["..."],
+      "outputs": ["..."],
+      "options": {
+        "...": "..."
+      }
+    }
+  }
+}

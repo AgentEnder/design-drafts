@@ -1,0 +1,42 @@
+{
+  "targetDefaults": {
+    "build": {
+      "cache": "true",
+      "inputs": ["..."],
+      "outputs": ["..."],
+      "options": {
+        "...": "..."
+      }
+    },
+    "test": [
+      {
+        "cache": false
+      },
+      {
+        "filter": {
+          "plugin": "@nx/vite",
+          "projects": ["tag:test-runner:vite", "./packages/*", "*-vite"]
+        },
+        "cache": "true",
+        "inputs": ["..."],
+        "outputs": ["..."],
+        "options": {
+          "...": "..."
+        }
+      },
+      {
+        "filter": {
+          "plugin": "@nx/jest",
+          "projects": ["tag:test-runner:jest"]
+        },
+        "cache": "true",
+        "inputs": ["..."],
+        "outputs": ["..."],
+        "options": {
+          "...": "..."
+        }
+      }
+    ]
+  },
+  "plugins": ["@nx/jest", "@nx/vite"]
+}

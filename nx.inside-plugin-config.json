@@ -1,0 +1,38 @@
+{
+  "targetDefaults": {
+    "test": {
+      "options": {
+        "testFilePattern": "**/*.vitests.ts"
+      }
+    }
+  },
+  "plugins": [
+    {
+      "plugin": "@nx/jest/plugin",
+      "targets": {
+        "test": {
+          "projects": ["tag:test-runner:jest"],
+          "cache": "true",
+          "inputs": ["..."],
+          "outputs": ["..."],
+          "options": {
+            "...": "...",
+            "testFilePattern": "**/*.jest.ts"
+          }
+        }
+      }
+    },
+    {
+      "plugin": "@nx/vite/plugin",
+      "test": {
+        "projects": ["tag:test-runner:vite", "./packages/*", "*-vite"],
+        "cache": "true",
+        "inputs": ["..."],
+        "outputs": ["..."],
+        "options": {
+          "...": "..."
+        }
+      }
+    }
+  ]
+}
