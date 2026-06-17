@@ -1,0 +1,34 @@
+{
+  "targetDefaults": {
+    "test-vite": {
+      "cache": "true",
+      "inputs": ["..."],
+      "outputs": ["..."],
+      "options": {
+        "...": "..."
+      }
+    },
+    "test-jest": {
+      "cache": "true",
+      "inputs": ["..."],
+      "outputs": ["..."],
+      "options": {
+        "...": "..."
+      }
+    }
+  },
+  "plugins": [
+    {
+      "plugin": "@nx/jest/plugin",
+      "options": {
+        "targetName": "test-jest"
+      }
+    },
+    {
+      "plugin": "@nx/vite/plugin",
+      "options": {
+        "targetName": "test-vite"
+      }
+    }
+  ]
+}

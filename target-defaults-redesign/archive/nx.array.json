@@ -1,0 +1,27 @@
+{
+  "targetDefaults": [
+    {
+      "target": "test",
+      "plugin": "@nx/vite",
+      "projects": ["tag:test-runner:vite", "./packages/*", "*-vite"],
+      "cache": "true",
+      "inputs": ["..."],
+      "outputs": ["..."],
+      "options": {
+        "...": "..."
+      }
+    },
+    {
+      "target": "test",
+      "plugin": "@nx/jest",
+      "projects": ["tag:test-runner:jest"],
+      "cache": "true",
+      "inputs": ["..."],
+      "outputs": ["..."],
+      "options": {
+        "...": "..."
+      }
+    }
+  ],
+  "plugins": ["@nx/jest", "@nx/vite"]
+}
