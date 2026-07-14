@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><meta name="draftId" content="daemonized-execution"/><title>Plan: Daemon-Hosted Task Execution</title><script>// Runs before first paint so a saved preference never flashes the other theme.
+try {
+  const saved = localStorage.getItem('dd-theme');
+  if (saved === 'light' || saved === 'dark') {
+    document.documentElement.dataset.theme = saved;
+  }
+} catch {}
+</script><style>:root{color-scheme:light;--bg: #f7f6f2;--fg: #2b2a26;--muted: #6f6d65;--border: #ddd9cf;--link: #0f5cad;--code-bg: #edeae2;--hl-comment: #59636e;--hl-keyword: #cf222e;--hl-string: #0a3069;--hl-title: #6639ba;--hl-constant: #0550ae;--hl-variable: #953800;--hl-added-fg: #116329;--hl-added-bg: #dafbe1;--hl-removed-fg: #82071e;--hl-removed-bg: #ffebe9;--anchor-flash: #f2e5b8}@media(prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg: #0d1117;--fg: #e6edf3;--muted: #9198a1;--border: #30363d;--link: #4493f8;--code-bg: #161b22;--hl-comment: #8b949e;--hl-keyword: #ff7b72;--hl-string: #a5d6ff;--hl-title: #d2a8ff;--hl-constant: #79c0ff;--hl-variable: #ffa657;--hl-added-fg: #aff5b4;--hl-added-bg: #033a16;--hl-removed-fg: #ffdcd7;--hl-removed-bg: #67060c;--anchor-flash: #423616}}:root[data-theme=dark]{color-scheme:dark;--bg: #0d1117;--fg: #e6edf3;--muted: #9198a1;--border: #30363d;--link: #4493f8;--code-bg: #161b22;--hl-comment: #8b949e;--hl-keyword: #ff7b72;--hl-string: #a5d6ff;--hl-title: #d2a8ff;--hl-constant: #79c0ff;--hl-variable: #ffa657;--hl-added-fg: #aff5b4;--hl-added-bg: #033a16;--hl-removed-fg: #ffdcd7;--hl-removed-bg: #67060c;--anchor-flash: #423616}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,system-ui,sans-serif;text-rendering:optimizeLegibility}.site-header{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.75rem 1.5rem;border-bottom:1px solid var(--border)}.site-header .site-title{font-weight:600;color:var(--fg);text-decoration:none}.theme-toggle{border:1px solid var(--border);background:transparent;color:var(--fg);border-radius:6px;padding:.25rem .6rem;font-size:.9rem;cursor:pointer;line-height:1.4}.theme-toggle:hover{background:var(--code-bg)}.page{display:grid;grid-template-columns:minmax(0,1fr);gap:2.5rem;max-width:72rem;margin-inline:auto;padding:2rem 1.5rem 4rem}.page.with-nav{grid-template-columns:14rem minmax(0,1fr)}.page.with-toc{grid-template-columns:minmax(0,1fr) 11rem}.page.with-nav.with-toc{grid-template-columns:14rem minmax(0,1fr) 11rem}@media(max-width:66rem){.page.with-toc{grid-template-columns:minmax(0,1fr)}.page.with-nav.with-toc{grid-template-columns:14rem minmax(0,1fr)}.toc{display:none}}@media(max-width:50rem){.page.with-nav,.page.with-nav.with-toc{grid-template-columns:minmax(0,1fr)}}@media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}.markdown-body summary>:is(h1,h2,h3,h4,h5,h6):before{transition:transform .15s ease}}.markdown-body summary{list-style:none;cursor:pointer}.markdown-body summary::-webkit-details-marker{display:none}.markdown-body summary>:is(h1,h2,h3,h4,h5,h6):before{content:"▸";display:inline-block;width:1em;margin-left:-1em;font-size:.6em;vertical-align:.2em;color:var(--muted)}.markdown-body details[open]>summary>:is(h1,h2,h3,h4,h5,h6):before{transform:rotate(90deg)}.markdown-body summary:hover>:is(h1,h2,h3,h4,h5,h6):before{color:var(--fg)}@keyframes dd-anchor-flash{0%{background-color:var(--anchor-flash);box-shadow:0 0 0 6px var(--anchor-flash)}to{background-color:transparent;box-shadow:none}}.markdown-body :target{border-radius:4px;animation:dd-anchor-flash 2s ease-out 1}.header-actions{display:flex;align-items:center;gap:.5rem}.pages-nav ul{list-style:none;margin:0;padding:0}.pages-nav li{margin:.15rem 0}.pages-nav a{display:block;padding:.3rem .6rem;border-radius:6px;color:var(--muted);text-decoration:none;overflow-wrap:anywhere}.pages-nav a:hover{color:var(--fg);background:var(--code-bg)}.pages-nav a[aria-current=page]{color:var(--fg);background:var(--code-bg);font-weight:600}main.markdown-body{max-width:48rem;min-width:0}.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4,.markdown-body h5,.markdown-body h6{margin:1.5em 0 .6em;line-height:1.25;text-wrap:balance;scroll-margin-top:1.25rem}.markdown-body h1:first-child{margin-top:0}.markdown-body h1,.markdown-body h2{padding-bottom:.3em;border-bottom:1px solid var(--border)}.markdown-body a{color:var(--link);text-decoration:none}.markdown-body a:hover{text-decoration:underline}.markdown-body p,.markdown-body ul,.markdown-body ol{margin-block:0 1em}.markdown-body img{max-width:100%}.markdown-body hr{height:1px;border:0;background:var(--border);margin:2rem 0}.markdown-body blockquote{margin:0 0 1em;padding:0 1em;color:var(--muted);border-left:.25em solid var(--border)}.markdown-body table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto;margin-bottom:1em}.markdown-body th,.markdown-body td{border:1px solid var(--border);padding:.4em .9em}.markdown-body th{font-weight:600}.markdown-body tr:nth-child(2n) td{background:var(--code-bg)}.markdown-body code{font-family:ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,monospace;font-size:85%;background:var(--code-bg);border-radius:6px;padding:.2em .4em}.markdown-body pre{background:var(--code-bg);border-radius:6px;padding:1rem;overflow-x:auto;line-height:1.45;margin:0 0 1em}.markdown-body pre code{background:transparent;padding:0;font-size:85%}.markdown-body input[type=checkbox]{margin-right:.4em}.markdown-body li:has(>input[type=checkbox]){list-style:none}.markdown-body ul:has(>li>input[type=checkbox]){padding-left:1em}.hljs-comment,.hljs-quote{color:var(--hl-comment)}.hljs-keyword,.hljs-doctag,.hljs-template-tag,.hljs-type,.hljs-selector-class,.hljs-selector-pseudo{color:var(--hl-keyword)}.hljs-string,.hljs-regexp,.hljs-char.escape_{color:var(--hl-string)}.hljs-title,.hljs-title.function_,.hljs-title.class_,.hljs-section{color:var(--hl-title)}.hljs-number,.hljs-literal,.hljs-symbol,.hljs-built_in,.hljs-attr,.hljs-attribute,.hljs-meta,.hljs-operator,.hljs-selector-attr,.hljs-selector-id,.hljs-bullet{color:var(--hl-constant)}.hljs-variable,.hljs-template-variable,.hljs-property,.hljs-name,.hljs-selector-tag,.hljs-tag{color:var(--hl-variable)}.hljs-emphasis{font-style:italic}.hljs-strong{font-weight:600}.hljs-addition{color:var(--hl-added-fg);background:var(--hl-added-bg)}.hljs-deletion{color:var(--hl-removed-fg);background:var(--hl-removed-bg)}.toc{position:sticky;top:1.5rem;align-self:start;max-height:calc(100vh - 3rem);overflow-y:auto;font-size:.85rem}.toc-title{margin:0 0 .5rem;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.toc ul{list-style:none;margin:0;padding:0;border-left:1px solid var(--border)}.toc a{display:block;padding:.2rem .75rem;color:var(--muted);text-decoration:none;border-left:2px solid transparent;margin-left:-1px;overflow-wrap:anywhere}.toc li.toc-depth-3 a{padding-left:1.6rem}.toc a:hover{color:var(--fg)}.toc a[aria-current=true]{color:var(--link);border-left-color:var(--link)}.search-trigger{display:inline-flex;align-items:center;gap:.6rem;border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:6px;padding:.25rem .6rem;font-size:.9rem;line-height:1.4;cursor:pointer}.search-trigger:hover{background:var(--code-bg);color:var(--fg)}.search-trigger kbd{font-family:inherit;font-size:.7rem;border:1px solid var(--border);border-radius:4px;padding:0 .35rem}.search-dialog{width:min(38rem,calc(100vw - 2rem));margin:12vh auto auto;padding:1rem;border:1px solid var(--border);border-radius:12px;background:var(--bg);color:var(--fg);box-shadow:0 24px 64px #00000040}.search-dialog::backdrop{background:#00000059;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}#dd-search{--pagefind-ui-primary: var(--link);--pagefind-ui-text: var(--fg);--pagefind-ui-background: var(--bg);--pagefind-ui-border: var(--border);--pagefind-ui-tag: var(--code-bg);--pagefind-ui-border-width: 1px;--pagefind-ui-font: inherit;font-size:.9rem}.search-placeholder{width:100%;padding:.55rem .75rem;font:inherit;color:var(--muted);background:var(--code-bg);border:1px solid var(--border);border-radius:8px}
+/*$vite$:1*/</style></head><body><header class="site-header"><a class="site-title" href="index.html">Proposal: Daemon-Hosted Task Execution</a><div class="header-actions"><button type="button" class="search-trigger"><span>Search</span><kbd>⌘K</kbd></button><button type="button" class="theme-toggle" aria-label="Toggle color theme">◐ Theme</button></div></header><div class="page with-nav with-toc"><nav class="pages-nav" aria-label="Pages"><ul><li><a href="index.html">Proposal: Daemon-Hosted Task Execution</a></li><li><a href="PLAN.html" aria-current="page">Plan: Daemon-Hosted Task Execution</a></li><li><a href="research/01-daemon-architecture.html">Research: Current Daemon Architecture</a></li><li><a href="research/02-task-execution-pipeline.html">Research: Current Task Execution Pipeline</a></li><li><a href="research/03-decisions-log.html">Decisions Log — Daemon Task Execution Proposal</a></li></ul></nav><main class="markdown-body" data-pagefind-body="true"><details class="md-section" open>
+<summary><h1 id="plan-daemon-hosted-task-execution">Plan: Daemon-Hosted Task Execution</h1></summary>
+<div class="md-section-body">
+<blockquote>
+<p>Companion to <a href="./PROPOSAL.html">PROPOSAL.md</a> (the cycle-planning pitch) — this is the detailed design, execution order, risks, and open investigations.
+Decision provenance: <a href="./research/03-decisions-log.html">research/03-decisions-log.md</a>. Codebase grounding: <a href="./research/01-daemon-architecture.html">research/01</a>, <a href="./research/02-task-execution-pipeline.html">research/02</a>.</p>
+</blockquote>
+<details class="md-section" open>
+<summary><h2 id="architecture">Architecture</h2></summary>
+<div class="md-section-body">
+<details class="md-section" open>
+<summary><h3 id="engine-extraction-dual-host">Engine extraction (dual-host)</h3></summary>
+<div class="md-section-body">
+<p>The task execution pipeline (task graph creation, hashing, orchestration, caching, lifecycles — today <code>run-command.ts</code> → <code>TaskOrchestrator</code>) is extracted into a host-agnostic library behind a narrow host interface (spawn, persist, report, env access). Two hosts:</p>
+<ul>
+<li><strong>Daemon host</strong> — used whenever the daemon is enabled. Note: enabled-ness, not TTY-ness, is the selector; AI agents are non-TTY clients and are the primary sharing use case. TTY-ness selects only the renderer.</li>
+<li><strong>In-process host</strong> — CI, docker, <code>NX_DAEMON=false</code>, WASM. Lives forever; CI keeps it honestly maintained. Zero execution logic may fork on host — the delta is transport only.</li>
+</ul>
+</div>
+</details>
+<details class="md-section" open>
+<summary><h3 id="run-submission">Run submission</h3></summary>
+<div class="md-section-body">
+<p>A run request carries the full invocation context, replacing today&#39;s ambient reads of CLI process state: normalized args, env snapshot (per-task <code>.env</code> layering resolves daemon-side against the snapshot), cwd, TTY metadata (interactive? initial size), and cloud runner options. The daemon maintains a pool of task executions; a run is a client-side selection over that pool.</p>
+</div>
+</details>
+<details class="md-section" open>
+<summary><h3 id="matching-dedup-task-level">Matching / dedup (task-level)</h3></summary>
+<div class="md-section-body">
+<table>
+<thead>
+<tr>
+<th>Task kind</th>
+<th>Matching key</th>
+<th>Same task ID in flight, key mismatch</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cacheable</td>
+<td>task hash (declared inputs + env + normalized args)</td>
+<td><strong>Supersede</strong>: kill stale execution, start fresh; all clients attach to the new one</td>
+</tr>
+<tr>
+<td>Non-cacheable, default inputs</td>
+<td>task ID + normalized args (file/env state ignored)</td>
+<td>n/a — key cannot drift</td>
+</tr>
+<tr>
+<td>Non-cacheable, explicit inputs</td>
+<td>same as cacheable</td>
+<td>same as cacheable</td>
+</tr>
+</tbody></table>
+<ul>
+<li>Supersede-on-stale <strong>is</strong> the rerun feature; no separate mechanism.</li>
+<li>Args canonicalization is a hard spec item (flag ordering, alias resolution, default elision). A false <em>positive</em> silently attaches a client to the wrong run — worse than a duplicate; bias the canonicalizer toward false negatives.</li>
+<li>Replaces <code>SharedRunningTask</code> (poll-the-DB, no output) and the client-written <code>running_tasks</code> table flow.</li>
+</ul>
+</div>
+</details>
+<details class="md-section" open>
+<summary><h3 id="io-transport-tmux-model">IO transport (tmux model)</h3></summary>
+<div class="md-section-body">
+<ul>
+<li>Bulk IO never touches the daemon&#39;s sentinel-framed JSON control socket (binary-unsafe, head-of-line blocking). Dedicated per-run raw sockets — precedent: existing forked-process/plugin-worker sockets.</li>
+<li>The daemon is the single PTY reader and holds the canonical vt100 parser per task (it already does this per-task for the TUI today, just in the wrong process). Attach = snapshot (current screen + scrollback) then delta stream; each client feeds a local parser.</li>
+<li>fd-passing was evaluated and rejected: PTY masters are single-consumer (breaks multi-attach), SCM_RIGHTS is POSIX-only, and unix-socket latency (µs) was never the bottleneck.</li>
+<li>Optional tee of raw output to an append-only file per execution: crash forensics + cheap replay for agents.</li>
+<li>Resize arbitration: first <em>interactive</em> attacher owns PTY size; non-interactive clients consume the stream as-is.</li>
+<li>Stdin: any attached interactive client may write (tmux semantics); agents generally won&#39;t.</li>
+</ul>
+</div>
+</details>
+<details class="md-section" open>
+<summary><h3 id="ownership-signals-death">Ownership, signals, death</h3></summary>
+<div class="md-section-body">
+<ul>
+<li><strong>Refcounted attachment.</strong> Ctrl+C = disconnect. Last disconnect forwards the termination signal to the process tree. Uniform for discrete and continuous tasks (<code>cleanUpUnneededContinuousTasks</code> becomes a degenerate case). Orphaned runs cannot exist. Solo-user UX is identical to today&#39;s; persistence-past-terminal is opt-in (monitor client or future <code>--detach</code> holding a reference).</li>
+<li><strong>Daemon self-termination</strong> (nx version change, lockfile change): kill in-flight tasks with explicit messaging (&quot;run terminated: workspace dependencies changed&quot;), then restart. Accepted regression: today <code>pnpm add</code> doesn&#39;t kill an in-flight run. 3h inactivity timeout is moot (running tasks are activity).</li>
+<li><strong>Daemon crash:</strong> tasks die with the daemon. Linux <code>PR_SET_PDEATHSIG</code>; Windows job objects; <strong>macOS needs a watchdog</strong> (parent-pid poll or kqueue <code>EVFILT_PROC</code>).</li>
+<li><strong>Error-model inversion (prerequisite):</strong> the daemon currently <code>process.exit(1)</code>s on any unexpected handler error, and poisons itself on watcher errors, by design. Executor-mode daemon must isolate and recover; a graph-computation error cannot take down running dev servers.</li>
+</ul>
+</div>
+</details>
+<details class="md-section" open>
+<summary><h3 id="nx-cloud-runner-in-the-daemon">Nx Cloud runner in the daemon</h3></summary>
+<div class="md-section-body">
+<ul>
+<li>Bundle resolution/verification/update happens daemon-side; the daemon reports errors to clients and can retry.</li>
+<li>Auth: daemon env is hydrated at launch and rehydrated on message receipt; first-starter&#39;s env drives an execution (consistent with env being in the cacheable matching key). A second attacher with different cloud env rides the first client&#39;s credentials — acceptable same-user/same-workspace.</li>
+<li><strong>DTE is a requirement, not a non-issue:</strong> the daemon can be explicitly enabled in CI (<code>NX_DAEMON=true</code>); DTE must work under the daemon host.</li>
+<li>Light-client audit (ocean-side) is a named open investigation — see below.</li>
+</ul>
+</div>
+</details>
+</div>
+</details>
+<details class="md-section" open>
+<summary><h2 id="execution-order-one-project-staged-internally">Execution order (one project, staged internally)</h2></summary>
+<div class="md-section-body">
+<p><strong>Stage 0 — engine extraction + daemon error-model inversion.</strong> No behavior change. Justified standalone as paying down CLI-process entanglement (research/02 documents the state currently trapped in the invoking process).</p>
+<p><strong>Stage 1 — daemon host, single client. ⛔ GO/NO-GO GATE.</strong> Behind a flag: CLI submits, daemon executes, output streams over dedicated sockets, TUI renders from the stream. Feature parity for one client; no sharing. Deliberately front-loads the two scariest risks (cross-process TUI quality; Rust TUI rework). <strong>Gate criteria: input-echo latency and render fidelity indistinguishable from today&#39;s zero-copy path in dogfooding on this repo.</strong> Fail → stop, keep Stage 0, retreat to broker model (documented fallback in research/03 D1).</p>
+<p><strong>Stage 2 — attach + dedup.</strong> Matching table, refcounted signals, supersede-on-stale, <code>SharedRunningTask</code> retired. Headline agent use case lands here.</p>
+<p><strong>Stage 3 — monitor + cloud surfaces.</strong> Monitor client (subscribe to whole pool); branch CIPEs and self-healing fixes when connected; instrumented connect prompts (UTM + background <code>nx connect</code>), copy limited to locally-derivable claims.</p>
+<p><strong>Parallel track (due before Stage 1 exits):</strong> ocean light-client audit.</p>
+</div>
+</details>
+<details class="md-section" open>
+<summary><h2 id="risks">Risks</h2></summary>
+<div class="md-section-body">
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Severity</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TUI-over-socket interactive quality</td>
+<td>High</td>
+<td>Stage 1 gate; snapshot+delta protocol; tmux as existence proof</td>
+</tr>
+<tr>
+<td>Dual-host maintenance tax (forever)</td>
+<td>High</td>
+<td>Engine library with transport-only host delta; CI exercises in-process host daily; dual-host test matrix from Stage 0</td>
+</tr>
+<tr>
+<td>Daemon reliability as run-holder</td>
+<td>High</td>
+<td>Error-model inversion in Stage 0; tasks-die-with-daemon keeps failure semantics simple</td>
+</tr>
+<tr>
+<td>Light client unsafe in long-lived/concurrent process</td>
+<td>Medium</td>
+<td>Ocean audit before Stage 1 exit; per-version bundle loading</td>
+</tr>
+<tr>
+<td>Args canonicalization false-positives</td>
+<td>Medium</td>
+<td>Bias to false negatives; canonicalizer spec&#39;d + tested standalone</td>
+</tr>
+<tr>
+<td>macOS child reaping</td>
+<td>Medium</td>
+<td>Watchdog design (kqueue <code>EVFILT_PROC</code>); spike early in Stage 1</td>
+</tr>
+<tr>
+<td>Windows (ConPTY + named pipes + no PDEATHSIG)</td>
+<td>Medium</td>
+<td>Windows PTY already gated (<code>NX_WINDOWS_PTY_SUPPORT</code>); keep daemon-execution gated similarly on Windows until parity</td>
+</tr>
+<tr>
+<td>Behavior-change backlash (lockfile kills runs)</td>
+<td>Low</td>
+<td>Explicit kill messaging; changelog/docs callout</td>
+</tr>
+</tbody></table>
+<p>Security note: attach implies any same-user process can inject stdin into running tasks via the daemon socket. This matches the existing trust boundary — the daemon already accepts <code>PROCESS_IN_BACKGROUND</code> (require-and-run arbitrary modules) from any same-user client.</p>
+</div>
+</details>
+<details class="md-section" open>
+<summary><h2 id="open-investigations">Open investigations</h2></summary>
+<div class="md-section-body">
+<ol>
+<li><strong>Ocean light-client audit:</strong> module-level singletons? env-keyed global state? safety under multiple concurrent runs in one process? lifecycle assumptions (process-exit flushes, <code>runInBackground</code> handoffs) under a long-lived host? (Investigable via Polygraph when the project is approved.)</li>
+<li><strong>Args canonicalization spec:</strong> normalization rules across executors; interaction with positional args and <code>--</code> passthrough.</li>
+<li><strong>Snapshot+stream protocol details:</strong> scrollback depth in snapshots; backpressure policy for slow attached clients (drop-oldest vs disconnect).</li>
+<li><strong>Graph/hasher consistency:</strong> executions hashed against the daemon&#39;s live graph while files change mid-run — pin file-map generation per run submission?</li>
+<li><strong>Worktrees:</strong> daemons are per-worktree; <code>running_tasks</code> is worktree-local today — confirm sharing scope stays worktree-local.</li>
+<li><strong>Monitor UX:</strong> TUI-first vs Nx Console-first; both are just clients of the same attach protocol (as is nx-mcp).</li>
+</ol>
+</div>
+</details>
+<details class="md-section" open>
+<summary><h2 id="measurement">Measurement</h2></summary>
+<div class="md-section-body">
+<ul>
+<li><strong>Stage 1 gate:</strong> input-echo latency delta vs today (target: indistinguishable; instrumented, not vibes), render-fidelity diff harness on recorded PTY streams.</li>
+<li><strong>Adoption funnel (Stage 3):</strong> connect-prompt impressions → UTM-attributed clicks → background-connect completions → connected workspaces. Falsifiable revenue claim, reviewed after a quarter of data.</li>
+<li><strong>Sharing utilization:</strong> attach events per workspace-week; superseded-run counts (proxy for duplicate work eliminated).</li>
+</ul>
+</div>
+</details>
+</div>
+</details>
+</main><aside class="toc"><nav aria-label="On this page"><h2 class="toc-title">On this page</h2><ul><li class="toc-depth-2"><a href="#architecture">Architecture</a></li><li class="toc-depth-3"><a href="#engine-extraction-dual-host">Engine extraction (dual-host)</a></li><li class="toc-depth-3"><a href="#run-submission">Run submission</a></li><li class="toc-depth-3"><a href="#matching-dedup-task-level">Matching / dedup (task-level)</a></li><li class="toc-depth-3"><a href="#io-transport-tmux-model">IO transport (tmux model)</a></li><li class="toc-depth-3"><a href="#ownership-signals-death">Ownership, signals, death</a></li><li class="toc-depth-3"><a href="#nx-cloud-runner-in-the-daemon">Nx Cloud runner in the daemon</a></li><li class="toc-depth-2"><a href="#execution-order-one-project-staged-internally">Execution order (one project, staged internally)</a></li><li class="toc-depth-2"><a href="#risks">Risks</a></li><li class="toc-depth-2"><a href="#open-investigations">Open investigations</a></li><li class="toc-depth-2"><a href="#measurement">Measurement</a></li></ul></nav></aside></div><dialog class="search-dialog" aria-label="Search this draft" data-ui-script="pagefind/pagefind-ui.js" data-ui-styles="pagefind/pagefind-ui.css" data-base-url="/design-drafts/daemonized-execution/"><div id="dd-search"></div></dialog><script>(function(){function p(){const n=document.querySelector(".search-dialog"),c=document.querySelector(".search-trigger"),i=document.getElementById("dd-search");if(!n||!c||!i)return;const{uiScript:o,uiStyles:s,baseUrl:d}=n.dataset;if(!o||!s)return;if(!/Mac|iPhone|iPad/.test(navigator.userAgent)){const e=c.querySelector("kbd");e&&(e.textContent="Ctrl K")}const a=document.createElement("input");a.type="search",a.className="search-placeholder",a.disabled=!0,a.placeholder="Loading search…",i.append(a);const l=()=>{const e=i.querySelector("input:not([disabled])");e&&e.focus()},u=()=>{n.open||n.showModal(),l()};c.addEventListener("click",u),window.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key==="k"){e.preventDefault(),u();return}if(e.key==="/"&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!n.open){const r=e.target;r instanceof HTMLElement&&(r.tagName==="INPUT"||r.tagName==="TEXTAREA"||r.isContentEditable)||(e.preventDefault(),u())}}),n.addEventListener("click",e=>{if(e.target===n){n.close();return}e.target instanceof Element&&e.target.closest("a")&&n.close()});const t=()=>{c.remove(),n.remove()};let m=0;const h=()=>{const e=document.createElement("link");e.rel="stylesheet",e.href=s,document.head.append(e);const r=document.createElement("script");r.src=o,r.onload=()=>{i.textContent="",new PagefindUI({element:"#dd-search",baseUrl:d,showSubResults:!0}),n.open&&l()},r.onerror=t,document.head.append(r)},f=async()=>{m+=1;let e=0;try{e=(await fetch(o,{method:"HEAD"})).status}catch{}if(e===200){h();return}if(e===503&&m<60){a.placeholder="Building search index…",setTimeout(f,1500);return}if((e===0||e>=500)&&m<3){setTimeout(f,2e3);return}t()};f()}function g(){const n=()=>{const c=decodeURIComponent(location.hash.slice(1));if(!c)return;const i=document.getElementById(c);if(!i)return;let o=i.closest("details"),s=!1;for(;o;)o.open||(o.open=!0,s=!0),o=o.parentElement?o.parentElement.closest("details"):null;s&&i.scrollIntoView()};window.addEventListener("hashchange",n),n()}function y(){const n=document.documentElement,c=document.querySelector(".theme-toggle");if(!c)return;const i=matchMedia("(prefers-color-scheme: dark)"),o=()=>n.dataset.theme??(i.matches?"dark":"light");c.addEventListener("click",()=>{const s=o()==="dark"?"light":"dark";n.dataset.theme=s;try{localStorage.setItem("dd-theme",s)}catch{}})}function w(){const n=Array.from(document.querySelectorAll(".toc a")),c=new Map(n.map(t=>[(t.getAttribute("href")??"").slice(1),t])),i=Array.from(c.keys()).map(t=>document.getElementById(t)).filter(t=>t!==null);let o=null,s=null;const d=t=>{t!==o&&(o&&o.removeAttribute("aria-current"),o=t,o&&o.setAttribute("aria-current","true"))},a=()=>{if(s){d(s);return}const t=i.filter(r=>r.checkVisibility?r.checkVisibility():r.getClientRects().length>0);if(!t.length){d(null);return}const m=document.documentElement,h=window.scrollY+window.innerHeight>=m.scrollHeight-2,f=window.innerHeight*.2;let e=h?t[t.length-1]:t[0];if(!h)for(const r of t){if(r.getBoundingClientRect().top>f)break;e=r}d(c.get(e.id)??null)};for(const t of n)t.addEventListener("click",()=>{s=t,a()});const l=()=>{s=null};window.addEventListener("wheel",l,{passive:!0}),window.addEventListener("touchmove",l,{passive:!0}),window.addEventListener("keydown",l);const u=new IntersectionObserver(a,{rootMargin:"0px 0px -80% 0px"});i.forEach(t=>u.observe(t)),a()}y(),g(),document.querySelector(".toc")&&w(),document.querySelector(".search-dialog")&&p()})();
+</script><script src="https://unpkg.com/@design-drafts/toolbar@0/dist/toolbar.js" defer></script><script src="https://unpkg.com/@design-drafts/annotate@0/dist/annotate.js" defer></script></body></html>

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://design-drafts.dev/schemas/draft-manifest.schema.json",
+  "name": "daemonized-execution",
+  "prompt": "",
+  "pages": [
+    {
+      "coordinates": {},
+      "path": "index.html"
+    }
+  ],
+  "createdAt": "2026-07-14T18:35:02.202Z",
+  "markdownIndex": "PROPOSAL.md"
+}
