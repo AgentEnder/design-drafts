@@ -1,0 +1,13 @@
+{
+  "$schema": "https://design-drafts.dev/schemas/draft-manifest.schema.json",
+  "name": "fs-outputs",
+  "prompt": "",
+  "pages": [
+    {
+      "coordinates": {},
+      "path": "index.html"
+    }
+  ],
+  "createdAt": "2026-07-14T22:03:25.950Z",
+  "markdownIndex": "PROPOSAL.md"
+}
