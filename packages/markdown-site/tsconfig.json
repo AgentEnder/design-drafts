@@ -10,7 +10,8 @@
     // resolution (extensionless relative imports, ?raw asset imports) applies.
     "module": "esnext",
     "moduleResolution": "bundler",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

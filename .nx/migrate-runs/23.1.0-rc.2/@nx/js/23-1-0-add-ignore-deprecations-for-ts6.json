@@ -1,0 +1,4 @@
+{
+  "status": "success",
+  "summary": "Verified the migration's tsconfig edits: \"ignoreDeprecations\": \"6.0\" added to all 6 leaf tsconfig.json files (annotate, toolbar, site, cli, conventions, markdown-site) and pre-TS6 defaults pinned in chain-root tsconfig.base.json (noUncheckedSideEffectImports:false, types:[\"*\"], esModuleInterop:false, ignoreDeprecations). All changes match the migration's intent, with existing strict:true correctly preserved. typecheck passes for 5 of 6 projects. markdown-site:typecheck reports one error (src/client/copy-markdown.ts:26, TS2345 on menu.hidden being string|boolean) that is pre-existing and unrelated to this migration — confirmed identical when the migration's tsconfig changes are reverted — so it was left untouched as out of scope."
+}

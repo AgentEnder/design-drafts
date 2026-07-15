@@ -3,7 +3,8 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "types": ["node", "vite/client"],
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "ignoreDeprecations": "6.0"
   },
   "include": ["pages/**/*.ts", "pages/**/*.tsx"]
 }

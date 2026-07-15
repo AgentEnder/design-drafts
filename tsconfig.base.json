@@ -11,6 +11,12 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "isolatedModules": true,
-    "strict": true
+    "strict": true,
+    "noUncheckedSideEffectImports": false,
+    "types": [
+      "*"
+    ],
+    "esModuleInterop": false,
+    "ignoreDeprecations": "6.0"
   }
 }
