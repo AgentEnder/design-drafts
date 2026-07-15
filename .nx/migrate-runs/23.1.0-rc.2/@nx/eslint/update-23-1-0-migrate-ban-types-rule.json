@@ -1,0 +1,4 @@
+{
+  "status": "success",
+  "summary": "No migration needed. Precondition 1 failed: no ESLint flat config in the workspace references @typescript-eslint/ban-types (in fact there are no eslint.config.* files at all; the string only appears in migrations.json and the migration's own instructions). Per the instructions, no changes were made."
+}
