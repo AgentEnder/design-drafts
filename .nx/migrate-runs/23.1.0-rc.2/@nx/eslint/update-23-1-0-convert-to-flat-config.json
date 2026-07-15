@@ -1,0 +1,4 @@
+{
+  "status": "success",
+  "summary": "No-op migration: this workspace has no ESLint setup to convert. There are no eslint.config.* or .eslintrc.* files, no lint targets (nx show projects --with-target lint returns []), and no @nx/eslint/plugin in nx.json (@nx/eslint is only an unused catalog dependency), so the pre-pass left the working tree clean. Verified all sections are not-applicable: no JavaScript-based configs (§2), no FlatCompat shims (§3), no lint targets so no passing-state baseline to restore (§4), no removed output formatters (§5), and no local rules or third-party eslint plugins to update (§6)."
+}
