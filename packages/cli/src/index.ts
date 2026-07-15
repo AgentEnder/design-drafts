@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
 
 import { cli } from 'cli-forge';
 
@@ -23,13 +23,24 @@ import {
 } from './config';
 import { CliError, runHandler } from './errors';
 import { capture, exec } from './exec';
-import { githubRemoteUrl } from './github';
+import { githubRemoteUrl, pagesBasePath } from './github';
 import { initDraft } from './init/draft';
 import { initHost } from './init/host';
 import { init } from './init/init';
+import {
+  buildSearchIndex,
+  collectMarkdownPages,
+  isMarkdownDraft,
+  renderMarkdownSite,
+} from '@design-drafts/markdown-site';
+import { resolveMarkdownIndex } from './markdown-index';
 import { ensureDraftIndex, preview } from './preview';
 import { refAdd } from './ref-add';
-import { slugifySiteName, validateSiteName } from './site-name';
+import { validateSiteName } from './site-name';
+import {
+  persistSiteNameToManifest,
+  resolveSiteName,
+} from './site-config';
 import { validatePrefix, validateRepo } from './validate';
 
 const CLI_VERSION: string = pkg.version;
@@ -148,45 +159,6 @@ function readManifestPrompt(
   return prompt.replace(/\s+/g, ' ');
 }
 
-/** Reads the manifest's human-readable `name` so the push can derive a
- * site-name from it. Returns undefined when there is no manifest, it doesn't
- * parse, or it has no usable `name`. */
-function readManifestName(manifestPath: string): string | undefined {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(readFileSync(manifestPath, 'utf-8'));
-  } catch {
-    return undefined;
-  }
-  if (!parsed || typeof parsed !== 'object') return undefined;
-  const name = (parsed as Record<string, unknown>).name;
-  return typeof name === 'string' && name.trim() ? name : undefined;
-}
-
-/**
- * Resolves the site-name (the branch/preview directory name) for a push.
- *
- * Precedence: an explicit `--site-name` wins; otherwise we derive it from the
- * manifest's `name` by slugifying it (so "Toolbar redesign demo" becomes
- * "toolbar-redesign-demo"). Only when there is no manifest to read from do we
- * fall back to prompting. The manifest is the single per-draft store now, so we
- * never persist the answer to a separate file.
- */
-async function resolveSiteName(
-  explicit: string | undefined,
-  manifestPath: string
-): Promise<string> {
-  if (explicit) return explicit;
-
-  const fromManifest = readManifestName(manifestPath);
-  if (fromManifest) {
-    const slug = slugifySiteName(fromManifest);
-    if (slug) return slug;
-  }
-
-  return promptForValue(undefined, 'site-name', 'Site name for this preview:');
-}
-
 function sanitizeAuthorName(name: string): string {
   // git's `Name <email>` author format treats `<` and `>` as delimiters.
   // Replace them with parentheses so we never produce a malformed line.
@@ -272,7 +244,10 @@ async function pushHandler(args: PushArgs): Promise<void> {
   // The manifest is the single per-draft config; derive the site-name from its
   // `name` unless an explicit --site-name overrides it.
   const manifestPath = join(sourcePath, 'design-drafts.config.json');
-  const siteName = await resolveSiteName(args['site-name'], manifestPath);
+  const { siteName, fromPrompt } = await resolveSiteName(
+    args['site-name'],
+    manifestPath
+  );
   const prefix = resolvePrefix(args.prefix);
 
   const validation = validateSiteName(siteName);
@@ -297,6 +272,16 @@ async function pushHandler(args: PushArgs): Promise<void> {
     process.exit(1);
   }
 
+  // A site-name we had to prompt for isn't recorded anywhere yet. Write it into
+  // the draft's manifest (creating one if absent) before we copy the source, so
+  // this first preview ships a manifest the toolbar can read AND future pushes
+  // derive the name instead of re-prompting. The manifest is the draft's own
+  // file, not a global default, so it's safe to write before the push lands.
+  if (fromPrompt) {
+    persistSiteNameToManifest(manifestPath, siteName, new Date().toISOString());
+    console.log(`Saved site-name "${siteName}" to design-drafts.config.json`);
+  }
+
   // Capture metadata about the SOURCE path before we copy it into a tmpdir.
   // The tmpdir gets a fresh `git init` and won't carry the source repo's
   // history, remotes, or config — so we have to read all of that from the
@@ -311,6 +296,10 @@ async function pushHandler(args: PushArgs): Promise<void> {
     draftConfigSha,
   });
 
+  // Which markdown doc becomes index.html — may prompt, so it runs against the
+  // source dir (where the answer is persisted) before anything is copied.
+  const indexSource = await resolveMarkdownIndex(sourcePath, manifestPath);
+
   const branchName = `${prefix}${siteName}`;
   const tmpDir = mkdtempSync(join(tmpdir(), 'design-drafts-'));
   // Keep the commit message OUTSIDE the working tree so `git add .` can't
@@ -320,13 +309,51 @@ async function pushHandler(args: PushArgs): Promise<void> {
   writeFileSync(messageFile, commitMessage);
 
   try {
-    cpSync(sourcePath, tmpDir, { recursive: true });
+    // A markdown-only folder is often a git repo root; carrying its `.git`
+    // into the tmpdir would hijack the fresh `git init` below (existing
+    // history, an already-taken `origin`), so it never gets copied.
+    cpSync(sourcePath, tmpDir, {
+      recursive: true,
+      filter: (src) => !src.split(sep).includes('.git'),
+    });
+    // A draft that is just markdown (no html at all) gets rendered into a
+    // browsable site: one themed, GFM-rendered html page per .md file, with
+    // README.md becoming index.html. Classic html drafts are left untouched.
+    // Search result links need the deployed base path, inferred from the repo.
+    const searchBasePath = pagesBasePath(repo, branchName);
+    // The site-name IS the draft id every page declares, so a page annotated in
+    // preview keeps its annotations once deployed (see resolveDraftId).
+    const draftId = siteName;
+    // Captured before rendering (which makes the dir no longer markdown-only):
+    // the alias copies of index pages, so the baked listing below — used when
+    // the draft has no index of its own — never lists a document twice.
+    const aliasPaths = isMarkdownDraft(tmpDir)
+      ? collectMarkdownPages(tmpDir, { indexSource }).flatMap(
+          (page) => page.aliasPaths
+        )
+      : [];
+    if (
+      renderMarkdownSite(tmpDir, {
+        siteName,
+        draftId,
+        indexSource,
+        search: { basePath: searchBasePath },
+      })
+    ) {
+      console.log('Rendered markdown pages into a browsable site.');
+      if (await buildSearchIndex(tmpDir)) {
+        console.log(`Search enabled (results resolve under ${searchBasePath}).`);
+      } else {
+        // Strip the search wiring so pages never reference a missing bundle.
+        renderMarkdownSite(tmpDir, { siteName, draftId, indexSource });
+      }
+    }
     // Bake a page listing into drafts that ship no index.html of their own.
     // The preview server fakes one per request, but gh-pages serves static
     // files only, so without this the deployed draft root 404s when linked
     // from the site index. Runs before the workflow embed so the listing never
     // includes the `.github/` dir (which the deploy step strips out anyway).
-    ensureDraftIndex(tmpDir);
+    ensureDraftIndex(tmpDir, { exclude: aliasPaths });
     await embedDeployWorkflow(repo, tmpDir);
     // Create the draft branch as the initial branch in one step — avoids git's
     // "using 'master'" hint and a redundant checkout.

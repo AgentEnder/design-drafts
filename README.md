@@ -111,6 +111,17 @@ force-pushes it to `drafts/<site-name>`, and exits. The
 [`Deploy Preview`](.github/workflows/deploy-preview.yml) workflow then publishes
 it to `https://<owner>.github.io/<repo>/<site-name>/`.
 
+### Markdown-only folders
+
+You don't need html at all. Running `design-drafts` in a folder that contains
+only markdown renders each `.md` file into a clean, GitHub-flavored viewer page
+— tables, task lists, strikethrough, syntax-highlighted code fences, heading
+anchors — with a light/dark theme toggle, a floating per-page table of
+contents, and Pagefind full-text search baked in. `README.md` becomes the site's `index.html`, relative links between
+markdown files are rewritten to the rendered pages, and the markdown sources
+ship alongside the html. A folder with any hand-written `.html` is treated as a
+classic draft and left untouched.
+
 > The **push** publishes the preview — a pull request is *not* required for
 > deployment.
 

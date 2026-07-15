@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./discover": "./src/discover.ts",
+    "./draft-id": "./src/draft-id.ts",
     "./draft-manifest.schema.json": "./schemas/draft-manifest.schema.json"
   },
   "scripts": {
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "jsdom": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

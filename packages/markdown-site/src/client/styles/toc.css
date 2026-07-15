@@ -1,0 +1,38 @@
+/* Only shipped on pages that render a toc. */
+.toc {
+  position: sticky;
+  top: 1.5rem;
+  align-self: start;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  font-size: 0.85rem;
+}
+.toc-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 1px solid var(--border);
+}
+.toc a {
+  display: block;
+  padding: 0.2rem 0.75rem;
+  color: var(--muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  margin-left: -1px;
+  overflow-wrap: anywhere;
+}
+.toc li.toc-depth-3 a { padding-left: 1.6rem; }
+.toc a:hover { color: var(--fg); }
+.toc a[aria-current='true'] {
+  color: var(--link);
+  border-left-color: var(--link);
+}

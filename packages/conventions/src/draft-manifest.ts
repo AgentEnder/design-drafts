@@ -143,6 +143,15 @@ export const DraftManifestSchema = Type.Object(
           "The brief that generated the draft. Free text, or a path reference like 'references/brief.md'.",
       })
     ),
+    markdownIndex: Type.Optional(
+      Type.Union(
+        [Type.String({ minLength: 1 }), Type.Null()],
+        {
+          description:
+            'For markdown drafts without a README.md/index.md: the root-relative markdown file chosen to render as index.html, or null when the generated page listing was chosen instead. Absent when the draft has a natural index (or is not a markdown draft).',
+        }
+      )
+    ),
     source: Type.Optional(DraftSourceSchema),
     createdAt: Type.String({
       format: 'date-time',

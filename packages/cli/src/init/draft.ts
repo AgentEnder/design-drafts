@@ -2,8 +2,9 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 
 import { promptForValue } from '../config';
+import { isMarkdownDraft } from '@design-drafts/markdown-site';
 import { slugifySiteName, validateSiteName } from '../site-name';
-import { draftConfig, DRAFT_INDEX_HTML } from './templates';
+import { draftConfig, draftIndexHtml } from './templates';
 
 export interface InitDraftOptions {
   path: string;
@@ -44,6 +45,11 @@ export async function initDraft(opts: InitDraftOptions): Promise<void> {
     siteName = fixed;
   }
 
+  // A folder that is already markdown pages must stay html-free: a placeholder
+  // index.html would flip it out of markdown-draft detection and the .md files
+  // would never be rendered on push/preview.
+  const markdownDraft = isMarkdownDraft(targetDir);
+
   // Don't clobber an existing draft manifest or page on re-run; report what
   // each file did so a re-run reads as "nothing to do" rather than a fresh
   // scaffold.
@@ -52,10 +58,17 @@ export async function initDraft(opts: InitDraftOptions): Promise<void> {
     join(targetDir, 'design-drafts.config.json'),
     draftConfig(siteName, new Date().toISOString())
   );
-  const wroteIndex = writeIfAbsent(
-    join(targetDir, 'index.html'),
-    DRAFT_INDEX_HTML
-  );
+  let wroteIndex = false;
+  if (markdownDraft) {
+    console.log('  skipped index.html (markdown pages found — they become the site)');
+  } else {
+    // The page declares the site-name as its draft id — the same slug a push
+    // derives from the manifest, so annotations keep their identity on deploy.
+    wroteIndex = writeIfAbsent(
+      join(targetDir, 'index.html'),
+      draftIndexHtml(siteName)
+    );
+  }
 
   if (!wroteManifest && !wroteIndex) {
     console.log(
@@ -66,6 +79,8 @@ export async function initDraft(opts: InitDraftOptions): Promise<void> {
 
   console.log(
     `\nDraft "${siteName}" ready.\n` +
-      `Edit index.html, then run \`design-drafts\` here to publish a preview.`
+      (markdownDraft
+        ? `Your markdown files are the pages; run \`design-drafts\` here to publish a preview.`
+        : `Edit index.html, then run \`design-drafts\` here to publish a preview.`)
   );
 }

@@ -17,6 +17,7 @@ import {
   discoverManifest,
   draftRoot,
 } from '@design-drafts/conventions/discover';
+import { readDraftId } from '@design-drafts/conventions/draft-id';
 
 import { pickAtPoint, type PickResult } from './picker.js';
 import {
@@ -97,12 +98,19 @@ class AnnotateOverlay {
   private pinLayer: HTMLElement | null = null;
 
   private active = false;
-  // The draft this page belongs to, used to scope which sibling pages' annotations
-  // appear in the panel. Defaults to the origin (every page on the host) until the
-  // manifest is found, then narrows to the draft root so co-deployed drafts don't
-  // bleed into each other. Resolved lazily on first activation.
+  // Which pages the panel may show, and which annotations on them are ours.
+  //
+  // `draftScope` is a URL prefix: the origin (every page on the host) until the
+  // manifest is found, then the draft root, so co-deployed drafts don't bleed
+  // into each other. Resolved lazily on first activation.
+  //
+  // `draftId` is what the page itself declares (a generated page always does;
+  // a hand-written one may not). It is the only thing that separates drafts a
+  // preview server serves from the same `localhost:<port>/` URL, where the
+  // scope prefix is identical for all of them.
   private draftScope: string = window.location.origin + '/';
   private scopeRequested = false;
+  private readonly draftId = readDraftId(document);
   private hovered: PickResult | null = null;
   private composing: { selector: SelectorBundle; element: Element } | null =
     null;
@@ -355,6 +363,7 @@ class AnnotateOverlay {
       const now = Date.now();
       const annotation: Annotation = {
         id: generateId(),
+        draftId: this.draftId,
         selector: this.composing.selector,
         comment: value,
         createdAt: now,
@@ -393,7 +402,7 @@ class AnnotateOverlay {
   private refreshPins(): void {
     this.clearPins();
     if (!this.pinLayer) return;
-    const annotations = loadAnnotations();
+    const annotations = loadAnnotations(this.draftId);
     annotations.forEach((annotation, index) => {
       const result = resolveSelector(annotation.selector);
       const pinNode = document.createElement('button');
@@ -568,7 +577,7 @@ class AnnotateOverlay {
     if (!this.panelBodyEl || !this.panelTabsEl) return;
 
     const currentUrl = currentPageUrl();
-    const allByUrl = loadAnnotationsByUrl(this.draftScope);
+    const allByUrl = loadAnnotationsByUrl(this.draftScope, this.draftId);
     // Always show the current page as a tab even if it has no annotations
     // yet — the panel doubles as an empty-state prompt.
     if (!allByUrl.has(currentUrl)) allByUrl.set(currentUrl, []);

@@ -9,6 +9,12 @@ export type {
 export { DraftManifestSchema } from './draft-manifest.js';
 
 export {
+  DRAFT_ID_META_NAME,
+  draftIdMetaTag,
+  readDraftId,
+} from './draft-id.js';
+
+export {
   parseDraftManifest,
   validateDraftManifest,
   type ValidationResult,

@@ -9,6 +9,12 @@ import type { SelectorBundle } from './selectors.js';
 
 export interface Annotation {
   id: string;
+  /** The draft this annotation was written against, as the page declared it
+   * (see `readDraftId`). Undefined when the page declared nothing — a
+   * hand-written draft. Reads only surface annotations whose draft matches the
+   * page doing the reading, so two drafts served at one URL (every preview
+   * server) stay separate. */
+  draftId?: string;
   selector: SelectorBundle;
   comment: string;
   createdAt: number;
@@ -60,20 +66,34 @@ function isAnnotation(value: unknown): value is Annotation {
     typeof v.createdAt === 'number' &&
     typeof v.updatedAt === 'number' &&
     typeof v.selector === 'object' &&
-    v.selector !== null
+    v.selector !== null &&
+    (v.draftId === undefined || typeof v.draftId === 'string')
   );
 }
 
-export function loadAnnotations(): Annotation[] {
-  return safeRead();
+/** Whether `annotation` belongs to the draft the reading page declares. A page
+ * that declares no draft sees only annotations that declare none either. */
+function belongsTo(draftId: string | undefined, annotation: Annotation): boolean {
+  return annotation.draftId === draftId;
 }
 
-// Enumerate every annotation set in localStorage that belongs to `scope`,
-// keyed by the page URL. `scope` is the draft root (the directory holding the
-// manifest), so the panel surfaces annotations made on sibling pages of *this*
-// draft — not every draft that happens to share the origin (multiple drafts are
-// deployed under one GitHub Pages origin at different sub-paths).
-export function loadAnnotationsByUrl(scope: string): Map<string, Annotation[]> {
+export function loadAnnotations(draftId: string | undefined): Annotation[] {
+  return safeRead().filter((a) => belongsTo(draftId, a));
+}
+
+// Enumerate the annotations on every page of `draftId`, keyed by page URL, so
+// the panel can offer sibling pages as tabs.
+//
+// Two filters, because neither alone is enough. `scope` — the draft root (the
+// directory holding the manifest) — keeps the co-deployed drafts that share a
+// GitHub Pages origin out of each other's panels. `draftId` keeps out the
+// drafts that share a *URL*: a preview server serves every draft from
+// `localhost:<port>/`, so scope can't separate them but the page's own
+// declaration can.
+export function loadAnnotationsByUrl(
+  scope: string,
+  draftId: string | undefined
+): Map<string, Annotation[]> {
   const out = new Map<string, Annotation[]>();
   try {
     for (let i = 0; i < window.localStorage.length; i++) {
@@ -86,7 +106,9 @@ export function loadAnnotationsByUrl(scope: string): Map<string, Annotation[]> {
       try {
         const list = JSON.parse(raw);
         if (Array.isArray(list)) {
-          const valid = list.filter(isAnnotation);
+          const valid = list
+            .filter(isAnnotation)
+            .filter((a) => belongsTo(draftId, a));
           if (valid.length) out.set(url, valid);
         }
       } catch {

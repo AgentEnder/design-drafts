@@ -17,6 +17,8 @@ import {
   contentTypeFor,
   createPreviewServer,
   ensureDraftIndex,
+  prepareMarkdownSearch,
+  type PreviewSearch,
   renderDirectoryIndex,
   resolveServedFile,
 } from './preview';
@@ -31,6 +33,10 @@ describe('contentTypeFor', () => {
 
   it('is case-insensitive on the extension', () => {
     expect(contentTypeFor('PAGE.HTML')).toBe('text/html; charset=utf-8');
+  });
+
+  it('serves markdown as plain text, so "view raw" displays instead of downloading', () => {
+    expect(contentTypeFor('README.md')).toBe('text/plain; charset=utf-8');
   });
 
   it('falls back to octet-stream for unknown or missing extensions', () => {
@@ -163,6 +169,280 @@ describe('createPreviewServer with no root index.html', () => {
     expect(res.headers.get('content-type')).toBe('text/html; charset=utf-8');
     expect(await res.text()).toContain('href="/about.html"');
   });
+
+  it('serves the generated index for /index.html too', async () => {
+    const res = await fetch(`${baseUrl}/index.html`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('href="/about.html"');
+  });
+});
+
+describe('createPreviewServer over a markdown draft', () => {
+  let dir: string;
+  let server: ReturnType<typeof createPreviewServer>;
+  let baseUrl: string;
+
+  beforeEach(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'design-drafts-preview-md-'));
+    writeFileSync(join(dir, 'design-drafts.config.json'), '{}');
+    writeFileSync(join(dir, 'README.md'), '# Home\n\nWelcome!');
+    mkdirSync(join(dir, 'guides'), { recursive: true });
+    writeFileSync(join(dir, 'guides', 'setup.md'), '# Setup\n\nSteps.');
+
+    server = createPreviewServer(dir);
+    await new Promise<void>((res) => server.listen(0, '127.0.0.1', res));
+    const { port } = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${port}`;
+  });
+
+  afterEach(async () => {
+    await new Promise<void>((res) => server.close(() => res()));
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('renders README.md for the root request', async () => {
+    const res = await fetch(`${baseUrl}/`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('text/html; charset=utf-8');
+    const html = await res.text();
+    expect(html).toContain('Welcome!');
+    expect(html).toContain('<!doctype html>');
+  });
+
+  it('renders the markdown twin of a requested html page', async () => {
+    const res = await fetch(`${baseUrl}/guides/setup.html`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('Steps.');
+  });
+
+  it('serves raw markdown when the .md file itself is requested', async () => {
+    // The "view raw" link on every rendered page points here; a push ships the
+    // same .md sources, so the link resolves on gh-pages too.
+    const res = await fetch(`${baseUrl}/guides/setup.md`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('text/plain; charset=utf-8');
+    expect(await res.text()).toBe('# Setup\n\nSteps.');
+  });
+
+  it('still 404s for html paths with no markdown twin', async () => {
+    const res = await fetch(`${baseUrl}/nope.html`);
+    expect(res.status).toBe(404);
+  });
+
+  it('leaves search out of rendered pages when no bundle is configured', async () => {
+    const res = await fetch(`${baseUrl}/`);
+    // The shared chrome bundle mentions search internally; the guarantee is
+    // that no search markup renders without a bundle configured.
+    const html = await res.text();
+    expect(html).not.toContain('class="search-dialog"');
+    expect(html).not.toContain('data-ui-script');
+  });
+});
+
+describe('createPreviewServer with a designated index doc', () => {
+  let dir: string;
+  let server: ReturnType<typeof createPreviewServer>;
+  let baseUrl: string;
+
+  beforeEach(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'design-drafts-preview-index-'));
+    writeFileSync(join(dir, 'design-drafts.config.json'), '{}');
+    writeFileSync(join(dir, 'notes.md'), '# Notes\n\nChosen index content.');
+    writeFileSync(join(dir, 'zoo.md'), '# Zoo');
+
+    server = createPreviewServer(dir, { indexSource: 'notes.md' });
+    await new Promise<void>((res) => server.listen(0, '127.0.0.1', res));
+    const { port } = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${port}`;
+  });
+
+  afterEach(async () => {
+    await new Promise<void>((res) => server.close(() => res()));
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('serves the chosen doc at the root and at /index.html', async () => {
+    expect(await (await fetch(`${baseUrl}/`)).text()).toContain(
+      'Chosen index content.'
+    );
+    expect(await (await fetch(`${baseUrl}/index.html`)).text()).toContain(
+      'Chosen index content.'
+    );
+  });
+
+  it('also serves the chosen doc under its default name, so relative links resolve', async () => {
+    // Another page's `[see](notes.md)` rewrites to `notes.html`.
+    const res = await fetch(`${baseUrl}/notes.html`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('Chosen index content.');
+  });
+});
+
+describe('createPreviewServer with background search', () => {
+  let dir: string;
+  let bundleDir: string;
+  let search: () => PreviewSearch;
+  let server: ReturnType<typeof createPreviewServer>;
+  let baseUrl: string;
+
+  beforeEach(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'design-drafts-preview-search-'));
+    writeFileSync(join(dir, 'design-drafts.config.json'), '{}');
+    writeFileSync(join(dir, 'README.md'), '# Home\n\nWelcome!');
+    mkdirSync(join(dir, 'guides'), { recursive: true });
+    writeFileSync(join(dir, 'guides', 'setup.md'), '# Setup');
+
+    // A stand-in for the staging dir prepareMarkdownSearch builds: the server
+    // only needs its pagefind/ contents to exist.
+    bundleDir = mkdtempSync(join(tmpdir(), 'design-drafts-bundle-'));
+    mkdirSync(join(bundleDir, 'pagefind'), { recursive: true });
+    writeFileSync(join(bundleDir, 'pagefind', 'pagefind-ui.js'), '// ui stub');
+
+    search = () => ({ phase: 'ready', bundleDir });
+    server = createPreviewServer(dir, { search: () => search() });
+    await new Promise<void>((res) => server.listen(0, '127.0.0.1', res));
+    const { port } = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${port}`;
+  });
+
+  afterEach(async () => {
+    await new Promise<void>((res) => server.close(() => res()));
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(bundleDir, { recursive: true, force: true });
+  });
+
+  it('wires the search UI into rendered pages with a root baseUrl', async () => {
+    const html = await (await fetch(`${baseUrl}/`)).text();
+    expect(html).toContain('id="dd-search"');
+    expect(html).toContain('data-base-url="/"');
+
+    const nested = await (await fetch(`${baseUrl}/guides/setup.html`)).text();
+    expect(nested).toContain('"../pagefind/pagefind-ui.js"');
+  });
+
+  it('serves the pagefind bundle from the staging directory once ready', async () => {
+    const res = await fetch(`${baseUrl}/pagefind/pagefind-ui.js`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe('// ui stub');
+  });
+
+  it('answers 503 for bundle files while the index is still building', async () => {
+    search = () => ({ phase: 'building' });
+    const res = await fetch(`${baseUrl}/pagefind/pagefind-ui.js`);
+    expect(res.status).toBe(503);
+    // Pages still render with the search placeholder while building.
+    const html = await (await fetch(`${baseUrl}/`)).text();
+    expect(html).toContain('id="dd-search"');
+  });
+
+  it('answers 404 for bundle files when indexing failed', async () => {
+    search = () => ({ phase: 'failed' });
+    const res = await fetch(`${baseUrl}/pagefind/pagefind-ui.js`);
+    expect(res.status).toBe(404);
+  });
+
+  it('404s for bundle files that do not exist', async () => {
+    const res = await fetch(`${baseUrl}/pagefind/nope.js`);
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('prepareMarkdownSearch', () => {
+  let dir: string;
+  let staging: string | undefined;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'design-drafts-prepare-search-'));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+    if (staging) rmSync(staging, { recursive: true, force: true });
+    staging = undefined;
+  });
+
+  it('builds a real pagefind bundle for a markdown draft', async () => {
+    writeFileSync(join(dir, 'README.md'), '# Docs\n\nSearchable words.');
+    staging = await prepareMarkdownSearch(dir);
+    expect(staging).toBeDefined();
+    expect(existsSync(join(staging as string, 'pagefind', 'pagefind-ui.js'))).toBe(true);
+  }, 30_000);
+
+  it('returns undefined for a classic html draft', async () => {
+    writeFileSync(join(dir, 'index.html'), '<!doctype html>');
+    staging = await prepareMarkdownSearch(dir);
+    expect(staging).toBeUndefined();
+  });
+});
+
+describe('createPreviewServer over a markdown draft with no README', () => {
+  let dir: string;
+  let server: ReturnType<typeof createPreviewServer>;
+  let baseUrl: string;
+
+  beforeEach(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'design-drafts-preview-md-noreadme-'));
+    writeFileSync(join(dir, 'design-drafts.config.json'), '{}');
+    writeFileSync(join(dir, 'notes.md'), '# Notes');
+
+    server = createPreviewServer(dir);
+    await new Promise<void>((res) => server.listen(0, '127.0.0.1', res));
+    const { port } = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${port}`;
+  });
+
+  afterEach(async () => {
+    await new Promise<void>((res) => server.close(() => res()));
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('lists the rendered markdown pages in the generated root index', async () => {
+    const res = await fetch(`${baseUrl}/`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('href="/notes.html"');
+  });
+
+  it('serves the generated index for /index.html, matching what a push bakes', async () => {
+    // Every rendered page's brand link points at index.html; a push always
+    // bakes one (ensureDraftIndex), so preview must answer it too.
+    const res = await fetch(`${baseUrl}/index.html`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('href="/notes.html"');
+  });
+});
+
+describe('createPreviewServer over an identified markdown draft', () => {
+  let dir: string;
+  let server: ReturnType<typeof createPreviewServer>;
+  let baseUrl: string;
+
+  beforeEach(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'design-drafts-preview-draft-id-'));
+    writeFileSync(
+      join(dir, 'design-drafts.config.json'),
+      JSON.stringify({ name: 'My Docs Site' })
+    );
+    writeFileSync(join(dir, 'README.md'), '# Home');
+
+    server = createPreviewServer(dir);
+    await new Promise<void>((res) => server.listen(0, '127.0.0.1', res));
+    const { port } = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${port}`;
+  });
+
+  afterEach(async () => {
+    await new Promise<void>((res) => server.close(() => res()));
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  // Preview is where drafts actually collide: every draft is served from a
+  // localhost URL, so without the declaration the overlay cannot tell whose
+  // annotations it is looking at. The id is the same slug the push derives
+  // from the manifest name, so annotations don't change identity on deploy.
+  it('declares the draft id derived from the manifest name', async () => {
+    const html = await (await fetch(`${baseUrl}/`)).text();
+    expect(html).toContain('<meta name="draftId" content="my-docs-site"/>');
+  });
 });
 
 describe('renderDirectoryIndex', () => {
@@ -190,6 +470,15 @@ describe('renderDirectoryIndex', () => {
     expect(html).toContain('href="about.html"');
     expect(html).toContain('href="pages/p.html"');
     expect(html).not.toContain('href="/');
+  });
+
+  it('omits excluded pages, so an index page is not listed twice', () => {
+    // A markdown index writes an alias copy (README.html next to index.html);
+    // the listing should show the page once.
+    writeFileSync(join(dir, 'README.html'), '');
+    const html = renderDirectoryIndex(dir, { exclude: ['README.html'] });
+    expect(html).not.toContain('href="/README.html"');
+    expect(html).toContain('href="/about.html"');
   });
 });
 

@@ -3,6 +3,8 @@
 // plain `pnpm build`, keeps the gh-pages branch as the durable preview store,
 // and serves via actions/deploy-pages (Pages source = "GitHub Actions").
 
+import { draftIdMetaTag } from '@design-drafts/conventions/draft-id';
+
 export const DRAFT_BRANCH_PREFIX = 'drafts/';
 
 // Marker embedded in the generated workflow so `init host` can detect an
@@ -182,11 +184,20 @@ export function draftConfig(siteName: string, createdAt: string): string {
   );
 }
 
-export const DRAFT_INDEX_HTML = `<!doctype html>
+/**
+ * The starter page written by `init draft`. It declares the draft it belongs to
+ * (`draftId`, the site-name slug) so the annotate overlay can tell this draft's
+ * annotations from those of every other draft the preview server hands the same
+ * `localhost:<port>/` URL to. Every other page the CLI generates declares the
+ * same id; see `@design-drafts/conventions/draft-id`.
+ */
+export function draftIndexHtml(draftId: string): string {
+  return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    ${draftIdMetaTag(draftId)}
     <title>Draft preview</title>
   </head>
   <body>
@@ -210,3 +221,4 @@ export const DRAFT_INDEX_HTML = `<!doctype html>
   </body>
 </html>
 `;
+}

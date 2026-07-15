@@ -1,10 +1,30 @@
 import { spawn } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { createServer, type Server } from 'node:http';
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { createServer, type Server, type ServerResponse } from 'node:http';
+import { tmpdir } from 'node:os';
 import { extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import { resolveDraftDir } from './draft-dir';
 import { CliError } from './errors';
+import {
+  buildSearchIndex,
+  collectMarkdownPages,
+  isMarkdownDraft,
+  renderMarkdownPageAt,
+  renderMarkdownSite,
+  type RenderMarkdownSiteOptions,
+} from '@design-drafts/markdown-site';
+import { resolveMarkdownIndex } from './markdown-index';
+import { resolveDraftId } from './site-config';
 
 const DEFAULT_PORT = 4321;
 // When scanning for a free port (no explicit --port), give up after this many
@@ -32,7 +52,9 @@ const MIME_TYPES: Record<string, string> = {
   '.ttf': 'font/ttf',
   '.otf': 'font/otf',
   '.txt': 'text/plain; charset=utf-8',
-  '.md': 'text/markdown; charset=utf-8',
+  // Plain text, not text/markdown: every page's "view raw" link points at its
+  // .md source, and browsers download text/markdown rather than display it.
+  '.md': 'text/plain; charset=utf-8',
 };
 
 /** Maps a file path to a Content-Type by extension, defaulting to a generic
@@ -116,6 +138,13 @@ export interface DirectoryIndexOptions {
    * gh-pages serves from a `/<site>/` subdirectory.
    */
   rootAbsoluteLinks?: boolean;
+  /** Designated markdown index (see `resolveMarkdownIndex`), so a markdown
+   * draft's listing shows the same output paths its pages render to. */
+  indexSource?: string;
+  /** Root-relative paths to leave out of the listing — the alias copies a
+   * markdown index writes (see `MarkdownPage.aliasPaths`), so one document
+   * isn't listed twice. */
+  exclude?: readonly string[];
 }
 
 /**
@@ -126,8 +155,16 @@ export function renderDirectoryIndex(
   draftDir: string,
   options: DirectoryIndexOptions = {}
 ): string {
-  const { rootAbsoluteLinks = true } = options;
-  const pages = collectHtmlPages(draftDir);
+  const { rootAbsoluteLinks = true, indexSource, exclude = [] } = options;
+  let pages = collectHtmlPages(draftDir);
+  if (pages.length === 0 && isMarkdownDraft(draftDir)) {
+    // A markdown draft has no .html on disk yet, but every .md renders to a
+    // page — list those output paths so the fallback index isn't empty.
+    pages = collectMarkdownPages(draftDir, { indexSource }).map(
+      (page) => page.outputPath
+    );
+  }
+  pages = pages.filter((page) => !exclude.includes(page));
   const items = pages.length
     ? pages
         .map((page) => {
@@ -172,17 +209,114 @@ ${items}
  * the branch content. Links are relative so they resolve under the `/<site>/`
  * base path the draft is deployed to. No-op when an index already exists.
  */
-export function ensureDraftIndex(dir: string): void {
+export function ensureDraftIndex(
+  dir: string,
+  options: { exclude?: readonly string[] } = {}
+): void {
   const indexPath = join(dir, 'index.html');
   if (existsSync(indexPath)) {
     return;
   }
-  writeFileSync(indexPath, renderDirectoryIndex(dir, { rootAbsoluteLinks: false }));
+  writeFileSync(
+    indexPath,
+    renderDirectoryIndex(dir, {
+      rootAbsoluteLinks: false,
+      exclude: options.exclude,
+    })
+  );
+}
+
+/** State of the background search-index build, polled per request. */
+export type PreviewSearch =
+  | { phase: 'building' }
+  | { phase: 'ready'; bundleDir: string }
+  | { phase: 'failed' };
+
+export interface PreviewServerOptions {
+  /**
+   * Reports the current state of the search bundle (see
+   * `prepareMarkdownSearch`); called on every `/pagefind/*` request so the
+   * index can finish building after the server is already up. When set,
+   * rendered markdown pages get the search UI wired to the server root;
+   * `/pagefind/*` answers 503 while building (the page's loader shows a
+   * progress placeholder and retries), the staged files once ready, and 404
+   * after a failure. Omit to disable search entirely.
+   */
+  search?: () => PreviewSearch;
+  /**
+   * Root-relative markdown source designated as the draft's index (see
+   * `resolveMarkdownIndex`) — served at `/` and `/index.html`, exactly as a
+   * push would bake it. Omit when a README/index.md exists or the generated
+   * listing was chosen.
+   */
+  indexSource?: string;
+}
+
+/**
+ * Copies a markdown draft into a staging tmpdir, renders it, and builds its
+ * Pagefind bundle there, so the preview server can offer working search
+ * without writing anything into the draft. Returns the staging directory, or
+ * undefined when the draft isn't markdown or indexing fails (search is
+ * progressive enhancement — the preview still works without it). The index is
+ * a snapshot from server start; markdown edited mid-session renders fresh but
+ * isn't re-indexed until the next `design-drafts preview`.
+ */
+export async function prepareMarkdownSearch(
+  draftDir: string,
+  indexSource?: string
+): Promise<string | undefined> {
+  if (!isMarkdownDraft(draftDir)) return undefined;
+  const staging = mkdtempSync(join(tmpdir(), 'design-drafts-search-'));
+  try {
+    cpSync(draftDir, staging, {
+      recursive: true,
+      filter: (src) => {
+        const segments = src.split(sep);
+        return !segments.includes('.git') && !segments.includes('node_modules');
+      },
+    });
+    if (
+      renderMarkdownSite(staging, { search: { basePath: '/' }, indexSource }) &&
+      (await buildSearchIndex(staging))
+    ) {
+      return staging;
+    }
+  } catch {
+    // Fall through to cleanup — preview works fine without search.
+  }
+  rmSync(staging, { recursive: true, force: true });
+  return undefined;
 }
 
 /** Builds the static file server for a draft directory without binding it to a
  * port, so it can be exercised directly in tests. */
-export function createPreviewServer(draftDir: string): Server {
+export function createPreviewServer(
+  draftDir: string,
+  options: PreviewServerOptions = {}
+): Server {
+  const sendHtml = (res: ServerResponse, html: string): void => {
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Length': Buffer.byteLength(html),
+    });
+    res.end(html);
+  };
+  // Maps an absolute path under the draft root to the root-relative POSIX form
+  // that markdown page output paths use (`''` for the root itself).
+  const relPosix = (abs: string): string =>
+    relative(draftDir, abs).split(sep).join('/');
+  const { search } = options;
+  // On-the-fly markdown pages must match what the search bundle was built
+  // from, so they get the same search wiring whenever search is configured.
+  // They also declare the same draft id a push would bake, which is what keeps
+  // one draft's annotations out of the next draft served from this same
+  // localhost URL.
+  const renderOptions: RenderMarkdownSiteOptions = {
+    draftId: resolveDraftId(join(draftDir, 'design-drafts.config.json')),
+    indexSource: options.indexSource,
+    ...(search ? { search: { basePath: '/' } } : {}),
+  };
+
   return createServer((req, res) => {
     const safePath = resolveServedFile(draftDir, req.url ?? '/');
     if (safePath === null) {
@@ -191,18 +325,57 @@ export function createPreviewServer(draftDir: string): Server {
       return;
     }
 
+    // The pagefind bundle lives in the staging dir, not the draft — serve it
+    // from there. safePath is already traversal-checked, so the same relative
+    // path is safe to resolve against the bundle root.
+    const rel = relPosix(safePath);
+    if (search && (rel === 'pagefind' || rel.startsWith('pagefind/'))) {
+      const state = search();
+      if (state.phase === 'building') {
+        res.writeHead(503, {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Retry-After': '2',
+        });
+        res.end('Search index is still building');
+        return;
+      }
+      if (state.phase === 'ready') {
+        try {
+          const body = readFileSync(join(state.bundleDir, rel));
+          res.writeHead(200, {
+            'Content-Type': contentTypeFor(rel),
+            'Content-Length': body.length,
+          });
+          res.end(body);
+          return;
+        } catch {
+          // Missing file inside a ready bundle — fall through to 404.
+        }
+      }
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Not found');
+      return;
+    }
+
     try {
       let filePath = safePath;
       if (statSync(filePath).isDirectory()) {
         const indexPath = join(filePath, 'index.html');
         if (!existsSync(indexPath)) {
-          // No index.html here — serve a generated listing of the draft's pages.
-          const listing = renderDirectoryIndex(draftDir);
-          res.writeHead(200, {
-            'Content-Type': 'text/html; charset=utf-8',
-            'Content-Length': Buffer.byteLength(listing),
-          });
-          res.end(listing);
+          // In a markdown draft the directory's README.md/index.md renders to
+          // this index — serve that, exactly as a push would bake it.
+          const dirRel = relPosix(filePath);
+          const rendered = renderMarkdownPageAt(
+            draftDir,
+            dirRel ? `${dirRel}/index.html` : 'index.html',
+            renderOptions
+          );
+          if (rendered !== null) {
+            sendHtml(res, rendered);
+            return;
+          }
+          // Otherwise serve a generated listing of the draft's pages.
+          sendHtml(res, renderDirectoryIndex(draftDir));
           return;
         }
         filePath = indexPath;
@@ -214,6 +387,22 @@ export function createPreviewServer(draftDir: string): Server {
       });
       res.end(body);
     } catch {
+      // A missing .html may be the rendered twin of a markdown source that
+      // only exists at push time — render it on the fly for preview parity.
+      if (/\.html$/i.test(rel)) {
+        const rendered = renderMarkdownPageAt(draftDir, rel, renderOptions);
+        if (rendered !== null) {
+          sendHtml(res, rendered);
+          return;
+        }
+        // Every push bakes a root index.html (ensureDraftIndex), and rendered
+        // pages link to it (the brand link) — so preview answers it with the
+        // same generated listing rather than a 404.
+        if (rel === 'index.html') {
+          sendHtml(res, renderDirectoryIndex(draftDir));
+          return;
+        }
+      }
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('Not found');
     }
@@ -292,7 +481,36 @@ export interface PreviewOptions {
 /** Serves a work-in-progress draft directory over HTTP for local viewing. */
 export async function preview(opts: PreviewOptions): Promise<void> {
   const draftDir = resolveDraftDir(opts.draft);
-  const server = createPreviewServer(draftDir);
+  // May prompt (README-less markdown draft, nothing persisted) — before the
+  // server comes up, while the terminal is clearly ours.
+  const indexSource = await resolveMarkdownIndex(
+    draftDir,
+    join(draftDir, 'design-drafts.config.json')
+  );
+
+  // Index in the background so the preview is up instantly; the page's search
+  // placeholder polls and swaps in the live UI when the bundle lands.
+  let searchState: PreviewSearch | undefined;
+  if (isMarkdownDraft(draftDir)) {
+    searchState = { phase: 'building' };
+    void prepareMarkdownSearch(draftDir, indexSource).then((bundleDir) => {
+      if (bundleDir) {
+        // Silent on purpose: the search box's own placeholder communicates
+        // readiness, and this resolves after the server banner has printed.
+        searchState = { phase: 'ready', bundleDir };
+        process.on('exit', () => {
+          rmSync(bundleDir, { recursive: true, force: true });
+        });
+      } else {
+        searchState = { phase: 'failed' };
+      }
+    });
+  }
+
+  const server = createPreviewServer(draftDir, {
+    search: searchState ? () => searchState as PreviewSearch : undefined,
+    indexSource,
+  });
   const port = await listen(server, opts.port);
   const url = `http://localhost:${port}/`;
 

@@ -1,0 +1,43 @@
+{
+  "name": "@design-drafts/markdown-site",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Renders a markdown-only draft directory into a themed, searchable static site. Built with vite; the built output is bundled into @design-drafts/cli.",
+  "type": "module",
+  "main": "./dist/node/index.js",
+  "types": "./dist/types/node/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/node/index.d.ts",
+      "default": "./dist/node/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build --config vite.client.config.ts && vite build --config vite.node.config.ts && tsc -p tsconfig.types.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@design-drafts/conventions": "workspace:*",
+    "highlight.js": "^11.11.1",
+    "marked": "^18.0.6",
+    "marked-highlight": "^2.2.4",
+    "pagefind": "^1.5.2",
+    "preact": "^10.28.2",
+    "preact-render-to-string": "^6.6.4"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "nx": {
+    "name": "markdown-site",
+    "targets": {
+      "test": {
+        "dependsOn": ["build"]
+      }
+    }
+  }
+}

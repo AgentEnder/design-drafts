@@ -41,10 +41,15 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.1.0",
-    "cli-forge": "catalog:"
+    "cli-forge": "catalog:",
+    "highlight.js": "^11.11.1",
+    "marked": "^18.0.6",
+    "marked-highlight": "^2.2.4",
+    "pagefind": "^1.5.2"
   },
   "devDependencies": {
     "@design-drafts/conventions": "workspace:*",
+    "@design-drafts/markdown-site": "workspace:*",
     "@types/node": "catalog:",
     "tsdown": "^0.21.7",
     "typescript": "catalog:",

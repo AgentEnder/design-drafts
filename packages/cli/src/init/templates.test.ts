@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   DEPLOY_WORKFLOW,
-  DRAFT_INDEX_HTML,
   HOST_MARKER,
   draftConfig,
+  draftIndexHtml,
 } from './templates';
 
 describe('DEPLOY_WORKFLOW', () => {
@@ -43,30 +43,39 @@ describe('DEPLOY_WORKFLOW', () => {
   });
 });
 
-describe('DRAFT_INDEX_HTML', () => {
+describe('draftIndexHtml', () => {
+  const html = draftIndexHtml('my-draft');
+
   it('is a complete HTML document', () => {
-    expect(DRAFT_INDEX_HTML).toContain('<!doctype html>');
-    expect(DRAFT_INDEX_HTML.trimEnd()).toMatch(/<\/html>$/);
+    expect(html).toContain('<!doctype html>');
+    expect(html.trimEnd()).toMatch(/<\/html>$/);
+  });
+
+  // Annotations are filtered by the draft a page declares (see
+  // @design-drafts/conventions/draft-id). A scaffold that declared nothing
+  // would pool its annotations with every other unidentified draft served at
+  // the same preview URL.
+  it('declares the draft it belongs to', () => {
+    expect(html).toContain('<meta name="draftId" content="my-draft" />');
   });
 
   // The scaffold ships the design-drafts overlays so a fresh draft has the
   // axis switcher and review overlay without any wiring. Pin the major (@0)
   // to match the package READMEs' recommended CDN reference.
   it('loads the toolbar overlay from the CDN, pinned to a major', () => {
-    expect(DRAFT_INDEX_HTML).toContain(
+    expect(html).toContain(
       'https://unpkg.com/@design-drafts/toolbar@0/dist/toolbar.js'
     );
   });
 
   it('loads the annotate overlay from the CDN, pinned to a major', () => {
-    expect(DRAFT_INDEX_HTML).toContain(
+    expect(html).toContain(
       'https://unpkg.com/@design-drafts/annotate@0/dist/annotate.js'
     );
   });
 
   it('defers both overlay scripts so they never block the draft render', () => {
-    const deferred =
-      DRAFT_INDEX_HTML.match(/<script[^>]*\bdefer\b[^>]*><\/script>/g) ?? [];
+    const deferred = html.match(/<script[^>]*\bdefer\b[^>]*><\/script>/g) ?? [];
     expect(deferred).toHaveLength(2);
   });
 });

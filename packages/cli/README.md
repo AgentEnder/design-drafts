@@ -33,6 +33,14 @@ design-drafts push ./dist --repo my-org/design-previews --site-name homepage-v2
 - `--site-name <name>` — branch/preview name (prompted if omitted).
 - `--prefix <prefix>` — branch prefix for previews (default `drafts/`; pass `""` to push without one).
 
+**Markdown-only folders** are rendered into a browsable site at push time:
+every `.md` file becomes a GitHub-flavored html page (tables, task lists,
+syntax-highlighted code, heading anchors) with a light/dark theme toggle and
+Pagefind full-text search. `README.md` becomes `index.html`, and relative links
+between markdown files are rewritten to the rendered pages. Search result
+links are wired to the GitHub Pages url inferred from `--repo`. Folders that
+contain any `.html` are pushed as-is.
+
 ### `design-drafts init host`
 
 Scaffold a new GitHub repo configured to host draft previews (deploy workflow,
@@ -65,6 +73,11 @@ design-drafts preview ./my-draft
 - `--port <n>` — port to serve on (default `4321`; auto-increments to the next
   free port unless you set it explicitly).
 - `--no-open` — don't open a browser, just print the URL.
+
+Markdown drafts are rendered on the fly, so the preview matches what a push
+deploys — including search: the index builds in the background while the
+server comes up (the search box shows progress until it's ready) and reflects
+the content at preview start; restart the preview to re-index new content.
 
 When a requested directory has no `index.html` (e.g. a draft whose pages are
 `about.html`, `pricing.html`, … with no home page yet), the server returns a
