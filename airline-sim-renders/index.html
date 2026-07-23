@@ -1,322 +1,458 @@
-<div class="board">
-  <header class="masthead">
-    <div class="brand">
-      <span class="glyph">✈</span>
-      <div>
-        <h1>AIRLINE&#8209;SIM · AUDIO TEST BENCH</h1>
-        <p>Chiptune SFX &amp; background music — rendered offline by the <code>chip</code> synth (zero deps, deterministic).</p>
+<div class="desk">
+  <div class="device">
+    <span class="screw tl" aria-hidden="true"></span>
+    <span class="screw tr" aria-hidden="true"></span>
+    <span class="screw bl" aria-hidden="true"></span>
+    <span class="screw br" aria-hidden="true"></span>
+
+    <div class="face">
+      <div class="topbar">
+        <div class="plate">
+          <span class="model">SFX·16</span>
+          <span class="brandname">AIRLINE-SIM</span>
+          <span class="tagline">CHIPTUNE SOUNDBOARD</span>
+          <div class="leds">
+            <span class="tiny"><i class="dot pwr"></i>PWR</span>
+            <span class="tiny"><i class="dot"></i>16 VOICES</span>
+          </div>
+        </div>
+
+        <div class="lcd">
+          <canvas class="vu" aria-hidden="true"></canvas>
+          <div class="lcd-read">
+            <span class="lcd-1" id="np1">— READY —</span>
+            <span class="lcd-2" id="np2">TAP A PAD · PRESS A KEY</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="zone">
+        <div class="zone-head">
+          <span>LOOPS — BACKGROUND MUSIC</span>
+          <button class="stop" type="button" id="stopall" title="Stop music (Esc)">■ STOP</button>
+        </div>
+        <div class="loops">
+          
+        <button class="mpad" type="button" aria-pressed="false" data-audio="audio/music-theme-main.wav" data-loop="1" data-name="Main Theme" data-key="1" title="A 16-bar A/B form — the I–vi–IV–V opener answered by a ii–iii turn — with a through-composed lead, half-note pad comping (no long drones), walking bass, and a snare fill every fourth bar.">
+          <span class="m-led" aria-hidden="true"></span>
+          <span class="m-name">Main Theme</span>
+          <span class="m-meta">138 BPM · C major · Upbeat · 27.8s</span>
+          <kbd class="m-key">1</kbd>
+        </button>
+        <button class="mpad" type="button" aria-pressed="false" data-audio="audio/music-build-mode.wav" data-loop="1" data-name="Build Mode" data-key="2" title="A 12-bar cycle that keeps moving — Cadd9–F–Am7–G into a Dm7 turn — with half-note pad comping and bass instead of held drones, under a wandering high bell arp.">
+          <span class="m-led" aria-hidden="true"></span>
+          <span class="m-name">Build Mode</span>
+          <span class="m-meta">96 BPM · C add9 · Lo-fi calm · 30.0s</span>
+          <kbd class="m-key">2</kbd>
+        </button>
+        <button class="mpad" type="button" aria-pressed="false" data-audio="audio/music-rush-hour.wav" data-loop="1" data-name="Rush Hour" data-key="3" title="A 20-bar A/B/A' drive — eight bars of the Am–F–C–G pump, eight of a darker Dm–Em–E turn with a busier lead, then a four-bar reprise. Four-on-the-floor with a fill every fourth bar.">
+          <span class="m-led" aria-hidden="true"></span>
+          <span class="m-name">Rush Hour</span>
+          <span class="m-meta">152 BPM · A minor · Tense drive · 31.6s</span>
+          <kbd class="m-key">3</kbd>
+        </button>
+        <button class="mpad" type="button" aria-pressed="false" data-audio="audio/music-after-hours.wav" data-loop="1" data-name="After Hours" data-key="4" title="An A-minor nocturne: a sparse, wandering melody over min7/maj7 pads (half-notes now, not drones), a breathing low bass that leaves space, high 'star' twinkles, and a distant tick. Night settling over the terminal.">
+          <span class="m-led" aria-hidden="true"></span>
+          <span class="m-name">After Hours</span>
+          <span class="m-meta">72 BPM · A minor · Nocturne · 26.7s</span>
+          <kbd class="m-key">4</kbd>
+        </button>
+        </div>
+      </div>
+
+      <div class="zone">
+        <div class="zone-head"><span>PADS — SOUND EFFECTS</span><span class="dim">fire over the music · overlaps · each hit varies pitch · tone · pan</span></div>
+        <div class="pads">
+          
+        <button class="pad" type="button" data-audio="audio/sfx-ui-click.wav" data-name="UI Click" data-key="Q" style="--pad:#35c9d6" title="Single 50%-pulse blip, 50ms decay — crisp, neutral, non-fatiguing on repeat.">
+          <span class="pad-led" aria-hidden="true"></span>
+          <kbd class="pad-key">Q</kbd>
+          <span class="pad-name">UI Click</span>
+          <span class="pad-sub">Button press · menu tab · tool select</span>
+          <span class="pad-kind">UI · 0.06s</span>
+        </button>
+        <button class="pad" type="button" data-audio="audio/sfx-ui-back.wav" data-name="UI Back / Cancel" data-key="W" style="--pad:#35c9d6" title="Two descending blips — the universal 'undo that intention' shape.">
+          <span class="pad-led" aria-hidden="true"></span>
+          <kbd class="pad-key">W</kbd>
+          <span class="pad-name">UI Back / Cancel</span>
+          <span class="pad-sub">Close panel · cancel tool · step back</span>
+          <span class="pad-kind">UI · 0.06s</span>
+        </button>
+        <button class="pad" type="button" data-audio="audio/sfx-place.wav" data-name="Place Fitting" data-key="E" style="--pad:#ff8a3d" title="A downward triangle 'thunk' (C3→C2) for low-end weight + a soft noise tick for grip — body first, not hiss.">
+          <span class="pad-led" aria-hidden="true"></span>
+          <kbd class="pad-key">E</kbd>
+          <span class="pad-name">Place Fitting</span>
+          <span class="pad-sub">Drop a Fitting · stamp a tile</span>
+          <span class="pad-kind">Build · 0.15s</span>
+        </button>
+        <button class="pad" type="button" data-audio="audio/sfx-error.wav" data-name="Invalid / Blocked" data-key="R" style="--pad:#ff8a3d" title="A minor-second dyad on a thin 12.5% pulse — dissonant enough to read 'no', short enough not to punish.">
+          <span class="pad-led" aria-hidden="true"></span>
+          <kbd class="pad-key">R</kbd>
+          <span class="pad-name">Invalid / Blocked</span>
+          <span class="pad-sub">Illegal placement · not enough Money</span>
+          <span class="pad-kind">Build · 0.15s</span>
+        </button>
+        <button class="pad" type="button" data-audio="audio/sfx-cash.wav" data-name="Cash Transaction" data-key="A" style="--pad:#57d971" title="Rising fourth on a bright lead + a high shimmer arp — the classic 'ka-ching'.">
+          <span class="pad-led" aria-hidden="true"></span>
+          <kbd class="pad-key">A</kbd>
+          <span class="pad-name">Cash Transaction</span>
+          <span class="pad-sub">Rent collected · concession sale · payout</span>
+          <span class="pad-kind">Economy · 0.19s</span>
+        </button>
+        <button class="pad" type="button" data-audio="audio/sfx-contract.wav" data-name="Contract Signed" data-key="S" style="--pad:#b98cff" title="Ascending C-major arpeggio resolving to the tonic over a soft triad — a clean, earned 'yes'.">
+          <span class="pad-led" aria-hidden="true"></span>
+          <kbd class="pad-key">S</kbd>
+          <span class="pad-name">Contract Signed</span>
+          <span class="pad-sub">Flight Contract accepted · lease signed</span>
+          <span class="pad-kind">Progress · 0.85s</span>
+        </button>
+        <button class="pad" type="button" data-audio="audio/sfx-unlock.wav" data-name="Capability Unlocked" data-key="D" style="--pad:#b98cff" title="A rising run into a vibrato'd major stab with a bass root — the biggest positive in the set, the 'level up'.">
+          <span class="pad-led" aria-hidden="true"></span>
+          <kbd class="pad-key">D</kbd>
+          <span class="pad-name">Capability Unlocked</span>
+          <span class="pad-sub">New Capability toggled on · milestone</span>
+          <span class="pad-kind">Progress · 1.13s</span>
+        </button>
+        <button class="pad" type="button" data-audio="audio/sfx-rating-up.wav" data-name="Rating Up" data-key="F" style="--pad:#b98cff" title="Three quick rising notes, light and bright — a small, frequent 'that helped' tick.">
+          <span class="pad-led" aria-hidden="true"></span>
+          <kbd class="pad-key">F</kbd>
+          <span class="pad-name">Rating Up</span>
+          <span class="pad-sub">KPI improved · Public Rating trend ↑</span>
+          <span class="pad-kind">Progress · 0.23s</span>
+        </button>
+        <button class="pad" type="button" data-audio="audio/sfx-notify.wav" data-name="Notification" data-key="Z" style="--pad:#ff5d5d" title="A soft two-tone 'ding-dong' on a rounded pulse — attention without alarm.">
+          <span class="pad-led" aria-hidden="true"></span>
+          <kbd class="pad-key">Z</kbd>
+          <span class="pad-name">Notification</span>
+          <span class="pad-sub">World Event · Demand Event · advisory</span>
+          <span class="pad-kind">Alert · 0.60s</span>
+        </button>
+        <button class="pad" type="button" data-audio="audio/sfx-pa-chime.wav" data-name="PA Boarding Chime" data-key="X" style="--pad:#4d9bff" title="The signature. A warm triangle gong rolling a major triad — each tone rings into the next (0.6s bleed) for a rolling chime, not three plucks.">
+          <span class="pad-led" aria-hidden="true"></span>
+          <kbd class="pad-key">X</kbd>
+          <span class="pad-name">PA Boarding Chime</span>
+          <span class="pad-sub">Passenger announcement · boarding call</span>
+          <span class="pad-kind">Ambience · 4.00s</span>
+        </button>
+        <button class="pad" type="button" data-audio="audio/sfx-demolish.wav" data-name="Demolish" data-key="C" style="--pad:#ff8a3d" title="A downward pitch slide riding a noise burst — a short destructive 'crunch'.">
+          <span class="pad-led" aria-hidden="true"></span>
+          <kbd class="pad-key">C</kbd>
+          <span class="pad-name">Demolish</span>
+          <span class="pad-sub">Remove a wall · bulldoze a Zone</span>
+          <span class="pad-kind">Build · 0.19s</span>
+        </button>
+        <button class="pad" type="button" data-audio="audio/sfx-pax-happy.wav" data-name="Passenger Satisfied" data-key="V" style="--pad:#4d9bff" title="A tiny upward chirp-slide — a soft emergent reward for watching the sim.">
+          <span class="pad-led" aria-hidden="true"></span>
+          <kbd class="pad-key">V</kbd>
+          <span class="pad-name">Passenger Satisfied</span>
+          <span class="pad-sub">A passenger's Need met · happy dwell</span>
+          <span class="pad-kind">Ambience · 0.03s</span>
+        </button>
+        </div>
       </div>
     </div>
-    <div class="live"><span class="pulse"></span>16 TRACKS ON BOARD</div>
-  </header>
 
-  <section>
-    <h2 class="section-title"><span>BACKGROUND MUSIC</span><span class="hint">click ▸ to audition · loops</span></h2>
-    <div class="cards">
-
-    <article class="card" data-item>
-      <button class="play" data-audio="audio/music-theme-main.wav" aria-label="Play Main Theme"><span class="tri"></span></button>
-      <div class="card-body">
-        <div class="card-head">
-          <h3>Main Theme</h3>
-          <span class="dur">13.9s · loops</span>
-        </div>
-        <p class="sub">Menu &amp; main gameplay — bright, welcoming airport optimism</p>
-        <div class="tags"><span class="tag">138 BPM</span><span class="tag">C major</span><span class="tag">Upbeat</span></div>
-        <p class="why">I–vi–IV–V (C–Am–F–G) run twice with a singing lead, real triad pad, walking bass, and a straight backbeat.</p>
-        <div class="seek"><div class="seek-fill"></div></div>
-      </div>
-    </article>
-    <article class="card" data-item>
-      <button class="play" data-audio="audio/music-build-mode.wav" aria-label="Play Build Mode"><span class="tri"></span></button>
-      <div class="card-body">
-        <div class="card-head">
-          <h3>Build Mode</h3>
-          <span class="dur">10.0s · loops</span>
-        </div>
-        <p class="sub">Layout &amp; architecting — calm, spacious focus music</p>
-        <div class="tags"><span class="tag">96 BPM</span><span class="tag">C add9</span><span class="tag">Lo-fi calm</span></div>
-        <p class="why">Slow held add9/7 pads, a sparse high bell arp, whole-note bass, and one soft off-beat tick. Room to think.</p>
-        <div class="seek"><div class="seek-fill"></div></div>
-      </div>
-    </article>
-    <article class="card" data-item>
-      <button class="play" data-audio="audio/music-rush-hour.wav" aria-label="Play Rush Hour"><span class="tri"></span></button>
-      <div class="card-body">
-        <div class="card-head">
-          <h3>Rush Hour</h3>
-          <span class="dur">12.6s · loops</span>
-        </div>
-        <p class="sub">Peak load / Demand Event — driving, urgent, still playful</p>
-        <div class="tags"><span class="tag">152 BPM</span><span class="tag">A minor</span><span class="tag">Tense drive</span></div>
-        <p class="why">Four-on-the-floor kick, pumping octave bass, off-beat minor stabs, and a busy A-minor lead riff. Pressure, not panic.</p>
-        <div class="seek"><div class="seek-fill"></div></div>
-      </div>
-    </article>
-    <article class="card" data-item>
-      <button class="play" data-audio="audio/music-after-hours.wav" aria-label="Play After Hours"><span class="tri"></span></button>
-      <div class="card-body">
-        <div class="card-head">
-          <h3>After Hours</h3>
-          <span class="dur">13.3s · loops</span>
-        </div>
-        <p class="sub">Off-peak / night — mellow, sparse, dreamlike</p>
-        <div class="tags"><span class="tag">72 BPM</span><span class="tag">Cmaj7</span><span class="tag">Ambient</span></div>
-        <p class="why">Slow maj7 pads with a gentle vibrato, whole-note bass, and occasional high bell sprinkles. No drums — let it breathe.</p>
-        <div class="seek"><div class="seek-fill"></div></div>
-      </div>
-    </article>
-    </div>
-  </section>
-
-  <section>
-    <h2 class="section-title"><span>SOUND EFFECTS</span><span class="hint">departures board · click ▸ to fire</span></h2>
-    <div class="table-wrap">
-      <table class="departures">
-        <thead>
-          <tr><th>STATUS</th><th>SOUND</th><th>TRIGGER</th><th>KIND</th><th>LEN</th><th>PLAY</th></tr>
-        </thead>
-        <tbody>
-
-      <tr data-item>
-        <td class="status"><span class="dot"></span><span class="label">READY</span></td>
-        <td class="name">UI Click</td>
-        <td class="trigger">Button press · menu tab · tool select</td>
-        <td class="cat">UI</td>
-        <td class="len">0.06s</td>
-        <td class="act"><button class="play sm" data-audio="audio/sfx-ui-click.wav" aria-label="Play UI Click"><span class="tri"></span></button></td>
-      </tr>
-      <tr data-item>
-        <td class="status"><span class="dot"></span><span class="label">READY</span></td>
-        <td class="name">UI Back / Cancel</td>
-        <td class="trigger">Close panel · cancel tool · step back</td>
-        <td class="cat">UI</td>
-        <td class="len">0.06s</td>
-        <td class="act"><button class="play sm" data-audio="audio/sfx-ui-back.wav" aria-label="Play UI Back / Cancel"><span class="tri"></span></button></td>
-      </tr>
-      <tr data-item>
-        <td class="status"><span class="dot"></span><span class="label">READY</span></td>
-        <td class="name">Place Fitting</td>
-        <td class="trigger">Drop a Fitting · stamp a tile</td>
-        <td class="cat">Build</td>
-        <td class="len">0.08s</td>
-        <td class="act"><button class="play sm" data-audio="audio/sfx-place.wav" aria-label="Play Place Fitting"><span class="tri"></span></button></td>
-      </tr>
-      <tr data-item>
-        <td class="status"><span class="dot"></span><span class="label">READY</span></td>
-        <td class="name">Invalid / Blocked</td>
-        <td class="trigger">Illegal placement · not enough Money</td>
-        <td class="cat">Build</td>
-        <td class="len">0.15s</td>
-        <td class="act"><button class="play sm" data-audio="audio/sfx-error.wav" aria-label="Play Invalid / Blocked"><span class="tri"></span></button></td>
-      </tr>
-      <tr data-item>
-        <td class="status"><span class="dot"></span><span class="label">READY</span></td>
-        <td class="name">Cash Transaction</td>
-        <td class="trigger">Rent collected · concession sale · payout</td>
-        <td class="cat">Economy</td>
-        <td class="len">0.19s</td>
-        <td class="act"><button class="play sm" data-audio="audio/sfx-cash.wav" aria-label="Play Cash Transaction"><span class="tri"></span></button></td>
-      </tr>
-      <tr data-item>
-        <td class="status"><span class="dot"></span><span class="label">READY</span></td>
-        <td class="name">Contract Signed</td>
-        <td class="trigger">Flight Contract accepted · lease signed</td>
-        <td class="cat">Progress</td>
-        <td class="len">0.85s</td>
-        <td class="act"><button class="play sm" data-audio="audio/sfx-contract.wav" aria-label="Play Contract Signed"><span class="tri"></span></button></td>
-      </tr>
-      <tr data-item>
-        <td class="status"><span class="dot"></span><span class="label">READY</span></td>
-        <td class="name">Capability Unlocked</td>
-        <td class="trigger">New Capability toggled on · milestone</td>
-        <td class="cat">Progress</td>
-        <td class="len">1.13s</td>
-        <td class="act"><button class="play sm" data-audio="audio/sfx-unlock.wav" aria-label="Play Capability Unlocked"><span class="tri"></span></button></td>
-      </tr>
-      <tr data-item>
-        <td class="status"><span class="dot"></span><span class="label">READY</span></td>
-        <td class="name">Rating Up</td>
-        <td class="trigger">KPI improved · Public Rating trend ↑</td>
-        <td class="cat">Progress</td>
-        <td class="len">0.23s</td>
-        <td class="act"><button class="play sm" data-audio="audio/sfx-rating-up.wav" aria-label="Play Rating Up"><span class="tri"></span></button></td>
-      </tr>
-      <tr data-item>
-        <td class="status"><span class="dot"></span><span class="label">READY</span></td>
-        <td class="name">Notification</td>
-        <td class="trigger">World Event · Demand Event · advisory</td>
-        <td class="cat">Alert</td>
-        <td class="len">0.60s</td>
-        <td class="act"><button class="play sm" data-audio="audio/sfx-notify.wav" aria-label="Play Notification"><span class="tri"></span></button></td>
-      </tr>
-      <tr data-item>
-        <td class="status"><span class="dot"></span><span class="label">READY</span></td>
-        <td class="name">PA Boarding Chime</td>
-        <td class="trigger">Passenger announcement · boarding call</td>
-        <td class="cat">Ambience</td>
-        <td class="len">2.67s</td>
-        <td class="act"><button class="play sm" data-audio="audio/sfx-pa-chime.wav" aria-label="Play PA Boarding Chime"><span class="tri"></span></button></td>
-      </tr>
-      <tr data-item>
-        <td class="status"><span class="dot"></span><span class="label">READY</span></td>
-        <td class="name">Demolish</td>
-        <td class="trigger">Remove a wall · bulldoze a Zone</td>
-        <td class="cat">Build</td>
-        <td class="len">0.19s</td>
-        <td class="act"><button class="play sm" data-audio="audio/sfx-demolish.wav" aria-label="Play Demolish"><span class="tri"></span></button></td>
-      </tr>
-      <tr data-item>
-        <td class="status"><span class="dot"></span><span class="label">READY</span></td>
-        <td class="name">Passenger Satisfied</td>
-        <td class="trigger">A passenger's Need met · happy dwell</td>
-        <td class="cat">Ambience</td>
-        <td class="len">0.03s</td>
-        <td class="act"><button class="play sm" data-audio="audio/sfx-pax-happy.wav" aria-label="Play Passenger Satisfied"><span class="tri"></span></button></td>
-      </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <footer>
-    Rendered from <code>content/areas/airline-sim/audio-spikes/chip/render-assets.ts</code> ·
-    regenerate with <code>npm run render:assets</code>.
-    <br>Deterministic: the same source always bakes byte&#8209;identical WAVs.
-  </footer>
+    <p class="foot">
+      <b>SFX·16</b> — baked by the <code>chip</code> synth, zero-dep &amp; deterministic · regenerate with <code>npm run render:assets</code>
+    </p>
+  </div>
 </div>
 
 <style>
-  html {
-    --bg: #0a0b0e; --panel: #121419; --panel-2: #171a21;
-    --amber: #ffb300; --amber-dim: #b57e12; --green: #37e07a; --ink: #e8e2d4;
-    --dim: #7d7768; --line: #262a33; --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-    background:
-      radial-gradient(1200px 400px at 50% -10%, rgba(255,179,0,.06), transparent 70%),
-      repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,.14) 3px, rgba(0,0,0,.14) 4px),
-      var(--bg);
+  :root {
+    --alu: #c9c6bd; --alu-hi: #e4e0d6; --alu-lo: #a09c92; --alu-edge: #7d7a71;
+    --face: #14151a; --face-2: #1b1d24; --raise: #262932;
+    --ink: #eae6da; --ink-dim: #8f8d83; --engrave: #605f58;
+    --amber: #ff9e2c; --amber-2: #c9761a;
+    --lcd: #a6ff37; --lcd-dim: #5f8f2c; --lcd-glass: #0b1207;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   * { box-sizing: border-box; }
-  .board {
-    max-width: 1080px; margin: 0 auto; padding: 28px 20px 64px;
-    font-family: var(--mono); color: var(--ink);
-    min-height: 100vh;
+  html, body { margin: 0; background: #0b0c0f; }
+  .desk {
+    min-height: 100vh; padding: 40px 18px; font-family: var(--sans); color: var(--ink);
+    background: radial-gradient(1100px 620px at 50% -5%, #1b1c20, #0b0c0f 72%);
+    display: flex; justify-content: center; align-items: flex-start;
   }
-  code { font-family: var(--mono); color: var(--amber-dim); background: rgba(255,179,0,.07); padding: 1px 5px; border-radius: 3px; font-size: .86em; }
+  code { font-family: var(--mono); color: var(--amber-2); font-size: .9em; }
 
-  .masthead {
-    display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;
-    border: 1px solid var(--line); border-radius: 10px; padding: 18px 22px; margin-bottom: 28px;
-    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  /* Aluminum chassis */
+  .device {
+    width: min(1040px, 100%); position: relative; border-radius: 22px; padding: 20px;
+    background: linear-gradient(176deg, var(--alu-hi), var(--alu) 34%, var(--alu-lo));
+    box-shadow:
+      0 1px 0 #f3f0e8 inset, 0 -3px 8px rgba(0,0,0,.28) inset,
+      0 2px 0 #5f5c54, 0 36px 70px -24px rgba(0,0,0,.75);
   }
-  .brand { display: flex; align-items: center; gap: 16px; }
-  .glyph { font-size: 34px; color: var(--amber); filter: drop-shadow(0 0 8px rgba(255,179,0,.4)); transform: rotate(-8deg); }
-  .masthead h1 { margin: 0; font-size: 17px; letter-spacing: 2.5px; color: var(--amber); font-weight: 700; }
-  .masthead p { margin: 5px 0 0; font-size: 12.5px; color: var(--dim); letter-spacing: .3px; }
-  .live { display: flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: 1.5px; color: var(--green); white-space: nowrap; }
-  .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: blink 1.6s steps(2) infinite; }
-  @keyframes blink { 50% { opacity: .25; } }
-
-  .section-title {
-    display: flex; justify-content: space-between; align-items: baseline;
-    font-size: 13px; letter-spacing: 3px; color: var(--amber); margin: 34px 0 16px;
-    padding-bottom: 8px; border-bottom: 1px solid var(--line);
+  .device::before { /* brushed grain */
+    content: ""; position: absolute; inset: 0; border-radius: 22px; pointer-events: none;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 1px, transparent 1px 3px);
+    mix-blend-mode: overlay; opacity: .55;
   }
-  .section-title .hint { font-size: 11px; letter-spacing: .5px; color: var(--dim); }
-
-  /* Music cards */
-  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
-  .card {
-    display: flex; gap: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 10px;
-    background: linear-gradient(180deg, var(--panel-2), var(--panel)); transition: border-color .2s;
+  .screw {
+    position: absolute; width: 16px; height: 16px; border-radius: 50%; z-index: 2;
+    background: radial-gradient(circle at 40% 34%, #f4f1e8, #bdb9af 52%, #8b887f 78%, #6f6c64);
+    box-shadow: 0 1px 1px rgba(255,255,255,.55) inset, 0 -1px 2px rgba(0,0,0,.3) inset, 0 1px 2px rgba(0,0,0,.4);
   }
-  .card.playing { border-color: var(--green); box-shadow: 0 0 0 1px rgba(55,224,122,.3), 0 0 24px rgba(55,224,122,.08); }
-  .card-body { flex: 1; min-width: 0; }
-  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-  .card h3 { margin: 0; font-size: 15px; color: var(--ink); letter-spacing: .5px; }
-  .card .dur { font-size: 10.5px; color: var(--dim); white-space: nowrap; }
-  .card .sub { margin: 4px 0 10px; font-size: 12px; color: var(--amber-dim); letter-spacing: .2px; }
-  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-  .tag { font-size: 10px; letter-spacing: .8px; color: var(--dim); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; }
-  .why { margin: 0 0 12px; font-size: 12px; line-height: 1.5; color: var(--dim); }
-  .seek { height: 4px; background: var(--line); border-radius: 999px; overflow: hidden; }
-  .seek-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--amber-dim), var(--amber)); }
-
-  /* Play buttons */
-  .play {
-    flex: none; width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
-    border: 1px solid var(--amber-dim); background: rgba(255,179,0,.08); color: var(--amber);
-    display: grid; place-items: center; transition: all .15s;
+  .screw::after { /* centered flathead slot */
+    content: ""; position: absolute; top: 50%; left: 50%; width: 10px; height: 2px; border-radius: 1px;
+    transform: translate(-50%, -50%) rotate(38deg);
+    background: linear-gradient(90deg, rgba(0,0,0,.12), rgba(0,0,0,.42), rgba(0,0,0,.12));
   }
-  .play:hover { background: rgba(255,179,0,.18); box-shadow: 0 0 14px rgba(255,179,0,.25); }
-  .play.sm { width: 30px; height: 30px; }
-  .tri { width: 0; height: 0; border-style: solid; border-width: 7px 0 7px 12px; border-color: transparent transparent transparent currentColor; margin-left: 3px; }
-  .play.sm .tri { border-width: 5px 0 5px 9px; margin-left: 2px; }
-  .play.playing { color: var(--green); border-color: var(--green); background: rgba(55,224,122,.12); }
-  .play.playing .tri { border-style: double; border-width: 0 0 0 12px; height: 12px; margin-left: 0; }
-  .play.sm.playing .tri { border-width: 0 0 0 9px; height: 9px; }
+  .screw.tl { top: 13px; left: 13px; } .screw.tr { top: 13px; right: 13px; }
+  .screw.bl { bottom: 13px; left: 13px; } .screw.br { bottom: 13px; right: 13px; }
 
-  /* Departures table */
-  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
-  .departures { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 640px; }
-  .departures th {
-    text-align: left; font-size: 10px; letter-spacing: 1.5px; color: var(--dim); font-weight: 600;
-    padding: 11px 14px; background: var(--panel-2); border-bottom: 1px solid var(--line);
+  /* Recessed dark instrument panel */
+  .face {
+    position: relative; border-radius: 13px; padding: 20px;
+    background: linear-gradient(180deg, var(--face-2), var(--face));
+    box-shadow: 0 2px 3px rgba(255,255,255,.35), 0 0 0 1px rgba(0,0,0,.55),
+      0 10px 24px rgba(0,0,0,.5) inset;
   }
-  .departures td { padding: 11px 14px; border-bottom: 1px solid rgba(38,42,51,.55); vertical-align: middle; }
-  .departures tr:last-child td { border-bottom: none; }
-  .departures tr[data-item]:hover { background: rgba(255,179,0,.03); }
-  .departures .name { color: var(--ink); letter-spacing: .3px; }
-  .departures .trigger { color: var(--dim); }
-  .departures .cat { color: var(--amber-dim); font-size: 11px; letter-spacing: .5px; }
-  .departures .len { color: var(--dim); font-variant-numeric: tabular-nums; }
-  .status { white-space: nowrap; }
-  .status .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--amber-dim); margin-right: 7px; vertical-align: middle; }
-  .status .label { font-size: 10.5px; letter-spacing: 1px; color: var(--dim); }
-  tr.playing .status .dot { background: var(--green); box-shadow: 0 0 7px var(--green); }
-  tr.playing .status .label { color: var(--green); }
-  tr.playing .name { color: var(--amber); }
 
-  footer { margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 11.5px; line-height: 1.7; color: var(--dim); }
+  .topbar { display: grid; grid-template-columns: minmax(190px, 250px) 1fr; gap: 16px; margin-bottom: 22px; }
+
+  .plate {
+    border-radius: 9px; padding: 14px 16px; display: flex; flex-direction: column; gap: 3px;
+    background: linear-gradient(180deg, #23262f, #171920);
+    box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 0 0 1px rgba(0,0,0,.5), 0 4px 10px rgba(0,0,0,.35);
+  }
+  .model { font-family: var(--mono); font-size: 11px; letter-spacing: 4px; color: var(--amber); }
+  .brandname { font-family: var(--mono); font-weight: 700; font-size: 22px; letter-spacing: 1px; color: var(--ink); }
+  .tagline { font-family: var(--mono); font-size: 9.5px; letter-spacing: 3.5px; color: var(--engrave); }
+  .leds { display: flex; gap: 14px; margin-top: 8px; }
+  .tiny { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; color: var(--ink-dim); }
+  .tiny .dot { width: 7px; height: 7px; border-radius: 50%; background: #3a3d46; box-shadow: 0 0 0 1px #000 inset; }
+  .tiny .dot.pwr { background: var(--lcd); box-shadow: 0 0 7px var(--lcd); animation: pwr 3.4s steps(1) infinite; }
+  @keyframes pwr { 96% { opacity: 1; } 98% { opacity: .3; } }
+
+  /* LCD — the hero. Live segmented VU + readout. */
+  .lcd {
+    position: relative; border-radius: 9px; overflow: hidden; padding: 12px 14px; min-height: 104px;
+    display: flex; flex-direction: column; justify-content: space-between; gap: 8px;
+    background: radial-gradient(130% 150% at 50% 0%, #16240d, var(--lcd-glass));
+    box-shadow: 0 0 0 2px #05070a, 0 0 0 3px #33363e, 0 0 34px rgba(0,0,0,.6) inset;
+  }
+  .lcd::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px);
+  }
+  .vu { width: 100%; height: 48px; display: block; }
+  .lcd-read { font-family: var(--mono); color: var(--lcd); text-shadow: 0 0 7px rgba(166,255,55,.45); z-index: 1; }
+  .lcd-1 { display: block; font-size: 14px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lcd-2 { display: block; font-size: 10.5px; letter-spacing: 2px; color: var(--lcd-dim); margin-top: 2px; }
+
+  .zone { margin-top: 18px; }
+  .zone-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 3px; color: var(--engrave);
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+  .zone-head .dim { letter-spacing: 1.5px; color: #4c4b45; }
+  .stop {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; cursor: pointer;
+    color: var(--ink-dim); background: #1c1e25; border: 1px solid rgba(0,0,0,.5);
+    border-radius: 5px; padding: 4px 10px; box-shadow: 0 1px 0 rgba(255,255,255,.05) inset;
+  }
+  .stop:hover { color: #ff8a8a; border-color: rgba(255,93,93,.4); }
+
+  /* Music transport channels */
+  .loops { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .mpad {
+    position: relative; cursor: pointer; border: none; border-radius: 10px; padding: 12px 13px;
+    display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto auto;
+    column-gap: 10px; align-items: center; text-align: left; color: var(--ink); font-family: var(--sans);
+    background: linear-gradient(180deg, var(--raise), #1b1e26);
+    box-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 3px 5px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.6);
+    transition: transform .05s, box-shadow .15s, background .15s;
+  }
+  .m-led { grid-row: 1 / 3; width: 11px; height: 11px; border-radius: 50%; background: #3a2c14; box-shadow: 0 0 0 1px #000 inset; }
+  .m-name { grid-column: 2; font-weight: 600; font-size: 13px; letter-spacing: .2px; }
+  .m-meta { grid-column: 2; font-family: var(--mono); font-size: 9.5px; color: var(--ink-dim); letter-spacing: .3px; }
+  .m-key { grid-row: 1 / 3; grid-column: 3; font-family: var(--mono); font-size: 11px; color: var(--engrave);
+    border: 1px solid rgba(255,255,255,.12); border-radius: 4px; padding: 3px 7px; align-self: center; }
+  .mpad:hover { box-shadow: 0 3px 5px rgba(0,0,0,.5), 0 0 0 1px rgba(255,158,44,.35); }
+  .mpad:active { transform: translateY(1px); }
+  .mpad.playing { background: linear-gradient(180deg, #3a2b12, #281d0b); box-shadow: 0 0 0 1px var(--amber-2), 0 0 24px -4px rgba(255,158,44,.5); }
+  .mpad.playing .m-led { background: var(--amber); box-shadow: 0 0 9px var(--amber); animation: pulse 1s ease-in-out infinite; }
+  .mpad.playing .m-name { color: var(--amber); }
+  .mpad.playing .m-key { color: var(--amber-2); border-color: rgba(255,158,44,.4); }
+  @keyframes pulse { 50% { opacity: .5; } }
+
+  /* SFX velocity pads */
+  .pads { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .pad {
+    position: relative; cursor: pointer; border: none; border-radius: 12px; padding: 13px 13px 12px; min-height: 108px;
+    display: flex; flex-direction: column; gap: 5px; text-align: left; color: var(--ink); --pad: var(--amber);
+    background: linear-gradient(180deg, var(--raise), #171a21);
+    box-shadow: 0 1px 0 rgba(255,255,255,.05) inset, 0 3px 6px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.6);
+    transition: transform .05s, box-shadow .12s, background .12s;
+  }
+  .pad:hover { box-shadow: 0 3px 6px rgba(0,0,0,.5), 0 0 0 1px color-mix(in srgb, var(--pad) 50%, transparent), 0 0 20px -6px var(--pad); }
+  .pad:active, .pad.firing { transform: translateY(2px); box-shadow: 0 1px 2px rgba(0,0,0,.6) inset, 0 0 0 1px var(--pad); }
+  .pad-led { position: absolute; top: 12px; right: 12px; width: 9px; height: 9px; border-radius: 50%;
+    background: color-mix(in srgb, var(--pad) 26%, #0b0c0f); box-shadow: 0 0 0 1px #000 inset; transition: box-shadow .1s, background .1s; }
+  .pad.firing .pad-led, .pad.playing .pad-led { background: var(--pad); box-shadow: 0 0 12px var(--pad); }
+  .pad.playing { background: linear-gradient(180deg, color-mix(in srgb, var(--pad) 15%, #1c1f28), #14161c); box-shadow: 0 0 0 1px color-mix(in srgb, var(--pad) 55%, transparent), 0 0 26px -8px var(--pad); }
+  .pad-key { align-self: flex-start; font-family: var(--mono); font-size: 10px; color: var(--engrave);
+    border: 1px solid rgba(255,255,255,.1); border-radius: 4px; padding: 1px 6px; }
+  .pad-name { font-weight: 600; font-size: 13.5px; letter-spacing: .2px; line-height: 1.15; margin-top: 2px; }
+  .pad-sub { font-family: var(--mono); font-size: 9.5px; color: var(--ink-dim); line-height: 1.35;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .pad-kind { margin-top: auto; font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--pad); }
+
+  .foot { text-align: center; margin: 14px 0 2px; padding: 0 46px; font-family: var(--mono);
+    font-size: 10.5px; letter-spacing: .3px; line-height: 1.6; color: #565349; text-shadow: 0 1px 0 rgba(255,255,255,.45); }
+  .foot b { color: #45423a; font-weight: 700; letter-spacing: 1.5px; }
+  .foot code { color: #8a6a1e; }
+
+  .pad:focus-visible, .mpad:focus-visible, .stop:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  @media (max-width: 720px) {
+    .topbar { grid-template-columns: 1fr; }
+    .loops { grid-template-columns: repeat(2, 1fr); }
+    .pads { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mpad.playing .m-led, .tiny .dot.pwr { animation: none; }
+  }
 </style>
 
 <script>
   (function () {
-    var current = null; // { audio, trigger }
-    function stop(entry) {
-      if (!entry) return;
-      entry.audio.pause();
-      entry.audio.currentTime = 0;
-      mark(entry, false);
+    var AC = window.AudioContext || window.webkitAudioContext;
+    var ac = null, master = null, analyser = null, freq = null, dpr = 1;
+    var canvas = document.querySelector(".vu"), ctx = canvas.getContext("2d");
+    var np1 = document.getElementById("np1"), np2 = document.getElementById("np2");
+    var musicEls = {}; // file -> audio element (persistent, looped)
+    var currentMusic = null; // { file, audio, btn }
+    var flashUntil = 0, flashText = "";
+
+    function ensureAudio() {
+      if (ac) { if (ac.state === "suspended") ac.resume(); return; }
+      ac = new AC();
+      master = ac.createGain(); master.gain.value = 0.9;
+      analyser = ac.createAnalyser(); analyser.fftSize = 128; analyser.smoothingTimeConstant = 0.78;
+      freq = new Uint8Array(analyser.frequencyBinCount);
+      master.connect(analyser); analyser.connect(ac.destination);
     }
-    function mark(entry, on) {
-      entry.trigger.classList.toggle("playing", on);
-      var item = entry.trigger.closest("[data-item]");
-      if (item) item.classList.toggle("playing", on);
+    function route(el) { try { ac.createMediaElementSource(el).connect(master); } catch (e) {} }
+
+    function fmt(t) { t = Math.max(0, t | 0); var m = (t / 60) | 0, s = t % 60; return m + ":" + (s < 10 ? "0" : "") + s; }
+
+    function stopMusic() {
+      if (!currentMusic) return;
+      currentMusic.audio.pause();
+      currentMusic.btn.classList.remove("playing");
+      currentMusic.btn.setAttribute("aria-pressed", "false");
+      currentMusic = null;
     }
-    document.querySelectorAll("[data-audio]").forEach(function (btn) {
-      var src = btn.getAttribute("data-audio");
-      var audio = new Audio(src);
-      var isMusic = !btn.classList.contains("sm");
-      audio.loop = isMusic;
-      var entry = { audio: audio, trigger: btn };
-      var fill = null;
-      var item = btn.closest("[data-item]");
-      if (item) fill = item.querySelector(".seek-fill");
-      audio.addEventListener("timeupdate", function () {
-        if (fill && audio.duration) fill.style.width = (audio.currentTime / audio.duration * 100) + "%";
+    function toggleMusic(btn) {
+      ensureAudio();
+      var file = btn.getAttribute("data-audio");
+      if (currentMusic && currentMusic.file === file) { stopMusic(); return; }
+      stopMusic();
+      var a = musicEls[file];
+      if (!a) { a = new Audio(file); a.loop = true; route(a); musicEls[file] = a; }
+      a.currentTime = 0; a.play();
+      btn.classList.add("playing"); btn.setAttribute("aria-pressed", "true");
+      currentMusic = { file: file, audio: a, btn: btn };
+    }
+    function fireSfx(btn) {
+      ensureAudio();
+      var a = new Audio(btn.getAttribute("data-audio"));
+      // Per-hit variation so rapid repeats don't fatigue — four cheap,
+      // playback-time axes routed through the audio graph (no re-rendering):
+      //   • pitch — a subtle vari-speed shift (±1.2 semitones)
+      //   • tone  — a high-shelf tilt (±6 dB, varying corner), brighter/darker
+      //   • pan   — stereo scatter so repeats don't stack in one spot
+      //   • level — slight velocity
+      var semis = (Math.random() * 2 - 1) * 1.2;
+      a.preservesPitch = false; a.mozPreservesPitch = false; a.webkitPreservesPitch = false;
+      a.playbackRate = Math.pow(2, semis / 12);
+
+      var src = ac.createMediaElementSource(a);
+      var tilt = ac.createBiquadFilter();
+      tilt.type = "highshelf"; tilt.frequency.value = 3500 + Math.random() * 2500;
+      tilt.gain.value = -6 + Math.random() * 11; // -6..+5 dB — a clearly audible bright/dark swing
+      var gain = ac.createGain();
+      gain.gain.value = 0.8 + Math.random() * 0.2;
+      src.connect(tilt);
+      var tail = tilt;
+      if (ac.createStereoPanner) {
+        var pan = ac.createStereoPanner();
+        pan.pan.value = (Math.random() * 2 - 1) * 0.4;
+        tilt.connect(pan); tail = pan;
+      }
+      tail.connect(gain); gain.connect(master);
+      a.play();
+
+      btn.classList.add("firing");
+      setTimeout(function () { btn.classList.remove("firing"); }, 140);
+      btn._n = (btn._n || 0) + 1; btn.classList.add("playing");
+      a.addEventListener("ended", function () {
+        try { gain.disconnect(); } catch (e) {}
+        if (--btn._n <= 0) { btn._n = 0; btn.classList.remove("playing"); }
       });
-      audio.addEventListener("ended", function () { mark(entry, false); if (fill) fill.style.width = "0%"; });
-      btn.addEventListener("click", function () {
-        var wasCurrent = current && current.audio === audio && !audio.paused;
-        if (current) stop(current);
-        if (fill) fill.style.width = "0%";
-        if (wasCurrent) { current = null; return; }
-        audio.currentTime = 0;
-        audio.play();
-        mark(entry, true);
-        current = entry;
-      });
+      flashText = ">> " + btn.getAttribute("data-name").toUpperCase();
+      flashUntil = performance.now() + 1100;
+    }
+
+    document.querySelectorAll(".mpad").forEach(function (b) { b.addEventListener("click", function () { toggleMusic(b); }); });
+    document.querySelectorAll(".pad").forEach(function (b) { b.addEventListener("click", function () { fireSfx(b); }); });
+    document.getElementById("stopall").addEventListener("click", stopMusic);
+
+    var keymap = {};
+    document.querySelectorAll("[data-key]").forEach(function (b) { keymap[b.getAttribute("data-key")] = b; });
+    window.addEventListener("keydown", function (e) {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+      if (e.key === "Escape") { stopMusic(); return; }
+      var b = keymap[e.key.toUpperCase()];
+      if (!b) return;
+      e.preventDefault(); b.click();
     });
+
+    // --- LCD readout + live segmented VU ---
+    function sizeCanvas() {
+      var r = canvas.getBoundingClientRect();
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.max(1, r.width * dpr); canvas.height = Math.max(1, r.height * dpr);
+    }
+    sizeCanvas(); window.addEventListener("resize", sizeCanvas);
+
+    function draw() {
+      requestAnimationFrame(draw);
+      // readout
+      if (currentMusic && !currentMusic.audio.paused) {
+        np1.textContent = "♪ " + currentMusic.btn.getAttribute("data-name").toUpperCase();
+        np2.textContent = "LOOP  " + fmt(currentMusic.audio.currentTime);
+      } else if (performance.now() < flashUntil) {
+        np1.textContent = flashText; np2.textContent = "ONE-SHOT";
+      } else {
+        np1.textContent = "— READY —"; np2.textContent = "TAP A PAD · PRESS A KEY";
+      }
+      // VU
+      var W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      if (analyser) analyser.getByteFrequencyData(freq);
+      var N = 30, gap = 3 * dpr, bw = (W - (N - 1) * gap) / N;
+      var segH = 4 * dpr, segGap = 2 * dpr, segs = Math.max(1, Math.floor(H / (segH + segGap)));
+      for (var i = 0; i < N; i++) {
+        var v = 0;
+        if (freq) { var idx = 2 + Math.floor(i / N * (freq.length - 6)); v = (freq[idx] || 0) / 255; }
+        var lit = Math.round(v * segs);
+        for (var s = 0; s < segs; s++) {
+          var on = s < lit, frac = s / segs;
+          var col = frac > 0.82 ? "#ff5d5d" : frac > 0.55 ? "#ffcf3a" : "#a6ff37";
+          var y = H - (s + 1) * (segH + segGap) + segGap;
+          if (on) { ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 6 * dpr; }
+          else { ctx.fillStyle = "rgba(120,150,90,0.07)"; ctx.shadowBlur = 0; }
+          ctx.fillRect(i * (bw + gap), y, bw, segH);
+        }
+      }
+      ctx.shadowBlur = 0;
+    }
+    requestAnimationFrame(draw);
   })();
 </script>
