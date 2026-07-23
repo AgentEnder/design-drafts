@@ -1,0 +1,12 @@
+{
+  "$schema": "https://design-drafts.dev/schemas/draft-manifest.schema.json",
+  "name": "airline-sim-renders",
+  "prompt": "",
+  "pages": [
+    {
+      "coordinates": {},
+      "path": "index.html"
+    }
+  ],
+  "createdAt": "2026-07-23T19:34:22.197Z"
+}
