@@ -111,6 +111,11 @@ force-pushes it to `drafts/<site-name>`, and exits. The
 [`Deploy Preview`](.github/workflows/deploy-preview.yml) workflow then publishes
 it to `https://<owner>.github.io/<repo>/<site-name>/`.
 
+The push prints that URL when it finishes — flagged as *not live yet*, because
+it only exists once the deploy workflow has finished building. If the repo
+serves Pages from a custom domain, the printed URL uses that domain's root
+instead.
+
 ### Markdown-only folders
 
 You don't need html at all. Running `design-drafts` in a folder that contains

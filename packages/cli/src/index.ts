@@ -23,7 +23,12 @@ import {
 } from './config';
 import { CliError, runHandler } from './errors';
 import { capture, exec } from './exec';
-import { githubRemoteUrl, pagesBasePath } from './github';
+import {
+  githubRemoteUrl,
+  lookupPagesSite,
+  pagesBasePath,
+  previewLocationMessage,
+} from './github';
 import { initDraft } from './init/draft';
 import { initHost } from './init/host';
 import { init } from './init/init';
@@ -377,6 +382,16 @@ async function pushHandler(args: PushArgs): Promise<void> {
     // typo'd or inaccessible repo never wedges future runs as a bad default.
     persistHomeConfigValue('repo', repo);
     console.log(`\nPushed "${branchName}" to ${repo}`);
+    // Where the draft is headed. Asked for against the source dir — the tmpdir
+    // is about to be removed, and `gh` only needs somewhere valid to run.
+    console.log(
+      '\n' +
+        previewLocationMessage({
+          repo,
+          branchName,
+          site: lookupPagesSite(repo, sourcePath),
+        })
+    );
   } finally {
     rmSync(tmpDir, { recursive: true, force: true });
     rmSync(messageFile, { force: true });
