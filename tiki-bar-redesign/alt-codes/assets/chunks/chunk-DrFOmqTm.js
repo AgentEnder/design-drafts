@@ -1,0 +1,1 @@
+import{o as e}from"./chunk-CIFxY5pd.js";function t(){return e()?.data}export{t};

@@ -1,0 +1,1 @@
+import{a as e}from"./chunk-elisZ1iz.js";function t(){return e()?.data}export{t};
