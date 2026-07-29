@@ -1,7 +1,7 @@
 import { n as __exportAll } from "../chunks/chunk-Sg1e8hzK.js";
 import { n as onRenderClient, t as Loading_default } from "../chunks/chunk-GZCHJOCC.js";
 import { t as require_jsx_runtime } from "../chunks/chunk-q44vHeK4.js";
-import { t as _Layout_exports } from "../chunks/chunk-CYRvVtg4.js";
+import { t as _Layout_exports } from "../chunks/chunk-B0pFMLna.js";
 //#region src/app/app.tsx
 var import_jsx_runtime = require_jsx_runtime();
 function App() {

@@ -2,7 +2,7 @@ import { n as __exportAll, r as __toESM, t as __commonJSMin } from "./chunk-Sg1e
 import { n as require_react, t as require_jsx_runtime } from "./chunk-q44vHeK4.js";
 import { m as assertClientRouting, n as renderPageClient, u as normalizeUrlArgument } from "./chunk-DnPPvupd.js";
 import { n as PRESENTATIONS } from "./chunk-CIV5sg3E.js";
-import { t as initClientRouter } from "./chunk-tDq-0kWn.js";
+import { t as initClientRouter } from "./chunk-wrJhFdpN.js";
 //#region ../../node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.core.js
 var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
 /**
@@ -67647,117 +67647,131 @@ var PROJECT_CRATES = [
 	"PEGLIN-SAVES"
 ];
 //#endregion
-//#region src/bar3d/materials.ts
-function buildMaterials(ctx) {
-	function canvasTex(w, h, draw, opts) {
-		const c = document.createElement("canvas");
-		c.width = w;
-		c.height = h;
-		draw(c.getContext("2d"), w, h);
-		const t = new CanvasTexture(c);
-		if (!opts || !opts.linear) t.colorSpace = SRGBColorSpace;
-		t.wrapS = t.wrapT = RepeatWrapping;
-		t.anisotropy = 8;
-		return t;
+//#region src/bar3d/materials/painters.ts
+function canvasTex(w, h, draw, opts) {
+	const c = document.createElement("canvas");
+	c.width = w;
+	c.height = h;
+	draw(c.getContext("2d"), w, h);
+	const t = new CanvasTexture(c);
+	if (!opts || !opts.linear) t.colorSpace = SRGBColorSpace;
+	t.wrapS = t.wrapT = RepeatWrapping;
+	t.anisotropy = 8;
+	return t;
+}
+function drawWeave(g, bump) {
+	const cell = 32;
+	for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+		const over = (x + y) % 2 === 0;
+		const seed = x * 13 + y * 7;
+		if (bump) g.fillStyle = over ? "#c8c8c8" : "#585858";
+		else g.fillStyle = (over ? [
+			"#3d2d1b",
+			"#43321e",
+			"#392a18"
+		] : [
+			"#2c2012",
+			"#271c10",
+			"#302314"
+		])[seed % 3];
+		g.fillRect(x * cell, y * cell, cell, cell);
+		g.strokeStyle = bump ? over ? "#909090" : "#404040" : "rgba(0,0,0,0.3)";
+		g.lineWidth = 1.5;
+		for (let s = 0; s < 4; s++) {
+			g.beginPath();
+			if (over) {
+				g.moveTo(x * cell, y * cell + s * 8 + 4);
+				g.lineTo(x * cell + cell, y * cell + s * 8 + 4);
+			} else {
+				g.moveTo(x * cell + s * 8 + 4, y * cell);
+				g.lineTo(x * cell + s * 8 + 4, y * cell + cell);
+			}
+			g.stroke();
+		}
 	}
-	function drawWeave(g, bump) {
-		const cell = 32;
-		for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
-			const over = (x + y) % 2 === 0;
-			const seed = x * 13 + y * 7;
-			if (bump) g.fillStyle = over ? "#c8c8c8" : "#585858";
-			else g.fillStyle = (over ? [
-				"#3d2d1b",
-				"#43321e",
-				"#392a18"
-			] : [
-				"#2c2012",
-				"#271c10",
-				"#302314"
-			])[seed % 3];
-			g.fillRect(x * cell, y * cell, cell, cell);
-			g.strokeStyle = bump ? over ? "#909090" : "#404040" : "rgba(0,0,0,0.3)";
-			g.lineWidth = 1.5;
-			for (let s = 0; s < 4; s++) {
+	g.strokeStyle = bump ? "#181818" : "#170f07";
+	g.lineWidth = 2.5;
+	for (let i = 0; i <= 8; i++) {
+		g.beginPath();
+		g.moveTo(i * 32, 0);
+		g.lineTo(i * 32, 256);
+		g.stroke();
+		g.beginPath();
+		g.moveTo(0, i * 32);
+		g.lineTo(256, i * 32);
+		g.stroke();
+	}
+}
+function drawWood(g, w, h, base, dark, bump, plankH) {
+	const ph = plankH || h;
+	for (let p = 0; p < h / ph; p++) {
+		const y0 = p * ph;
+		g.fillStyle = bump ? "#8a8a8a" : p % 2 ? base : shade(base, -8);
+		g.fillRect(0, y0, w, ph);
+		for (let i = 0; i < 26; i++) {
+			const yy = y0 + (i * 17 + p * 53) % ph;
+			g.strokeStyle = bump ? "rgba(60,60,60,0.55)" : "rgba(" + hexRgb(dark) + "," + (.25 + i % 3 * .12) + ")";
+			g.lineWidth = 1 + i % 3 * .7;
+			g.beginPath();
+			g.moveTo(0, yy);
+			g.bezierCurveTo(w * .3, yy + (i % 5 - 2) * 3, w * .6, yy - (i % 3 - 1) * 4, w, yy + 2);
+			g.stroke();
+		}
+		for (let k = 0; k < 2; k++) {
+			const kx = (p * 197 + k * 331) % (w - 80) + 40;
+			const ky = y0 + ph * .3 + (p * 89 + k * 57) % (ph * .4);
+			for (let r = 5; r > 0; r--) {
+				g.strokeStyle = bump ? "rgba(40,40,40,0.7)" : "rgba(" + hexRgb(dark) + ",0.5)";
+				g.lineWidth = 1.2;
 				g.beginPath();
-				if (over) {
-					g.moveTo(x * cell, y * cell + s * 8 + 4);
-					g.lineTo(x * cell + cell, y * cell + s * 8 + 4);
-				} else {
-					g.moveTo(x * cell + s * 8 + 4, y * cell);
-					g.lineTo(x * cell + s * 8 + 4, y * cell + cell);
-				}
+				g.ellipse(kx, ky, r * 4.5, r * 2.6, .2, 0, 7);
 				g.stroke();
 			}
 		}
-		g.strokeStyle = bump ? "#181818" : "#170f07";
-		g.lineWidth = 2.5;
-		for (let i = 0; i <= 8; i++) {
+		if (plankH) {
+			g.strokeStyle = bump ? "#101010" : "#0d0803";
+			g.lineWidth = 3;
 			g.beginPath();
-			g.moveTo(i * 32, 0);
-			g.lineTo(i * 32, 256);
+			g.moveTo(0, y0);
+			g.lineTo(w, y0);
 			g.stroke();
+			const bx = p * 173 % (w - 100) + 50;
+			g.lineWidth = 2;
 			g.beginPath();
-			g.moveTo(0, i * 32);
-			g.lineTo(256, i * 32);
+			g.moveTo(bx, y0);
+			g.lineTo(bx, y0 + ph);
 			g.stroke();
 		}
 	}
+}
+function shade(hex, amt) {
+	const n = parseInt(hex.slice(1), 16);
+	const r = Math.max(0, (n >> 16 & 255) + amt);
+	const gg = Math.max(0, (n >> 8 & 255) + amt);
+	const b = Math.max(0, (n & 255) + amt);
+	return "#" + (r << 16 | gg << 8 | b).toString(16).padStart(6, "0");
+}
+function hexRgb(hex) {
+	const n = parseInt(hex.slice(1), 16);
+	return (n >> 16 & 255) + "," + (n >> 8 & 255) + "," + (n & 255);
+}
+var drawRope = (g, bump) => {
+	g.fillStyle = bump ? "#808080" : "#7a6242";
+	g.fillRect(0, 0, 64, 64);
+	for (let i = -3; i < 12; i++) {
+		g.strokeStyle = bump ? i % 2 ? "#303030" : "#d8d8d8" : i % 2 ? "rgba(38,26,14,0.9)" : "rgba(178,142,96,0.85)";
+		g.lineWidth = 7;
+		g.beginPath();
+		g.moveTo(i * 12 - 22, 72);
+		g.lineTo(i * 12 + 22, -8);
+		g.stroke();
+	}
+};
+//#endregion
+//#region src/bar3d/materials/index.ts
+function buildMaterials(ctx) {
 	const weaveTex = canvasTex(256, 256, (g) => drawWeave(g, false));
 	const weaveBump = canvasTex(256, 256, (g) => drawWeave(g, true), { linear: true });
-	function drawWood(g, w, h, base, dark, bump, plankH) {
-		const ph = plankH || h;
-		for (let p = 0; p < h / ph; p++) {
-			const y0 = p * ph;
-			g.fillStyle = bump ? "#8a8a8a" : p % 2 ? base : shade(base, -8);
-			g.fillRect(0, y0, w, ph);
-			for (let i = 0; i < 26; i++) {
-				const yy = y0 + (i * 17 + p * 53) % ph;
-				g.strokeStyle = bump ? "rgba(60,60,60,0.55)" : "rgba(" + hexRgb(dark) + "," + (.25 + i % 3 * .12) + ")";
-				g.lineWidth = 1 + i % 3 * .7;
-				g.beginPath();
-				g.moveTo(0, yy);
-				g.bezierCurveTo(w * .3, yy + (i % 5 - 2) * 3, w * .6, yy - (i % 3 - 1) * 4, w, yy + 2);
-				g.stroke();
-			}
-			for (let k = 0; k < 2; k++) {
-				const kx = (p * 197 + k * 331) % (w - 80) + 40;
-				const ky = y0 + ph * .3 + (p * 89 + k * 57) % (ph * .4);
-				for (let r = 5; r > 0; r--) {
-					g.strokeStyle = bump ? "rgba(40,40,40,0.7)" : "rgba(" + hexRgb(dark) + ",0.5)";
-					g.lineWidth = 1.2;
-					g.beginPath();
-					g.ellipse(kx, ky, r * 4.5, r * 2.6, .2, 0, 7);
-					g.stroke();
-				}
-			}
-			if (plankH) {
-				g.strokeStyle = bump ? "#101010" : "#0d0803";
-				g.lineWidth = 3;
-				g.beginPath();
-				g.moveTo(0, y0);
-				g.lineTo(w, y0);
-				g.stroke();
-				const bx = p * 173 % (w - 100) + 50;
-				g.lineWidth = 2;
-				g.beginPath();
-				g.moveTo(bx, y0);
-				g.lineTo(bx, y0 + ph);
-				g.stroke();
-			}
-		}
-	}
-	function shade(hex, amt) {
-		const n = parseInt(hex.slice(1), 16);
-		const r = Math.max(0, (n >> 16 & 255) + amt);
-		const gg = Math.max(0, (n >> 8 & 255) + amt);
-		const b = Math.max(0, (n & 255) + amt);
-		return "#" + (r << 16 | gg << 8 | b).toString(16).padStart(6, "0");
-	}
-	function hexRgb(hex) {
-		const n = parseInt(hex.slice(1), 16);
-		return (n >> 16 & 255) + "," + (n >> 8 & 255) + "," + (n & 255);
-	}
 	const floorTex = canvasTex(512, 512, (g, w, h) => drawWood(g, w, h, "#1e1409", "#0a0602", false, 64));
 	const floorBump = canvasTex(512, 512, (g, w, h) => drawWood(g, w, h, "", "", true, 64), { linear: true });
 	const counterTex = canvasTex(512, 256, (g, w, h) => drawWood(g, w, h, "#54371c", "#241205", false, 0));
@@ -67855,38 +67869,10 @@ function buildMaterials(ctx) {
 			g.fill();
 		}
 	});
-	canvasTex(128, 128, (g) => {
-		g.fillStyle = "#141414";
-		g.fillRect(0, 0, 128, 128);
-		g.strokeStyle = "#2c241c";
-		g.lineWidth = 2;
-		for (let i = 0; i < 16; i++) {
-			g.beginPath();
-			g.moveTo(i * 8, 0);
-			g.lineTo(i * 8 + 128, 128);
-			g.stroke();
-			g.beginPath();
-			g.moveTo(i * 8 - 128, 0);
-			g.lineTo(i * 8, 128);
-			g.stroke();
-		}
-	});
 	weaveTex.repeat.set(9, 2);
 	weaveBump.repeat.set(9, 2);
 	floorTex.repeat.set(6, 4);
 	floorBump.repeat.set(6, 4);
-	const drawRope = (g, bump) => {
-		g.fillStyle = bump ? "#808080" : "#7a6242";
-		g.fillRect(0, 0, 64, 64);
-		for (let i = -3; i < 12; i++) {
-			g.strokeStyle = bump ? i % 2 ? "#303030" : "#d8d8d8" : i % 2 ? "rgba(38,26,14,0.9)" : "rgba(178,142,96,0.85)";
-			g.lineWidth = 7;
-			g.beginPath();
-			g.moveTo(i * 12 - 22, 72);
-			g.lineTo(i * 12 + 22, -8);
-			g.stroke();
-		}
-	};
 	const ropeTex = canvasTex(64, 64, (g) => drawRope(g, false));
 	const ropeBump = canvasTex(64, 64, (g) => drawRope(g, true), { linear: true });
 	ropeTex.repeat.set(5, 1);
@@ -68173,6 +68159,242 @@ function buildCore(ctx) {
 	});
 }
 //#endregion
+//#region src/bar3d/parts/vessels.ts
+function makeVessels(ctx) {
+	const { M, BOTTLE_PROFILES, MUG_PROFILE, bottleGlassColors } = ctx;
+	function bottleBatch(placements) {
+		for (let prof = 0; prof < 3; prof++) {
+			const items = placements.filter((p) => p[0] === prof);
+			if (!items.length) continue;
+			const inst = new InstancedMesh(new LatheGeometry(BOTTLE_PROFILES[prof].map((p) => new Vector2(p[0], p[1])), 12), M.glass, items.length);
+			const mtx = new Matrix4();
+			const col = new Color();
+			items.forEach((p, i) => {
+				mtx.makeRotationY((p[1] * 13 + p[3] * 7) % 6.28);
+				mtx.setPosition(p[1], p[2], p[3]);
+				inst.setMatrixAt(i, mtx);
+				col.setHex(bottleGlassColors[(i + prof * 2) % bottleGlassColors.length]);
+				inst.setColorAt(i, col);
+			});
+			ctx.scene.add(inst);
+		}
+	}
+	function mugBatch(placements) {
+		const inst = new InstancedMesh(new LatheGeometry(MUG_PROFILE.map((p) => new Vector2(p[0], p[1])), 14), M.mugClay, placements.length);
+		const mtx = new Matrix4();
+		const col = new Color();
+		const clays = [
+			2365192,
+			3809812,
+			5517340,
+			2765360,
+			1842210
+		];
+		placements.forEach((p, i) => {
+			mtx.makeRotationY(i * 2.4 % 6.28);
+			mtx.setPosition(p[0], p[1], p[2]);
+			inst.setMatrixAt(i, mtx);
+			col.setHex(clays[i % clays.length]);
+			inst.setColorAt(i, col);
+		});
+		ctx.scene.add(inst);
+	}
+	return {
+		bottleBatch,
+		mugBatch
+	};
+}
+//#endregion
+//#region src/bar3d/parts/totem.ts
+function makeTotem(ctx) {
+	const { M, aoBlob } = ctx;
+	function totem(x, z, ry, height) {
+		const g = new Group();
+		const r = .3;
+		const segs = 2;
+		const segH = height / segs;
+		const dark = new MeshStandardMaterial({
+			color: 2365192,
+			roughness: .95
+		});
+		const light = new MeshStandardMaterial({
+			color: 7031334,
+			roughness: .8
+		});
+		for (let i = 0; i < segs; i++) {
+			const y0 = i * segH;
+			const trunk = new Mesh(new CylinderGeometry(r * (1 - i * .06), r * (1.04 - i * .06), segH, 14), M.carve);
+			trunk.position.y = y0 + segH / 2;
+			trunk.castShadow = true;
+			g.add(trunk);
+			const brow = new Mesh(new BoxGeometry(r * 1.9, segH * .1, r * .5), light);
+			brow.position.set(0, y0 + segH * .72, r * .82);
+			brow.rotation.x = .3;
+			g.add(brow);
+			[-1, 1].forEach((side) => {
+				const eye = new Mesh(new CylinderGeometry(r * .22, r * .22, .05, 10), dark);
+				eye.rotation.x = Math.PI / 2;
+				eye.position.set(side * r * .42, y0 + segH * .6, r * .86);
+				g.add(eye);
+			});
+			const nose = new Mesh(new CylinderGeometry(r * .12, r * .26, segH * .32, 4), light);
+			nose.position.set(0, y0 + segH * .44, r * .95);
+			nose.rotation.x = .1;
+			g.add(nose);
+			const mouth = new Mesh(new BoxGeometry(r * 1.3, segH * .16, r * .3), dark);
+			mouth.position.set(0, y0 + segH * .2, r * .88);
+			g.add(mouth);
+			for (let t = 0; t < 5; t++) {
+				const tooth = new Mesh(new BoxGeometry(r * .14, segH * .13, r * .06), light);
+				tooth.position.set(-r * .5 + t * r * .25, y0 + segH * .2, r * 1.02);
+				g.add(tooth);
+			}
+		}
+		const cap = new Mesh(new CylinderGeometry(r * 1.2, r * 1.05, .12, 14), dark);
+		cap.position.y = height + .06;
+		g.add(cap);
+		g.position.set(x, 0, z);
+		g.rotation.y = ry;
+		ctx.scene.add(g);
+		aoBlob(1.3, 1.3, x, z);
+		return g;
+	}
+	return totem;
+}
+//#endregion
+//#region src/bar3d/parts/pufferLamp.ts
+function makePufferLamp(ctx, swayers) {
+	const { M, ROOM } = ctx;
+	function pufferLamp(x, z, scale, withLight) {
+		const pivot = new Group();
+		pivot.position.set(x, ROOM.h, z);
+		const rope = new Mesh(new CylinderGeometry(.012, .012, .9, 5), M.rope);
+		rope.position.y = -.45;
+		pivot.add(rope);
+		const body = new Mesh(new SphereGeometry(.26 * scale, 20, 16), M.lampGlass);
+		body.position.y = -1.05;
+		body.scale.set(1.06, .88, 1);
+		pivot.add(body);
+		const spikes = new InstancedMesh(new ConeGeometry(.014, .075, 4), new MeshStandardMaterial({
+			color: 9061414,
+			roughness: .9
+		}), 64);
+		const mtx = new Matrix4();
+		const q = new Quaternion();
+		const up = new Vector3(0, 1, 0);
+		const dir = new Vector3();
+		for (let i = 0; i < 64; i++) {
+			const phi = Math.acos(1 - 2 * (i + .5) / 64);
+			const th = Math.PI * (1 + Math.sqrt(5)) * i;
+			dir.setFromSphericalCoords(1, phi, th);
+			q.setFromUnitVectors(up, dir);
+			const p = dir.clone();
+			p.x *= .27 * scale * 1.06;
+			p.y = p.y * .27 * scale * .88 - 1.05;
+			p.z *= .27 * scale;
+			mtx.compose(p, q, new Vector3(1, 1, 1));
+			spikes.setMatrixAt(i, mtx);
+		}
+		pivot.add(spikes);
+		const finMat = new MeshStandardMaterial({
+			color: 9061414,
+			roughness: .85
+		});
+		const tail = new Mesh(new ConeGeometry(.06 * scale, .14 * scale, 6), finMat);
+		tail.position.set(-.3 * scale, -1.05, 0);
+		tail.rotation.z = Math.PI / 2;
+		pivot.add(tail);
+		if (withLight) {
+			const pl = new PointLight(14721104, 13 * scale, 8, 2);
+			pl.position.y = -1.05;
+			pivot.add(pl);
+		}
+		ctx.scene.add(pivot);
+		swayers.push({
+			node: pivot,
+			phase: x * 1.3 + z,
+			amp: .04
+		});
+		return pivot;
+	}
+	return pufferLamp;
+}
+//#endregion
+//#region src/bar3d/parts/rigging.ts
+function makeRigging(ctx, swayers) {
+	const { M, ROOM } = ctx;
+	function ropeWrap(x, z, y0, y1, r) {
+		const pts = [];
+		const turns = Math.max(2, Math.round((y1 - y0) * 7));
+		const steps = turns * 10;
+		for (let i = 0; i <= steps; i++) {
+			const t = i / steps;
+			const a = t * turns * Math.PI * 2;
+			pts.push(new Vector3(x + Math.cos(a) * r, y0 + t * (y1 - y0), z + Math.sin(a) * r));
+		}
+		const tube = new Mesh(new TubeGeometry(new CatmullRomCurve3(pts), steps, .014, 5), M.rope);
+		ctx.scene.add(tube);
+	}
+	function fishTrap(x, z, y) {
+		const g = new Group();
+		const rope = new Mesh(new CylinderGeometry(.008, .008, ROOM.h - y, 5), M.rope);
+		rope.position.y = (ROOM.h - y) / 2;
+		g.add(rope);
+		const rr = [
+			.14,
+			.19,
+			.19,
+			.15,
+			.08
+		];
+		rr.forEach((radius, i) => {
+			const ring = new Mesh(new TorusGeometry(radius, .012, 5, 14), M.bamboo);
+			ring.rotation.x = Math.PI / 2;
+			ring.position.y = -i * .16;
+			g.add(ring);
+		});
+		for (let i = 0; i < 8; i++) {
+			const a = i / 8 * Math.PI * 2;
+			const rib = new Mesh(new TubeGeometry(new CatmullRomCurve3(rr.map((radius, j) => new Vector3(Math.cos(a) * radius, -j * .16, Math.sin(a) * radius))), 8, .006, 4), M.rope);
+			g.add(rib);
+		}
+		g.position.set(x, y, z);
+		ctx.scene.add(g);
+		swayers.push({
+			node: g,
+			phase: x * .7,
+			amp: .03
+		});
+	}
+	function ropeDrape(from, to, sag) {
+		const mid = from.clone().add(to).multiplyScalar(.5);
+		mid.y -= sag;
+		const curve = new QuadraticBezierCurve3(from, mid, to);
+		ctx.scene.add(new Mesh(new TubeGeometry(curve, 20, .011, 5), M.rope));
+	}
+	function lightString(from, to, sag, n) {
+		const mid = from.clone().add(to).multiplyScalar(.5);
+		mid.y -= sag;
+		const curve = new QuadraticBezierCurve3(from, mid, to);
+		const wire = new Mesh(new TubeGeometry(curve, 24, .006, 4), M.darkWood);
+		ctx.scene.add(wire);
+		const inst = new InstancedMesh(new SphereGeometry(.026, 8, 6), M.bulb, n);
+		const mtx = new Matrix4();
+		for (let i = 0; i < n; i++) {
+			const p = curve.getPoint(i / (n - 1));
+			mtx.setPosition(p.x, p.y - .03, p.z);
+			inst.setMatrixAt(i, mtx);
+		}
+		ctx.scene.add(inst);
+	}
+	return {
+		ropeWrap,
+		fishTrap,
+		ropeDrape,
+		lightString
+	};
+}
+//#endregion
 //#region ../../node_modules/.pnpm/three@0.185.1/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js
 /**
 * Merges a set of geometries into a single instance. All geometries must have compatible attributes.
@@ -68325,451 +68547,9 @@ function mergeAttributes(attributes) {
 	return result;
 }
 //#endregion
-//#region src/bar3d/masks.ts
-var COLS = 36;
-var ROWS = 48;
-var gauss = (d, s) => Math.exp(-(d * d) / (2 * s * s));
-var clamp01 = (v) => Math.min(1, Math.max(0, v));
-var smooth = (a, b, v) => {
-	const t = clamp01((v - a) / (b - a));
-	return t * t * (3 - 2 * t);
-};
-function features(kind) {
-	return {
-		ry: kind === 1 ? .49 : .41,
-		eyeY: kind === 1 ? .16 : .1,
-		eyeX: .36,
-		noseEnd: kind === 1 ? -.3 : -.2,
-		mouthY: kind === 1 ? -.54 : -.46
-	};
-}
-/** Signed height (world units) of the carve at face coords fx,fy ∈ [-1,1]. */
-function maskHeight(fx, fy, kind) {
-	const F = features(kind);
-	const r2 = fx * fx + fy * fy;
-	const r = Math.sqrt(r2);
-	const base = .055 * Math.sqrt(Math.max(0, 1 - Math.min(1, r2) * .96));
-	const ef = 1 - smooth(.82, .97, r);
-	let h = 0;
-	const browY = F.eyeY + .24;
-	h += .034 * gauss(fy - browY, .07) * Math.max(0, 1 - Math.abs(fx) / .75);
-	for (const side of [-1, 1]) {
-		const dx = (fx - side * F.eyeX) / .17;
-		const dy = (fy - F.eyeY) / .13;
-		const d = Math.sqrt(dx * dx + dy * dy);
-		h -= .036 * Math.exp(-d * d);
-		h += .015 * gauss(d - 1.2, .3);
-	}
-	const along = clamp01((F.eyeY - .02 - fy) / (F.eyeY - .02 - F.noseEnd));
-	if (along > 0 && along <= 1.15) {
-		const w = .055 + .075 * along;
-		const profile = Math.sin(Math.min(1, along) * Math.PI * .62);
-		h += .052 * gauss(fx, w) * profile;
-		if (along > .8) for (const side of [-1, 1]) h += .02 * gauss(fx - side * w * 1.25, .05) * gauss(fy - F.noseEnd, .06);
-	}
-	const mx = smooth(.58, .4, Math.abs(fx));
-	h -= .032 * gauss(fy - F.mouthY, .08) * mx;
-	h += .02 * Math.pow(Math.max(0, Math.cos(fx * Math.PI * 7)), 1.6) * gauss(fy - F.mouthY, .05) * mx;
-	for (const side of [-1, 1]) {
-		const dc = Math.sqrt(Math.pow((fx - side * .95) / 1, 2) + Math.pow((fy - (F.eyeY - .1)) / 1.15, 2));
-		h -= .013 * gauss(dc - .62, .05);
-	}
-	if (kind === 1) for (const cx of [
-		-.3,
-		0,
-		.3
-	]) h -= .012 * gauss(fx - cx, .055) * gauss(fy - .6, .13);
-	else h += .014 * gauss(fx, .17) * gauss(fy + .74, .11);
-	return base + h * ef;
-}
-/** Depth of recesses only — drives the baked AO in the painted texture. */
-function recessDepth(fx, fy, kind) {
-	const F = features(kind);
-	let d = 0;
-	for (const side of [-1, 1]) {
-		const dx = (fx - side * F.eyeX) / .17;
-		const dy = (fy - F.eyeY) / .13;
-		const dist = Math.sqrt(dx * dx + dy * dy);
-		d += .036 * Math.exp(-dist * dist);
-	}
-	const mx = smooth(.58, .4, Math.abs(fx));
-	d += .032 * gauss(fy - F.mouthY, .08) * mx;
-	for (const side of [-1, 1]) {
-		const dc = Math.sqrt(Math.pow((fx - side * .95) / 1, 2) + Math.pow((fy - (F.eyeY - .1)) / 1.15, 2));
-		d += .013 * gauss(dc - .62, .05);
-	}
-	if (kind === 1) for (const cx of [
-		-.3,
-		0,
-		.3
-	]) d += .012 * gauss(fx - cx, .055) * gauss(fy - .6, .13);
-	return d;
-}
-function buildGeometry(kind) {
-	const rx = .29;
-	const { ry } = features(kind);
-	const positions = [];
-	const uvs = [];
-	const index = [];
-	for (let iy = 0; iy <= ROWS; iy++) {
-		const v = iy / ROWS * 2 - 1;
-		const halfW = Math.sqrt(Math.max(4e-4, 1 - v * v));
-		for (let ix = 0; ix <= COLS; ix++) {
-			const fx = (ix / COLS * 2 - 1) * halfW;
-			positions.push(fx * rx, v * ry, maskHeight(fx, v, kind));
-			uvs.push(fx * .5 + .5, v * .5 + .5);
-		}
-	}
-	const stride = COLS + 1;
-	for (let iy = 0; iy < ROWS; iy++) for (let ix = 0; ix < COLS; ix++) {
-		const a = iy * stride + ix;
-		index.push(a, a + 1, a + stride, a + 1, a + stride + 1, a + stride);
-	}
-	const geo = new BufferGeometry();
-	geo.setAttribute("position", new Float32BufferAttribute(positions, 3));
-	geo.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
-	geo.setIndex(index);
-	geo.computeVertexNormals();
-	return geo;
-}
-/** face coords → canvas px (fy up, canvas y down) */
-function toPx(fx, fy, W, H) {
-	return [(fx * .5 + .5) * W, (1 - (fy * .5 + .5)) * H];
-}
-function paintTexture(kind) {
-	const W = 256;
-	const H = 320;
-	const F = features(kind);
-	const c = document.createElement("canvas");
-	c.width = W;
-	c.height = H;
-	const g = c.getContext("2d");
-	const grad = g.createLinearGradient(0, 0, 0, H);
-	if (kind === 1) {
-		grad.addColorStop(0, "#452a15");
-		grad.addColorStop(1, "#26150a");
-	} else {
-		grad.addColorStop(0, "#3a2214");
-		grad.addColorStop(1, "#241708");
-	}
-	g.fillStyle = grad;
-	g.fillRect(0, 0, W, H);
-	for (let i = 0; i < 70; i++) {
-		const x0 = Math.random() * W;
-		g.strokeStyle = Math.random() > .5 ? "rgba(107,74,38,0.18)" : "rgba(16,9,4,0.22)";
-		g.lineWidth = 1 + Math.random() * 1.6;
-		g.beginPath();
-		const wob = 3 + Math.random() * 5;
-		const phase = Math.random() * 6.28;
-		for (let y = 0; y <= H; y += 8) g.lineTo(x0 + Math.sin(y / 40 + phase) * wob, y);
-		g.stroke();
-	}
-	const jitter = (n) => n + (Math.random() - .5) * 2.5;
-	for (const side of [-1, 1]) {
-		const [ex, ey] = toPx(side * F.eyeX, F.eyeY, W, H);
-		for (const [rxp, ryp, color, lw] of [[
-			.2,
-			.16,
-			"rgba(232,220,192,0.85)",
-			4.5
-		], [
-			.14,
-			.11,
-			"rgba(168,58,46,0.8)",
-			3
-		]]) {
-			g.strokeStyle = color;
-			g.lineWidth = lw;
-			g.beginPath();
-			g.ellipse(jitter(ex), jitter(ey), rxp * W / 2, ryp * H / 2, 0, 0, 6.29);
-			g.stroke();
-		}
-	}
-	const [, by] = toPx(0, F.eyeY + .24, W, H);
-	g.fillStyle = "rgba(168,58,46,0.75)";
-	g.fillRect(W * .14, by - 4, W * .72, 8);
-	g.fillStyle = "rgba(201,162,39,0.7)";
-	for (let i = 0; i < 7; i++) {
-		const tx = W * .16 + i * W * .68 / 6.5;
-		g.beginPath();
-		g.moveTo(tx, by - 6);
-		g.lineTo(tx + 7, by - 15);
-		g.lineTo(tx + 14, by - 6);
-		g.fill();
-	}
-	g.strokeStyle = "rgba(201,162,39,0.55)";
-	g.lineWidth = 3;
-	{
-		const [nx0, ny0] = toPx(0, F.eyeY, W, H);
-		const [, ny1] = toPx(0, F.noseEnd, W, H);
-		g.beginPath();
-		g.moveTo(nx0, ny0);
-		g.lineTo(nx0, ny1);
-		g.stroke();
-	}
-	const [, my] = toPx(0, F.mouthY, W, H);
-	g.fillStyle = "rgba(232,220,192,0.9)";
-	for (let t = -3; t <= 3; t++) {
-		const fxT = t * 2 / 7;
-		if (Math.abs(fxT) > .52) continue;
-		const [txp] = toPx(fxT, 0, W, H);
-		g.fillRect(txp - 4, my - 6, 8, 12);
-	}
-	if (kind === 1) {
-		g.fillStyle = "rgba(232,220,192,0.55)";
-		for (const cx of [
-			-.3,
-			0,
-			.3
-		]) {
-			const [bx, byTop] = toPx(cx, .72, W, H);
-			const [, byBot] = toPx(cx, .48, W, H);
-			g.fillRect(bx - 3, byTop, 6, byBot - byTop);
-		}
-	} else {
-		const [, cy] = toPx(0, -.74, W, H);
-		g.strokeStyle = "rgba(232,220,192,0.5)";
-		g.lineWidth = 2.5;
-		for (let i = 0; i < 3; i++) {
-			g.beginPath();
-			g.moveTo(W * .36, cy + i * 6 - 6);
-			g.lineTo(W * .5, cy + i * 6);
-			g.lineTo(W * .64, cy + i * 6 - 6);
-			g.stroke();
-		}
-	}
-	const STEP = 4;
-	for (let py = 0; py < H; py += STEP) for (let px = 0; px < W; px += STEP) {
-		const d = recessDepth(px / W * 2 - 1, (1 - py / H) * 2 - 1, kind);
-		if (d > .002) {
-			g.fillStyle = `rgba(5,2,0,${Math.min(.6, d * 15)})`;
-			g.fillRect(px - 1, py - 1, STEP + 2, STEP + 2);
-		}
-	}
-	g.fillStyle = "rgba(10,5,2,0.14)";
-	for (let i = 0; i < 220; i++) g.fillRect(Math.random() * W, Math.random() * H, 1.5, 1.5);
-	const tex = new CanvasTexture(c);
-	tex.colorSpace = SRGBColorSpace;
-	tex.anisotropy = 8;
-	return tex;
-}
-var cache = /* @__PURE__ */ new Map();
-/** Shared per-kind assets; placements clone nothing — meshes reference these. */
-function maskAssets(kind) {
-	let entry = cache.get(kind);
-	if (!entry) {
-		entry = {
-			geometry: buildGeometry(kind),
-			material: new MeshStandardMaterial({
-				map: paintTexture(kind),
-				roughness: .85
-			})
-		};
-		cache.set(kind, entry);
-	}
-	return entry;
-}
-//#endregion
-//#region src/bar3d/props.ts
-function buildProps(ctx) {
-	const { M, ROOM, add, box, aoBlob, lathe, BOTTLE_PROFILES, MUG_PROFILE, bottleGlassColors, canvasTex, signTex } = ctx;
-	function bottleBatch(placements) {
-		for (let prof = 0; prof < 3; prof++) {
-			const items = placements.filter((p) => p[0] === prof);
-			if (!items.length) continue;
-			const inst = new InstancedMesh(new LatheGeometry(BOTTLE_PROFILES[prof].map((p) => new Vector2(p[0], p[1])), 12), M.glass, items.length);
-			const mtx = new Matrix4();
-			const col = new Color();
-			items.forEach((p, i) => {
-				mtx.makeRotationY((p[1] * 13 + p[3] * 7) % 6.28);
-				mtx.setPosition(p[1], p[2], p[3]);
-				inst.setMatrixAt(i, mtx);
-				col.setHex(bottleGlassColors[(i + prof * 2) % bottleGlassColors.length]);
-				inst.setColorAt(i, col);
-			});
-			ctx.scene.add(inst);
-		}
-	}
-	function mugBatch(placements) {
-		const inst = new InstancedMesh(new LatheGeometry(MUG_PROFILE.map((p) => new Vector2(p[0], p[1])), 14), M.mugClay, placements.length);
-		const mtx = new Matrix4();
-		const col = new Color();
-		const clays = [
-			2365192,
-			3809812,
-			5517340,
-			2765360,
-			1842210
-		];
-		placements.forEach((p, i) => {
-			mtx.makeRotationY(i * 2.4 % 6.28);
-			mtx.setPosition(p[0], p[1], p[2]);
-			inst.setMatrixAt(i, mtx);
-			col.setHex(clays[i % clays.length]);
-			inst.setColorAt(i, col);
-		});
-		ctx.scene.add(inst);
-	}
-	function mask3d(x, y, z, ry, s, kind) {
-		const { geometry, material } = maskAssets(kind === 1 ? 1 : 0);
-		const mesh = new Mesh(geometry, material);
-		mesh.castShadow = true;
-		const g = new Group();
-		g.add(mesh);
-		g.position.set(x, y, z);
-		g.rotation.y = ry;
-		g.rotation.z = x * 7 % 3 * .02 - .02;
-		g.scale.setScalar(s);
-		ctx.scene.add(g);
-		return g;
-	}
-	function totem(x, z, ry, height) {
-		const g = new Group();
-		const r = .3;
-		const segs = 2;
-		const segH = height / segs;
-		const dark = new MeshStandardMaterial({
-			color: 2365192,
-			roughness: .95
-		});
-		const light = new MeshStandardMaterial({
-			color: 7031334,
-			roughness: .8
-		});
-		for (let i = 0; i < segs; i++) {
-			const y0 = i * segH;
-			const trunk = new Mesh(new CylinderGeometry(r * (1 - i * .06), r * (1.04 - i * .06), segH, 14), M.carve);
-			trunk.position.y = y0 + segH / 2;
-			trunk.castShadow = true;
-			g.add(trunk);
-			const brow = new Mesh(new BoxGeometry(r * 1.9, segH * .1, r * .5), light);
-			brow.position.set(0, y0 + segH * .72, r * .82);
-			brow.rotation.x = .3;
-			g.add(brow);
-			[-1, 1].forEach((side) => {
-				const eye = new Mesh(new CylinderGeometry(r * .22, r * .22, .05, 10), dark);
-				eye.rotation.x = Math.PI / 2;
-				eye.position.set(side * r * .42, y0 + segH * .6, r * .86);
-				g.add(eye);
-			});
-			const nose = new Mesh(new CylinderGeometry(r * .12, r * .26, segH * .32, 4), light);
-			nose.position.set(0, y0 + segH * .44, r * .95);
-			nose.rotation.x = .1;
-			g.add(nose);
-			const mouth = new Mesh(new BoxGeometry(r * 1.3, segH * .16, r * .3), dark);
-			mouth.position.set(0, y0 + segH * .2, r * .88);
-			g.add(mouth);
-			for (let t = 0; t < 5; t++) {
-				const tooth = new Mesh(new BoxGeometry(r * .14, segH * .13, r * .06), light);
-				tooth.position.set(-r * .5 + t * r * .25, y0 + segH * .2, r * 1.02);
-				g.add(tooth);
-			}
-		}
-		const cap = new Mesh(new CylinderGeometry(r * 1.2, r * 1.05, .12, 14), dark);
-		cap.position.y = height + .06;
-		g.add(cap);
-		g.position.set(x, 0, z);
-		g.rotation.y = ry;
-		ctx.scene.add(g);
-		aoBlob(1.3, 1.3, x, z);
-		return g;
-	}
-	const swayers = [];
-	function pufferLamp(x, z, scale, withLight) {
-		const pivot = new Group();
-		pivot.position.set(x, ROOM.h, z);
-		const rope = new Mesh(new CylinderGeometry(.012, .012, .9, 5), M.rope);
-		rope.position.y = -.45;
-		pivot.add(rope);
-		const body = new Mesh(new SphereGeometry(.26 * scale, 20, 16), M.lampGlass);
-		body.position.y = -1.05;
-		body.scale.set(1.06, .88, 1);
-		pivot.add(body);
-		const spikes = new InstancedMesh(new ConeGeometry(.014, .075, 4), new MeshStandardMaterial({
-			color: 9061414,
-			roughness: .9
-		}), 64);
-		const mtx = new Matrix4();
-		const q = new Quaternion();
-		const up = new Vector3(0, 1, 0);
-		const dir = new Vector3();
-		for (let i = 0; i < 64; i++) {
-			const phi = Math.acos(1 - 2 * (i + .5) / 64);
-			const th = Math.PI * (1 + Math.sqrt(5)) * i;
-			dir.setFromSphericalCoords(1, phi, th);
-			q.setFromUnitVectors(up, dir);
-			const p = dir.clone();
-			p.x *= .27 * scale * 1.06;
-			p.y = p.y * .27 * scale * .88 - 1.05;
-			p.z *= .27 * scale;
-			mtx.compose(p, q, new Vector3(1, 1, 1));
-			spikes.setMatrixAt(i, mtx);
-		}
-		pivot.add(spikes);
-		const finMat = new MeshStandardMaterial({
-			color: 9061414,
-			roughness: .85
-		});
-		const tail = new Mesh(new ConeGeometry(.06 * scale, .14 * scale, 6), finMat);
-		tail.position.set(-.3 * scale, -1.05, 0);
-		tail.rotation.z = Math.PI / 2;
-		pivot.add(tail);
-		if (withLight) {
-			const pl = new PointLight(14721104, 13 * scale, 8, 2);
-			pl.position.y = -1.05;
-			pivot.add(pl);
-		}
-		ctx.scene.add(pivot);
-		swayers.push({
-			node: pivot,
-			phase: x * 1.3 + z,
-			amp: .04
-		});
-		return pivot;
-	}
-	function ropeWrap(x, z, y0, y1, r) {
-		const pts = [];
-		const turns = Math.max(2, Math.round((y1 - y0) * 7));
-		const steps = turns * 10;
-		for (let i = 0; i <= steps; i++) {
-			const t = i / steps;
-			const a = t * turns * Math.PI * 2;
-			pts.push(new Vector3(x + Math.cos(a) * r, y0 + t * (y1 - y0), z + Math.sin(a) * r));
-		}
-		const tube = new Mesh(new TubeGeometry(new CatmullRomCurve3(pts), steps, .014, 5), M.rope);
-		ctx.scene.add(tube);
-	}
-	function fishTrap(x, z, y) {
-		const g = new Group();
-		const rope = new Mesh(new CylinderGeometry(.008, .008, ROOM.h - y, 5), M.rope);
-		rope.position.y = (ROOM.h - y) / 2;
-		g.add(rope);
-		const rr = [
-			.14,
-			.19,
-			.19,
-			.15,
-			.08
-		];
-		rr.forEach((radius, i) => {
-			const ring = new Mesh(new TorusGeometry(radius, .012, 5, 14), M.bamboo);
-			ring.rotation.x = Math.PI / 2;
-			ring.position.y = -i * .16;
-			g.add(ring);
-		});
-		for (let i = 0; i < 8; i++) {
-			const a = i / 8 * Math.PI * 2;
-			const rib = new Mesh(new TubeGeometry(new CatmullRomCurve3(rr.map((radius, j) => new Vector3(Math.cos(a) * radius, -j * .16, Math.sin(a) * radius))), 8, .006, 4), M.rope);
-			g.add(rib);
-		}
-		g.position.set(x, y, z);
-		ctx.scene.add(g);
-		swayers.push({
-			node: g,
-			phase: x * .7,
-			amp: .03
-		});
-	}
+//#region src/bar3d/parts/netting/wrap.ts
+function makeNetWrap(ctx) {
+	const { M } = ctx;
 	function netWrap(r) {
 		const R = r * 1.02;
 		const phi0 = .55;
@@ -68835,23 +68615,22 @@ function buildProps(ctx) {
 		net.rotation.set(.2 + h % .3, h * 7 % (Math.PI * 2), 1.25 + h % .4);
 		ctx.scene.add(net);
 	}
-	const floatTints = [
-		5222026,
-		14195269,
-		5933768,
-		10139727,
-		14208436
-	];
-	floatTints.map((tint) => new MeshPhysicalMaterial({
-		color: tint,
-		roughness: .04,
-		metalness: 0,
-		transmission: 1,
-		thickness: .5,
-		ior: 1.45,
-		envMapIntensity: 1.4,
-		specularIntensity: 1
-	}));
+	return {
+		netWrap,
+		shelfFloat
+	};
+}
+//#endregion
+//#region src/bar3d/parts/netting/canopy.ts
+var floatTints = [
+	5222026,
+	14195269,
+	5933768,
+	10139727,
+	14208436
+];
+function makeNetCanopy(ctx) {
+	const { M, ROOM } = ctx;
 	const ropeVertexTint = M.rope.clone();
 	ropeVertexTint.vertexColors = true;
 	function netCanopy(x0, z0, x1, z1, sag, floats) {
@@ -69094,27 +68873,12 @@ function buildProps(ctx) {
 		});
 		ctx.scene.add(g);
 	}
-	function ropeDrape(from, to, sag) {
-		const mid = from.clone().add(to).multiplyScalar(.5);
-		mid.y -= sag;
-		const curve = new QuadraticBezierCurve3(from, mid, to);
-		ctx.scene.add(new Mesh(new TubeGeometry(curve, 20, .011, 5), M.rope));
-	}
-	function lightString(from, to, sag, n) {
-		const mid = from.clone().add(to).multiplyScalar(.5);
-		mid.y -= sag;
-		const curve = new QuadraticBezierCurve3(from, mid, to);
-		const wire = new Mesh(new TubeGeometry(curve, 24, .006, 4), M.darkWood);
-		ctx.scene.add(wire);
-		const inst = new InstancedMesh(new SphereGeometry(.026, 8, 6), M.bulb, n);
-		const mtx = new Matrix4();
-		for (let i = 0; i < n; i++) {
-			const p = curve.getPoint(i / (n - 1));
-			mtx.setPosition(p.x, p.y - .03, p.z);
-			inst.setMatrixAt(i, mtx);
-		}
-		ctx.scene.add(inst);
-	}
+	return netCanopy;
+}
+//#endregion
+//#region src/bar3d/parts/barrel.ts
+function makeBarrel(ctx) {
+	const { M, aoBlob, lathe } = ctx;
 	function barrel(x, z, s) {
 		const g = new Group();
 		const body = lathe([
@@ -69144,6 +68908,281 @@ function buildProps(ctx) {
 		aoBlob(.9 * (s || 1), .9 * (s || 1), x, z);
 		return g;
 	}
+	return barrel;
+}
+var gauss = (d, s) => Math.exp(-(d * d) / (2 * s * s));
+var clamp01 = (v) => Math.min(1, Math.max(0, v));
+var smooth = (a, b, v) => {
+	const t = clamp01((v - a) / (b - a));
+	return t * t * (3 - 2 * t);
+};
+function features(kind) {
+	return {
+		ry: kind === 1 ? .49 : .41,
+		eyeY: kind === 1 ? .16 : .1,
+		eyeX: .36,
+		noseEnd: kind === 1 ? -.3 : -.2,
+		mouthY: kind === 1 ? -.54 : -.46
+	};
+}
+/** Signed height (world units) of the carve at face coords fx,fy ∈ [-1,1]. */
+function maskHeight(fx, fy, kind) {
+	const F = features(kind);
+	const r2 = fx * fx + fy * fy;
+	const r = Math.sqrt(r2);
+	const base = .055 * Math.sqrt(Math.max(0, 1 - Math.min(1, r2) * .96));
+	const ef = 1 - smooth(.82, .97, r);
+	let h = 0;
+	const browY = F.eyeY + .24;
+	h += .034 * gauss(fy - browY, .07) * Math.max(0, 1 - Math.abs(fx) / .75);
+	for (const side of [-1, 1]) {
+		const dx = (fx - side * F.eyeX) / .17;
+		const dy = (fy - F.eyeY) / .13;
+		const d = Math.sqrt(dx * dx + dy * dy);
+		h -= .036 * Math.exp(-d * d);
+		h += .015 * gauss(d - 1.2, .3);
+	}
+	const along = clamp01((F.eyeY - .02 - fy) / (F.eyeY - .02 - F.noseEnd));
+	if (along > 0 && along <= 1.15) {
+		const w = .055 + .075 * along;
+		const profile = Math.sin(Math.min(1, along) * Math.PI * .62);
+		h += .052 * gauss(fx, w) * profile;
+		if (along > .8) for (const side of [-1, 1]) h += .02 * gauss(fx - side * w * 1.25, .05) * gauss(fy - F.noseEnd, .06);
+	}
+	const mx = smooth(.58, .4, Math.abs(fx));
+	h -= .032 * gauss(fy - F.mouthY, .08) * mx;
+	h += .02 * Math.pow(Math.max(0, Math.cos(fx * Math.PI * 7)), 1.6) * gauss(fy - F.mouthY, .05) * mx;
+	for (const side of [-1, 1]) {
+		const dc = Math.sqrt(Math.pow((fx - side * .95) / 1, 2) + Math.pow((fy - (F.eyeY - .1)) / 1.15, 2));
+		h -= .013 * gauss(dc - .62, .05);
+	}
+	if (kind === 1) for (const cx of [
+		-.3,
+		0,
+		.3
+	]) h -= .012 * gauss(fx - cx, .055) * gauss(fy - .6, .13);
+	else h += .014 * gauss(fx, .17) * gauss(fy + .74, .11);
+	return base + h * ef;
+}
+/** Depth of recesses only — drives the baked AO in the painted texture. */
+function recessDepth(fx, fy, kind) {
+	const F = features(kind);
+	let d = 0;
+	for (const side of [-1, 1]) {
+		const dx = (fx - side * F.eyeX) / .17;
+		const dy = (fy - F.eyeY) / .13;
+		const dist = Math.sqrt(dx * dx + dy * dy);
+		d += .036 * Math.exp(-dist * dist);
+	}
+	const mx = smooth(.58, .4, Math.abs(fx));
+	d += .032 * gauss(fy - F.mouthY, .08) * mx;
+	for (const side of [-1, 1]) {
+		const dc = Math.sqrt(Math.pow((fx - side * .95) / 1, 2) + Math.pow((fy - (F.eyeY - .1)) / 1.15, 2));
+		d += .013 * gauss(dc - .62, .05);
+	}
+	if (kind === 1) for (const cx of [
+		-.3,
+		0,
+		.3
+	]) d += .012 * gauss(fx - cx, .055) * gauss(fy - .6, .13);
+	return d;
+}
+function buildGeometry(kind) {
+	const rx = .29;
+	const { ry } = features(kind);
+	const positions = [];
+	const uvs = [];
+	const index = [];
+	for (let iy = 0; iy <= 48; iy++) {
+		const v = iy / 48 * 2 - 1;
+		const halfW = Math.sqrt(Math.max(4e-4, 1 - v * v));
+		for (let ix = 0; ix <= 36; ix++) {
+			const fx = (ix / 36 * 2 - 1) * halfW;
+			positions.push(fx * rx, v * ry, maskHeight(fx, v, kind));
+			uvs.push(fx * .5 + .5, v * .5 + .5);
+		}
+	}
+	const stride = 37;
+	for (let iy = 0; iy < 48; iy++) for (let ix = 0; ix < 36; ix++) {
+		const a = iy * stride + ix;
+		index.push(a, a + 1, a + stride, a + 1, a + stride + 1, a + stride);
+	}
+	const geo = new BufferGeometry();
+	geo.setAttribute("position", new Float32BufferAttribute(positions, 3));
+	geo.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+	geo.setIndex(index);
+	geo.computeVertexNormals();
+	return geo;
+}
+//#endregion
+//#region src/bar3d/parts/masks/texture.ts
+/** face coords → canvas px (fy up, canvas y down) */
+function toPx(fx, fy, W, H) {
+	return [(fx * .5 + .5) * W, (1 - (fy * .5 + .5)) * H];
+}
+function paintTexture(kind) {
+	const W = 256;
+	const H = 320;
+	const F = features(kind);
+	const c = document.createElement("canvas");
+	c.width = W;
+	c.height = H;
+	const g = c.getContext("2d");
+	const grad = g.createLinearGradient(0, 0, 0, H);
+	if (kind === 1) {
+		grad.addColorStop(0, "#452a15");
+		grad.addColorStop(1, "#26150a");
+	} else {
+		grad.addColorStop(0, "#3a2214");
+		grad.addColorStop(1, "#241708");
+	}
+	g.fillStyle = grad;
+	g.fillRect(0, 0, W, H);
+	for (let i = 0; i < 70; i++) {
+		const x0 = Math.random() * W;
+		g.strokeStyle = Math.random() > .5 ? "rgba(107,74,38,0.18)" : "rgba(16,9,4,0.22)";
+		g.lineWidth = 1 + Math.random() * 1.6;
+		g.beginPath();
+		const wob = 3 + Math.random() * 5;
+		const phase = Math.random() * 6.28;
+		for (let y = 0; y <= H; y += 8) g.lineTo(x0 + Math.sin(y / 40 + phase) * wob, y);
+		g.stroke();
+	}
+	const jitter = (n) => n + (Math.random() - .5) * 2.5;
+	for (const side of [-1, 1]) {
+		const [ex, ey] = toPx(side * F.eyeX, F.eyeY, W, H);
+		for (const [rxp, ryp, color, lw] of [[
+			.2,
+			.16,
+			"rgba(232,220,192,0.85)",
+			4.5
+		], [
+			.14,
+			.11,
+			"rgba(168,58,46,0.8)",
+			3
+		]]) {
+			g.strokeStyle = color;
+			g.lineWidth = lw;
+			g.beginPath();
+			g.ellipse(jitter(ex), jitter(ey), rxp * W / 2, ryp * H / 2, 0, 0, 6.29);
+			g.stroke();
+		}
+	}
+	const [, by] = toPx(0, F.eyeY + .24, W, H);
+	g.fillStyle = "rgba(168,58,46,0.75)";
+	g.fillRect(W * .14, by - 4, W * .72, 8);
+	g.fillStyle = "rgba(201,162,39,0.7)";
+	for (let i = 0; i < 7; i++) {
+		const tx = W * .16 + i * W * .68 / 6.5;
+		g.beginPath();
+		g.moveTo(tx, by - 6);
+		g.lineTo(tx + 7, by - 15);
+		g.lineTo(tx + 14, by - 6);
+		g.fill();
+	}
+	g.strokeStyle = "rgba(201,162,39,0.55)";
+	g.lineWidth = 3;
+	{
+		const [nx0, ny0] = toPx(0, F.eyeY, W, H);
+		const [, ny1] = toPx(0, F.noseEnd, W, H);
+		g.beginPath();
+		g.moveTo(nx0, ny0);
+		g.lineTo(nx0, ny1);
+		g.stroke();
+	}
+	const [, my] = toPx(0, F.mouthY, W, H);
+	g.fillStyle = "rgba(232,220,192,0.9)";
+	for (let t = -3; t <= 3; t++) {
+		const fxT = t * 2 / 7;
+		if (Math.abs(fxT) > .52) continue;
+		const [txp] = toPx(fxT, 0, W, H);
+		g.fillRect(txp - 4, my - 6, 8, 12);
+	}
+	if (kind === 1) {
+		g.fillStyle = "rgba(232,220,192,0.55)";
+		for (const cx of [
+			-.3,
+			0,
+			.3
+		]) {
+			const [bx, byTop] = toPx(cx, .72, W, H);
+			const [, byBot] = toPx(cx, .48, W, H);
+			g.fillRect(bx - 3, byTop, 6, byBot - byTop);
+		}
+	} else {
+		const [, cy] = toPx(0, -.74, W, H);
+		g.strokeStyle = "rgba(232,220,192,0.5)";
+		g.lineWidth = 2.5;
+		for (let i = 0; i < 3; i++) {
+			g.beginPath();
+			g.moveTo(W * .36, cy + i * 6 - 6);
+			g.lineTo(W * .5, cy + i * 6);
+			g.lineTo(W * .64, cy + i * 6 - 6);
+			g.stroke();
+		}
+	}
+	const STEP = 4;
+	for (let py = 0; py < H; py += STEP) for (let px = 0; px < W; px += STEP) {
+		const d = recessDepth(px / W * 2 - 1, (1 - py / H) * 2 - 1, kind);
+		if (d > .002) {
+			g.fillStyle = `rgba(5,2,0,${Math.min(.6, d * 15)})`;
+			g.fillRect(px - 1, py - 1, STEP + 2, STEP + 2);
+		}
+	}
+	g.fillStyle = "rgba(10,5,2,0.14)";
+	for (let i = 0; i < 220; i++) g.fillRect(Math.random() * W, Math.random() * H, 1.5, 1.5);
+	const tex = new CanvasTexture(c);
+	tex.colorSpace = SRGBColorSpace;
+	tex.anisotropy = 8;
+	return tex;
+}
+//#endregion
+//#region src/bar3d/parts/masks/index.ts
+var cache = /* @__PURE__ */ new Map();
+/** Shared per-kind assets; placements clone nothing — meshes reference these. */
+function maskAssets(kind) {
+	let entry = cache.get(kind);
+	if (!entry) {
+		entry = {
+			geometry: buildGeometry(kind),
+			material: new MeshStandardMaterial({
+				map: paintTexture(kind),
+				roughness: .85
+			})
+		};
+		cache.set(kind, entry);
+	}
+	return entry;
+}
+function makeMask3d(ctx) {
+	function mask3d(x, y, z, ry, s, kind) {
+		const { geometry, material } = maskAssets(kind === 1 ? 1 : 0);
+		const mesh = new Mesh(geometry, material);
+		mesh.castShadow = true;
+		const g = new Group();
+		g.add(mesh);
+		g.position.set(x, y, z);
+		g.rotation.y = ry;
+		g.rotation.z = x * 7 % 3 * .02 - .02;
+		g.scale.setScalar(s);
+		ctx.scene.add(g);
+		return g;
+	}
+	return mask3d;
+}
+//#endregion
+//#region src/bar3d/props.ts
+function buildProps(ctx) {
+	const swayers = [];
+	const { bottleBatch, mugBatch } = makeVessels(ctx);
+	const mask3d = makeMask3d(ctx);
+	const totem = makeTotem(ctx);
+	const pufferLamp = makePufferLamp(ctx, swayers);
+	const { ropeWrap, fishTrap, ropeDrape, lightString } = makeRigging(ctx, swayers);
+	const { netWrap, shelfFloat } = makeNetWrap(ctx);
+	const netCanopy = makeNetCanopy(ctx);
+	const barrel = makeBarrel(ctx);
 	ctx.swayers = swayers;
 	Object.assign(ctx, {
 		bottleBatch,
