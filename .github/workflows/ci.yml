@@ -1,12 +1,15 @@
 name: CI
 
-# Manual, conventional-commit-driven release of the publishable packages
-# (@design-drafts/cli, @design-drafts/toolbar, @design-drafts/annotate).
+# The gate for every pull request and every push to main.
 #
-# `nx release` determines each project's next version independently from the
-# conventional commits touching it, writes per-project changelogs, commits and
-# tags the bump (tag pattern `{projectName}@{version}`), then publishes to npm.
-# Nothing publishes without an explicit run of this workflow.
+# The legs are `build`, `typecheck` and `test`, and each one catches a class the
+# others structurally cannot: `test` runs transpiled code and never type-checks a
+# line it doesn't execute, so a tree can be fully green and still not compile
+# (which is exactly how the TS 6 break in markdown-site reached main).
+#
+# Every leg here must match at least one project. `lint` used to be listed and
+# matched none — there is no eslint config and no project declares the target —
+# so Nx quietly ran two legs while the workflow claimed three.
 
 on:
   pull_request:
@@ -48,5 +51,5 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
 
-      - name: Build publishable packages
-        run: pnpm exec nx run-many -t build,lint,test
+      - name: Build, typecheck and test
+        run: pnpm exec nx run-many -t build typecheck test

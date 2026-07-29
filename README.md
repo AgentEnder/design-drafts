@@ -214,11 +214,16 @@ This is an [Nx](https://nx.dev) + pnpm monorepo.
 
 ```sh
 pnpm install
-pnpm nx run-many -t build           # build all packages
-pnpm nx run-many -t typecheck       # typecheck all packages
+pnpm nx run-many -t build typecheck test   # the gate — same legs CI runs
 pnpm --filter @design-drafts/cli test
-pnpm --filter @design-drafts/site dev   # run the index site locally
+pnpm --filter @design-drafts/site dev      # run the index site locally
 ```
+
+`build typecheck test` is the whole gate, and each leg catches something the
+others cannot: `test` runs transpiled code, so it never type-checks a line it
+doesn't execute. There is deliberately no `lint` leg — the workspace has no
+eslint config and no project declares the target, so listing it only made Nx
+report a passing run of nothing.
 
 ---
 
