@@ -385,12 +385,11 @@ async function pushHandler(args: PushArgs): Promise<void> {
     // Where the draft is headed. Asked for against the source dir — the tmpdir
     // is about to be removed, and `gh` only needs somewhere valid to run.
     console.log(
-      '\n' +
-        previewLocationMessage({
-          repo,
-          branchName,
-          site: lookupPagesSite(repo, sourcePath),
-        })
+      previewLocationMessage({
+        repo,
+        branchName,
+        site: lookupPagesSite(repo, sourcePath),
+      })
     );
   } finally {
     rmSync(tmpDir, { recursive: true, force: true });

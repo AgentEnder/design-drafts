@@ -124,11 +124,15 @@ export function pagesPreviewUrl(
 }
 
 /**
- * The block `push` prints once the branch has landed.
+ * The line `push` prints once the branch has landed: where the draft will be
+ * served, qualified inline.
  *
- * The second line is the point of it: the push only triggers the deploy, and
- * the page does not exist until that workflow finishes building. Buried in a
- * parenthetical, the first click 404s and reads as a bug in the push.
+ * `once built` is load-bearing — the push only triggers the deploy, and the
+ * page does not exist until that workflow finishes, so an unqualified URL 404s
+ * on the first click and reads as a bug in the push. `unverified` carries the
+ * rest of the doubt: `gh` could not report the site root (missing, signed out,
+ * no access, or unreachable) and a custom domain would move it. One word is the
+ * whole budget for that — anyone who cares can run `gh auth status`.
  */
 export function previewLocationMessage(opts: {
   repo: string;
@@ -147,35 +151,25 @@ export function previewLocationMessage(opts: {
     // No Pages means no CNAME either, so the default github.io form is the one
     // to promise once the site is actually turned on.
     return [
-      `GitHub Pages is not enabled on ${repo} — the deploy has nowhere to publish.`,
+      `GitHub Pages is not enabled on ${repo} — the deploy has nowhere to go.`,
       `Enable it (Settings -> Pages -> Source: GitHub Actions), then run the deploy:`,
       `  ${dispatch}`,
-      `Once it builds, the preview will be at:`,
-      `  ${url}`,
+      `Preview (once enabled and built): ${url}`,
     ].join('\n');
   }
 
-  // An unconfirmed site root has to be flagged in the HEADER. Reusing the
-  // confirmed one and hedging further down puts the doubt on the line a reader
-  // skips, which is the same as not saying it.
-  const lines =
+  // The doubt rides in the same parenthetical as the not-live caveat, so a
+  // reader cannot take an unverified URL for a confirmed one without also
+  // skipping the URL itself.
+  const lines = [
     site.status === 'ok'
-      ? ['Preview will be at:', `  ${url}`]
-      : [
-          'Preview will probably be at:',
-          `  ${url}`,
-          "  Unconfirmed — `gh` could not report this repo's Pages URL (not installed, not",
-          '  signed in, no access to the repo, or GitHub unreachable), and a custom domain',
-          '  would change the site root.',
-        ];
-  lines.push(
-    '  Not live yet — the deploy workflow still has to build it (usually a minute',
-    '  or two; longer on the first deploy or a busy runner).'
-  );
+      ? `Preview (once built): ${url}`
+      : `Preview (once built, unverified): ${url}`,
+  ];
   if (!branchName.startsWith(DEPLOYED_BRANCH_PREFIX)) {
     lines.push(
-      `  The deploy only auto-runs for "${DEPLOYED_BRANCH_PREFIX}" branches, so start this one:`,
-      `    ${dispatch}`
+      `The deploy only auto-runs for "${DEPLOYED_BRANCH_PREFIX}" branches — start this one:`,
+      `  ${dispatch}`
     );
   }
   return lines.join('\n');
