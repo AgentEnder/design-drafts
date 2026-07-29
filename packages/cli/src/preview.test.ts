@@ -566,12 +566,22 @@ function openReloadStream(baseUrl: string): {
   };
 }
 
+/**
+ * Vitest's per-test budget for anything below that waits on the filesystem
+ * watcher. Generous on purpose: these tests run alongside parallel builds, and
+ * the cost of being wrong here is a flake, not a slow suite — nothing waits out
+ * the budget on a passing run.
+ */
+const WATCH_TEST_TIMEOUT_MS = 20_000;
+
 /** Polls until `predicate` holds, so a timing-sensitive assertion never rides
- * on a guessed sleep duration. */
+ * on a guessed sleep duration. The budget stays under `WATCH_TEST_TIMEOUT_MS`
+ * so a genuine hang reports *what* it was waiting for, rather than being cut
+ * short by vitest's own timeout with nothing to say. */
 async function waitFor(
   predicate: () => boolean,
   what: string,
-  timeoutMs = 5_000
+  timeoutMs = 15_000
 ): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -714,7 +724,7 @@ describe('createPreviewServer live reload channel', () => {
       () => stream.text().includes('event: manifest-changed'),
       'the manifest-changed event'
     );
-  });
+  }, WATCH_TEST_TIMEOUT_MS);
 
   it('keeps serving other listeners after one disconnects', async () => {
     // A closed tab must not wedge the channel or leak its response object.
@@ -729,7 +739,7 @@ describe('createPreviewServer live reload channel', () => {
       () => staying.text().includes('event: manifest-changed'),
       'the surviving listener to be notified'
     );
-  });
+  }, WATCH_TEST_TIMEOUT_MS);
 
   it('reloads the page when nothing handles the event', async () => {
     const client = await runReloadClient(baseUrl, 'http:');
@@ -757,17 +767,39 @@ describe('createPreviewServer live reload channel', () => {
     expect(client.reloads).toBe(0);
   });
 
+  it('shuts down while a reload stream is still connected', async () => {
+    const stream = open();
+    await stream.ready;
+    await waitFor(() => stream.text().includes('retry:'), 'the stream preamble');
+
+    // `close()` waits for every open connection, and an SSE response is a
+    // connection that never ends on its own — so a graceful shutdown has to
+    // tear the channel down itself rather than wait for an event its own
+    // streams are blocking.
+    await new Promise<void>((done, fail) => {
+      const giveUp = setTimeout(
+        () => fail(new Error('server.close() never completed')),
+        10_000
+      );
+      server.close(() => {
+        clearTimeout(giveUp);
+        done();
+      });
+    });
+  }, WATCH_TEST_TIMEOUT_MS);
+
   it('ignores writes to files other than the manifest', async () => {
     const stream = open();
     await stream.ready;
     await waitFor(() => stream.text().includes('retry:'), 'the stream preamble');
 
     writeFileSync(join(dir, 'styles.css'), 'body { color: blue; }');
-    // Nothing to wait for, so prove the negative by letting the watcher's
-    // debounce elapse several times over before asserting.
+    // A negative has no event to wait for, so this is a bounded observation
+    // window rather than a proof: several times the debounce, after which an
+    // announcement that was going to happen would have.
     await new Promise((res) => setTimeout(res, 300));
     expect(stream.text()).not.toContain('event: manifest-changed');
-  });
+  }, WATCH_TEST_TIMEOUT_MS);
 });
 
 describe('renderDirectoryIndex', () => {
@@ -837,8 +869,10 @@ describe('ensureDraftIndex', () => {
   });
 
   it('bakes no preview-only reload client into the pushed index', () => {
-    // The reload client is injected at serve time; `push` copies files, so
-    // nothing from the preview channel can reach a deployed draft.
+    // A regression guard, not a proof: injection lives in the serve path, which
+    // this never touches. It exists so that moving injection down into
+    // renderDirectoryIndex — where both push and preview would pick it up —
+    // fails here instead of shipping a dev-only script to gh-pages.
     writeFileSync(join(dir, 'about.html'), '');
     ensureDraftIndex(dir);
     expect(readFileSync(join(dir, 'index.html'), 'utf-8')).not.toContain(

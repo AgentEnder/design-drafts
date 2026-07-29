@@ -334,8 +334,16 @@ const RELOAD_CLIENT = `<script data-design-drafts-preview="reload">
 })();
 </script>`;
 
-/** Appends the reload client to an HTML document, before its closing `</body>`
- * where there is one so the document stays well-formed. */
+/**
+ * Appends the reload client to an HTML document, before its closing `</body>`
+ * where there is one so the document stays well-formed.
+ *
+ * The match is textual, not parsed: a literal `</body>` inside a trailing
+ * script string or comment would win "last match" and take the injection with
+ * it. Every page this server sends — the templates, the markdown renderer's
+ * output, the generated listing — has exactly one, and a mis-splice costs a
+ * misplaced dev-only script tag, so this stays a search rather than a parser.
+ */
 function injectReloadClient(html: string): string {
   let insertAt = -1;
   for (const match of html.matchAll(/<\/body\s*>/gi)) {
@@ -427,8 +435,12 @@ export function createPreviewServer(
         announceManifestChange();
       }
     });
-    watcher.on('error', () => {
-      /* watch dropped mid-session — the preview keeps serving */
+    watcher.on('error', (error) => {
+      // The preview keeps serving, but pages will silently stop refreshing —
+      // say so, or the next manifest edit looks like a bug in the reload.
+      console.warn(
+        `Stopped watching ${MANIFEST_FILE} (${error.message}); reload the page by hand to pick up config changes.`
+      );
     });
   } catch {
     watcher = undefined;
@@ -552,16 +564,27 @@ export function createPreviewServer(
     }
   });
 
-  // Nothing the reload channel owns outlives the server: the watcher and any
-  // pending announcement are dropped, and every stream still open is ended.
-  server.on('close', () => {
+  // `http.Server.close()` does not complete until every open connection has
+  // ended, and an SSE response is precisely a connection that never ends on its
+  // own — so this teardown cannot hang off the server's own `'close'` event,
+  // which its streams are what's blocking. Run it the moment shutdown is
+  // *initiated* instead, by wrapping close().
+  //
+  // The sockets are destroyed rather than left to end politely: `res.end()`
+  // returns them to the keep-alive pool, where nothing would collect them until
+  // a timeout that `close()` would sit through.
+  const closeServer = server.close.bind(server);
+  server.close = (callback?: (error?: Error) => void): Server => {
     clearTimeout(announceTimer);
     watcher?.close();
     for (const client of reloadClients) {
+      const { socket } = client;
       client.end();
+      socket?.destroy();
     }
     reloadClients.clear();
-  });
+    return closeServer(callback);
+  };
 
   return server;
 }
