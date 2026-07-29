@@ -1,11 +1,21 @@
 import { capture, succeeds } from './exec';
 
 // The prefix the deploy workflow strips when it maps a draft branch to a
-// published directory (its own DRAFT_BRANCH_PREFIX). This is NOT the CLI's
-// configurable `--prefix`: a branch pushed under any other prefix keeps that
-// prefix in the deployed path — and never auto-triggers the deploy, whose push
-// trigger is scoped to `drafts/**`.
+// published directory. This is NOT the CLI's configurable `--prefix`: a branch
+// pushed under any other prefix keeps that prefix in the deployed path — and
+// never auto-triggers the deploy, whose push trigger is scoped to `drafts/**`.
+//
+// Three copies of this string have to agree, because they live in three places
+// that can't import each other: this one (what the deploy DOES with a branch),
+// `DEFAULT_PREFIX` in config.ts (what the CLI names a branch by default), and
+// `DRAFT_BRANCH_PREFIX` / the `branches:` filter in
+// .github/workflows/deploy-preview.yml (what the deploy runs FOR). Change one,
+// change all three.
 const DEPLOYED_BRANCH_PREFIX = 'drafts/';
+
+// A Pages metadata lookup is one small GET; anything slower than this is a
+// stall, not a slow response.
+const PAGES_LOOKUP_TIMEOUT_MS = 5_000;
 
 /** The directory the deploy workflow publishes a draft branch under. */
 function previewDir(branchName: string): string {
@@ -69,13 +79,25 @@ export type PagesSite =
  * One `gh api` call is cheap next to the force-push it follows, and it also
  * separates "Pages is off, nothing will ever appear" from "we couldn't ask".
  * Only that failure path pays for the second call.
+ *
+ * Everything here is decoration on a push that has already succeeded, so it is
+ * bounded: `gh` has no overall request timeout of its own, and a hung DNS
+ * lookup or stalled TLS handshake must never leave the terminal blocked on a
+ * message. Anything slower than the budget degrades to `unknown`.
  */
 export function lookupPagesSite(repo: string, cwd: string): PagesSite {
-  const siteUrl = capture(`gh api repos/${repo}/pages --jq .html_url`, cwd);
+  const siteUrl = capture(
+    `gh api repos/${repo}/pages --jq .html_url`,
+    cwd,
+    PAGES_LOOKUP_TIMEOUT_MS
+  );
   if (siteUrl) {
     return { status: 'ok', siteUrl };
   }
-  return succeeds(`gh api repos/${repo} --silent`, cwd)
+  // Reading the repo but not its Pages metadata means Pages is off. The one
+  // false positive is a token scoped to `repo` but not to Pages, which reads as
+  // `not-enabled`; a default `gh auth login` grants both, so we accept it.
+  return succeeds(`gh api repos/${repo} --silent`, cwd, PAGES_LOOKUP_TIMEOUT_MS)
     ? { status: 'not-enabled' }
     : { status: 'unknown' };
 }
@@ -133,18 +155,23 @@ export function previewLocationMessage(opts: {
     ].join('\n');
   }
 
-  const lines = [
-    'Preview will be at:',
-    `  ${url}`,
+  // An unconfirmed site root has to be flagged in the HEADER. Reusing the
+  // confirmed one and hedging further down puts the doubt on the line a reader
+  // skips, which is the same as not saying it.
+  const lines =
+    site.status === 'ok'
+      ? ['Preview will be at:', `  ${url}`]
+      : [
+          'Preview will probably be at:',
+          `  ${url}`,
+          "  Unconfirmed — `gh` could not report this repo's Pages URL (not installed, not",
+          '  signed in, no access to the repo, or GitHub unreachable), and a custom domain',
+          '  would change the site root.',
+        ];
+  lines.push(
     '  Not live yet — the deploy workflow still has to build it (usually a minute',
-    '  or two; longer on the first deploy or a busy runner).',
-  ];
-  if (site.status === 'unknown') {
-    lines.push(
-      '  (Could not reach the GitHub API to confirm it — a custom domain would',
-      "   change this repo's Pages site root.)"
-    );
-  }
+    '  or two; longer on the first deploy or a busy runner).'
+  );
   if (!branchName.startsWith(DEPLOYED_BRANCH_PREFIX)) {
     lines.push(
       `  The deploy only auto-runs for "${DEPLOYED_BRANCH_PREFIX}" branches, so start this one:`,

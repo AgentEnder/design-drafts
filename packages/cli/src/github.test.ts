@@ -110,7 +110,7 @@ describe('previewLocationMessage', () => {
     );
   });
 
-  it('flags an unconfirmed site root instead of promising the github.io one', () => {
+  it('flags an unconfirmed site root in the header, not just at the end', () => {
     const message = previewLocationMessage({
       repo: 'acme/previews',
       branchName: 'drafts/homepage',
@@ -118,6 +118,32 @@ describe('previewLocationMessage', () => {
     });
     expect(message).toContain('https://acme.github.io/previews/homepage/');
     expect(message).toContain('custom domain');
+    // The doubt has to be readable before the URL, so the confirmed header
+    // must not be reused here.
+    expect(message.split('\n')[0]).toBe('Preview will probably be at:');
+    expect(message).not.toContain('Preview will be at:');
+    // Still says it is not live yet — that caveat is independent of this one.
+    expect(message).toContain('Not live yet');
+  });
+
+  it('names the whole set of reasons the Pages URL went unconfirmed', () => {
+    // `unknown` is reached by a missing gh, an unauthenticated gh, a repo the
+    // token cannot read, or an unreachable GitHub — not connectivity alone.
+    const message = previewLocationMessage({
+      repo: 'acme/previews',
+      branchName: 'drafts/homepage',
+      site: { status: 'unknown' },
+    });
+    // Collapsed so the assertion tracks the wording, not where it wraps.
+    const flat = message.replace(/\s+/g, ' ');
+    for (const cause of [
+      'not installed',
+      'not signed in',
+      'no access to the repo',
+      'unreachable',
+    ]) {
+      expect(flat).toContain(cause);
+    }
   });
 
   it('says Pages is off rather than promising a URL that never resolves', () => {
