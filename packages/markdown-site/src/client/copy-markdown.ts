@@ -18,18 +18,25 @@ export function initCopyMarkdown(): void {
     return;
   }
 
+  // `hidden` is tri-state: `false`, `true`, or `'until-found'` — hidden but
+  // revealable by find-in-page, at which point the browser drops the attribute
+  // and it reflects as `false` again. So "open" is the one case where it is
+  // exactly `false`; anything else is some flavour of hidden. Reading the state
+  // through this predicate keeps `aria-expanded` a real "true"/"false" instead
+  // of echoing an attribute value back into it.
+  const isMenuOpen = (): boolean => menu.hidden === false;
   const setMenuOpen = (open: boolean): void => {
     menu.hidden = !open;
     toggle.setAttribute('aria-expanded', String(open));
   };
   toggle.addEventListener('click', () => {
-    setMenuOpen(menu.hidden);
+    setMenuOpen(!isMenuOpen());
   });
   document.addEventListener('click', (event) => {
-    if (!menu.hidden && !group.contains(event.target as Node)) setMenuOpen(false);
+    if (isMenuOpen() && !group.contains(event.target as Node)) setMenuOpen(false);
   });
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !menu.hidden) {
+    if (event.key === 'Escape' && isMenuOpen()) {
       setMenuOpen(false);
       toggle.focus();
     }
