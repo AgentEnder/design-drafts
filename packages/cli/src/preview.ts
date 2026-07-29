@@ -2,11 +2,13 @@ import { spawn } from 'node:child_process';
 import {
   cpSync,
   existsSync,
+  type FSWatcher,
   mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
   statSync,
+  watch,
   writeFileSync,
 } from 'node:fs';
 import { createServer, type Server, type ServerResponse } from 'node:http';
@@ -23,13 +25,27 @@ import {
   renderMarkdownSite,
   type RenderMarkdownSiteOptions,
 } from '@design-drafts/markdown-site';
-import { resolveMarkdownIndex } from './markdown-index';
+import { readMarkdownIndexChoice, resolveMarkdownIndex } from './markdown-index';
 import { resolveDraftId } from './site-config';
 
 const DEFAULT_PORT = 4321;
 // When scanning for a free port (no explicit --port), give up after this many
 // consecutive busy ports rather than looping forever.
 const PORT_SCAN_ATTEMPTS = 20;
+
+const MANIFEST_FILE = 'design-drafts.config.json';
+
+/** Root-relative path of the live-reload stream. Under a `__`-prefixed segment
+ * so it cannot collide with a real page in the draft. */
+const RELOAD_PATH = '__design-drafts/reload';
+
+/**
+ * How long to let writes settle before announcing a manifest change. Saving one
+ * file commonly fires several watcher events — an editor writes a temp file,
+ * renames it over the target, then touches the mtime — and a reload per event
+ * would flap the page.
+ */
+const RELOAD_DEBOUNCE_MS = 60;
 
 const MIME_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -288,6 +304,47 @@ export async function prepareMarkdownSearch(
   return undefined;
 }
 
+/**
+ * The client half of the live-reload channel, appended to every HTML response
+ * the preview server sends.
+ *
+ * It is injected by the server rather than shipped in `@design-drafts/toolbar`
+ * because every page loads the toolbar from unpkg (see `init/templates.ts` and
+ * the markdown renderer) — code added to that package reaches nobody's preview
+ * until it is published, whereas anything the server injects works today.
+ *
+ * The custom event fires first and `location.reload()` is only the fallback: a
+ * toolbar that knows how to rebuild its axis switchers in place cancels the
+ * event and keeps the page's scroll position and state. Nothing here reaches a
+ * pushed draft — `push` copies files off disk, it never serves them.
+ */
+const RELOAD_CLIENT = `<script data-design-drafts-preview="reload">
+(function () {
+  // A page opened from disk has no preview server behind it; bail before
+  // opening a stream that can only fail.
+  if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
+  if (typeof EventSource !== 'function') return;
+  var source = new EventSource('/${RELOAD_PATH}');
+  source.addEventListener('manifest-changed', function () {
+    var handled = !window.dispatchEvent(
+      new CustomEvent('design-drafts:manifest-changed', { cancelable: true })
+    );
+    if (!handled) location.reload();
+  });
+})();
+</script>`;
+
+/** Appends the reload client to an HTML document, before its closing `</body>`
+ * where there is one so the document stays well-formed. */
+function injectReloadClient(html: string): string {
+  let insertAt = -1;
+  for (const match of html.matchAll(/<\/body\s*>/gi)) {
+    insertAt = match.index;
+  }
+  if (insertAt === -1) return `${html}\n${RELOAD_CLIENT}\n`;
+  return `${html.slice(0, insertAt)}${RELOAD_CLIENT}\n${html.slice(insertAt)}`;
+}
+
 /** Builds the static file server for a draft directory without binding it to a
  * port, so it can be exercised directly in tests. */
 export function createPreviewServer(
@@ -295,29 +352,89 @@ export function createPreviewServer(
   options: PreviewServerOptions = {}
 ): Server {
   const sendHtml = (res: ServerResponse, html: string): void => {
+    // Every HTML response is rewritten to carry the reload client, so the
+    // length has to be recomputed from the rewritten body.
+    const body = injectReloadClient(html);
     res.writeHead(200, {
       'Content-Type': 'text/html; charset=utf-8',
-      'Content-Length': Buffer.byteLength(html),
+      'Content-Length': Buffer.byteLength(body),
     });
-    res.end(html);
+    res.end(body);
   };
   // Maps an absolute path under the draft root to the root-relative POSIX form
   // that markdown page output paths use (`''` for the root itself).
   const relPosix = (abs: string): string =>
     relative(draftDir, abs).split(sep).join('/');
   const { search } = options;
-  // On-the-fly markdown pages must match what the search bundle was built
-  // from, so they get the same search wiring whenever search is configured.
-  // They also declare the same draft id a push would bake, which is what keeps
-  // one draft's annotations out of the next draft served from this same
-  // localhost URL.
-  const renderOptions: RenderMarkdownSiteOptions = {
-    draftId: resolveDraftId(join(draftDir, 'design-drafts.config.json')),
-    indexSource: options.indexSource,
-    ...(search ? { search: { basePath: '/' } } : {}),
+  const manifestPath = join(draftDir, MANIFEST_FILE);
+
+  // Read per request, never closed over: the point of a preview server is that
+  // you keep editing the draft while it runs, and the manifest is part of the
+  // draft. Renaming it mid-session would otherwise keep filing this session's
+  // annotations under the old draft id, and re-designating the index would keep
+  // serving the old one at `/`.
+  //
+  // Both readers swallow a parse failure and report "nothing designated", so
+  // catching the file mid-save — the normal case, not the exception — degrades
+  // to a page with no draft id rather than a failed response. Only the markdown
+  // render paths call this, so an asset request pays nothing for it, and a page
+  // render already re-reads and re-renders its own source next to which one
+  // small JSON parse is noise.
+  const renderOptions = (): RenderMarkdownSiteOptions => {
+    const indexChoice = readMarkdownIndexChoice(draftDir, manifestPath);
+    return {
+      // The draft id a push would bake, which is what keeps one draft's
+      // annotations out of the next draft served from this same localhost URL.
+      draftId: resolveDraftId(manifestPath),
+      // When only a prompt could settle the index we keep the answer `preview`
+      // resolved at startup — a request must never open an interactive prompt.
+      indexSource: indexChoice.resolved
+        ? indexChoice.indexSource
+        : options.indexSource,
+      // On-the-fly markdown pages must match what the search bundle was built
+      // from, so they get the same wiring whenever search is configured.
+      ...(search ? { search: { basePath: '/' } } : {}),
+    };
   };
 
-  return createServer((req, res) => {
+  // Open reload streams. A response drops out the moment its socket closes, so
+  // a closed tab or a navigated-away page cannot accumulate here.
+  const reloadClients = new Set<ServerResponse>();
+  let announceTimer: NodeJS.Timeout | undefined;
+
+  const announceManifestChange = (): void => {
+    clearTimeout(announceTimer);
+    announceTimer = setTimeout(() => {
+      for (const client of reloadClients) {
+        client.write('event: manifest-changed\ndata: {}\n\n');
+      }
+    }, RELOAD_DEBOUNCE_MS);
+    // A pending announcement is not a reason to hold the process open.
+    announceTimer.unref();
+  };
+
+  // Non-recursive on purpose: the manifest sits at the draft root, and
+  // recursive `fs.watch` is not supported on Linux. A filesystem that cannot be
+  // watched at all just means no push signal — pages still reload by hand.
+  //
+  // `persistent: false` so the watch is never the reason the process stays up:
+  // it lives exactly as long as the listening server that gives it a purpose.
+  let watcher: FSWatcher | undefined;
+  try {
+    watcher = watch(draftDir, { persistent: false }, (_event, filename) => {
+      // Some platforms report no filename; announcing then is the safe guess.
+      if (filename === null || filename === MANIFEST_FILE) {
+        announceManifestChange();
+      }
+    });
+    watcher.on('error', () => {
+      /* watch dropped mid-session — the preview keeps serving */
+    });
+  } catch {
+    watcher = undefined;
+  }
+
+  const server = createServer((req, res) => {
     const safePath = resolveServedFile(draftDir, req.url ?? '/');
     if (safePath === null) {
       res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -325,10 +442,30 @@ export function createPreviewServer(
       return;
     }
 
+    const rel = relPosix(safePath);
+    if (rel === RELOAD_PATH) {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+      });
+      // The comment frame flushes the headers straight away so `EventSource`
+      // fires `open` instead of sitting in CONNECTING until the first real
+      // event; `retry` shortens the browser's default backoff, so a page left
+      // open across a `preview` restart reattaches in about a second.
+      res.write(': connected\nretry: 1000\n\n');
+      reloadClients.add(res);
+      const drop = (): void => {
+        reloadClients.delete(res);
+      };
+      res.on('close', drop);
+      res.on('error', drop);
+      return;
+    }
+
     // The pagefind bundle lives in the staging dir, not the draft — serve it
     // from there. safePath is already traversal-checked, so the same relative
     // path is safe to resolve against the bundle root.
-    const rel = relPosix(safePath);
     if (search && (rel === 'pagefind' || rel.startsWith('pagefind/'))) {
       const state = search();
       if (state.phase === 'building') {
@@ -368,7 +505,7 @@ export function createPreviewServer(
           const rendered = renderMarkdownPageAt(
             draftDir,
             dirRel ? `${dirRel}/index.html` : 'index.html',
-            renderOptions
+            renderOptions()
           );
           if (rendered !== null) {
             sendHtml(res, rendered);
@@ -380,9 +517,16 @@ export function createPreviewServer(
         }
         filePath = indexPath;
       }
+      const contentType = contentTypeFor(filePath);
+      if (contentType.startsWith('text/html')) {
+        // HTML is rewritten to carry the reload client, so it goes through
+        // sendHtml rather than the byte passthrough below.
+        sendHtml(res, readFileSync(filePath, 'utf-8'));
+        return;
+      }
       const body = readFileSync(filePath);
       res.writeHead(200, {
-        'Content-Type': contentTypeFor(filePath),
+        'Content-Type': contentType,
         'Content-Length': body.length,
       });
       res.end(body);
@@ -390,7 +534,7 @@ export function createPreviewServer(
       // A missing .html may be the rendered twin of a markdown source that
       // only exists at push time — render it on the fly for preview parity.
       if (/\.html$/i.test(rel)) {
-        const rendered = renderMarkdownPageAt(draftDir, rel, renderOptions);
+        const rendered = renderMarkdownPageAt(draftDir, rel, renderOptions());
         if (rendered !== null) {
           sendHtml(res, rendered);
           return;
@@ -407,6 +551,19 @@ export function createPreviewServer(
       res.end('Not found');
     }
   });
+
+  // Nothing the reload channel owns outlives the server: the watcher and any
+  // pending announcement are dropped, and every stream still open is ended.
+  server.on('close', () => {
+    clearTimeout(announceTimer);
+    watcher?.close();
+    for (const client of reloadClients) {
+      client.end();
+    }
+    reloadClients.clear();
+  });
+
+  return server;
 }
 
 /**
@@ -485,7 +642,7 @@ export async function preview(opts: PreviewOptions): Promise<void> {
   // server comes up, while the terminal is clearly ours.
   const indexSource = await resolveMarkdownIndex(
     draftDir,
-    join(draftDir, 'design-drafts.config.json')
+    join(draftDir, MANIFEST_FILE)
   );
 
   // Index in the background so the preview is up instantly; the page's search

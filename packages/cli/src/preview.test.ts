@@ -229,6 +229,11 @@ describe('createPreviewServer over a markdown draft', () => {
     expect(res.status).toBe(404);
   });
 
+  it('carries the injected reload client on rendered pages', async () => {
+    const html = await (await fetch(`${baseUrl}/guides/setup.html`)).text();
+    expect(html).toContain('data-design-drafts-preview="reload"');
+  });
+
   it('leaves search out of rendered pages when no bundle is configured', async () => {
     const res = await fetch(`${baseUrl}/`);
     // The shared chrome bundle mentions search internally; the guarantee is
@@ -445,6 +450,326 @@ describe('createPreviewServer over an identified markdown draft', () => {
   });
 });
 
+describe('createPreviewServer re-reading the manifest per request', () => {
+  let dir: string;
+  let manifestPath: string;
+  let server: ReturnType<typeof createPreviewServer>;
+  let baseUrl: string;
+
+  const startServer = async (
+    options?: Parameters<typeof createPreviewServer>[1]
+  ): Promise<void> => {
+    server = createPreviewServer(dir, options);
+    await new Promise<void>((res) => server.listen(0, '127.0.0.1', res));
+    const { port } = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${port}`;
+  };
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'design-drafts-preview-reread-'));
+    manifestPath = join(dir, 'design-drafts.config.json');
+  });
+
+  afterEach(async () => {
+    await new Promise<void>((res) => server.close(() => res()));
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('picks up a renamed draft without a restart', async () => {
+    // The draft id scopes annotations, so a stale one files this session's
+    // notes under the old draft — the one staleness with a real consequence.
+    writeFileSync(manifestPath, JSON.stringify({ name: 'My Docs Site' }));
+    writeFileSync(join(dir, 'README.md'), '# Home');
+    await startServer();
+
+    expect(await (await fetch(`${baseUrl}/`)).text()).toContain(
+      '<meta name="draftId" content="my-docs-site"/>'
+    );
+
+    writeFileSync(manifestPath, JSON.stringify({ name: 'Renamed Draft' }));
+    expect(await (await fetch(`${baseUrl}/`)).text()).toContain(
+      '<meta name="draftId" content="renamed-draft"/>'
+    );
+  });
+
+  it('degrades to no draft id for a half-written manifest instead of erroring', async () => {
+    writeFileSync(manifestPath, JSON.stringify({ name: 'My Docs Site' }));
+    writeFileSync(join(dir, 'README.md'), '# Home');
+    await startServer();
+
+    // Editors save in bursts; catching the file mid-write is the normal case.
+    writeFileSync(manifestPath, '{"name": "My Doc');
+    const res = await fetch(`${baseUrl}/`);
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('Home');
+    expect(html).not.toContain('<meta name="draftId"');
+  });
+
+  it('serves the newly designated index without a restart', async () => {
+    writeFileSync(manifestPath, JSON.stringify({ markdownIndex: 'notes.md' }));
+    writeFileSync(join(dir, 'notes.md'), '# Notes\n\nNotes content.');
+    writeFileSync(join(dir, 'zoo.md'), '# Zoo\n\nZoo content.');
+    await startServer({ indexSource: 'notes.md' });
+
+    expect(await (await fetch(`${baseUrl}/`)).text()).toContain('Notes content.');
+
+    writeFileSync(manifestPath, JSON.stringify({ markdownIndex: 'zoo.md' }));
+    expect(await (await fetch(`${baseUrl}/`)).text()).toContain('Zoo content.');
+  });
+
+  it('keeps the startup answer when the manifest designates nothing', async () => {
+    // `resolveMarkdownIndex` can only settle this draft by prompting, and a
+    // request must never fire a prompt — so the startup answer stands.
+    writeFileSync(manifestPath, '{}');
+    writeFileSync(join(dir, 'notes.md'), '# Notes\n\nNotes content.');
+    writeFileSync(join(dir, 'zoo.md'), '# Zoo\n\nZoo content.');
+    await startServer({ indexSource: 'notes.md' });
+
+    expect(await (await fetch(`${baseUrl}/`)).text()).toContain('Notes content.');
+  });
+});
+
+/** Opens the reload stream and accumulates it into a buffer the test can poll.
+ * A raw stream rather than `EventSource` so the test can abort deterministically
+ * in teardown — an open stream keeps `server.close()` from ever completing. */
+function openReloadStream(baseUrl: string): {
+  ready: Promise<Response>;
+  text: () => string;
+  close: () => Promise<void>;
+} {
+  const controller = new AbortController();
+  let received = '';
+  const ready = fetch(`${baseUrl}/__design-drafts/reload`, {
+    signal: controller.signal,
+  });
+  const drained = ready
+    .then(async (res) => {
+      const reader = (res.body as ReadableStream<Uint8Array>).getReader();
+      const decoder = new TextDecoder();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) return;
+        received += decoder.decode(value, { stream: true });
+      }
+    })
+    .catch(() => {
+      /* aborted in teardown, or the endpoint answered without a body */
+    });
+  return {
+    ready,
+    text: () => received,
+    close: async () => {
+      controller.abort();
+      await drained;
+    },
+  };
+}
+
+/** Polls until `predicate` holds, so a timing-sensitive assertion never rides
+ * on a guessed sleep duration. */
+async function waitFor(
+  predicate: () => boolean,
+  what: string,
+  timeoutMs = 5_000
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (predicate()) return;
+    await new Promise((res) => setTimeout(res, 10));
+  }
+  throw new Error(`Timed out waiting for ${what}`);
+}
+
+/**
+ * Runs the injected reload client against stubbed browser globals, so the
+ * contract the toolbar will rely on — the event fires first, `location.reload()`
+ * only when nobody handled it — is pinned without driving a real browser.
+ */
+async function runReloadClient(
+  baseUrl: string,
+  protocol: string
+): Promise<{
+  window: EventTarget;
+  streams: string[];
+  reloads: number;
+  emit: () => void;
+}> {
+  const html = await (await fetch(`${baseUrl}/index.html`)).text();
+  const source = /<script data-design-drafts-preview="reload">([\s\S]*?)<\/script>/.exec(
+    html
+  );
+  if (!source) throw new Error('no reload client was injected');
+
+  const streams: string[] = [];
+  const handlers: (() => void)[] = [];
+  class StubEventSource {
+    constructor(url: string) {
+      streams.push(url);
+    }
+    addEventListener(type: string, handler: () => void): void {
+      expect(type).toBe('manifest-changed');
+      handlers.push(handler);
+    }
+  }
+  const state = {
+    window: new EventTarget(),
+    streams,
+    reloads: 0,
+    emit: () => handlers.forEach((handler) => handler()),
+  };
+  const location = { protocol, reload: () => void (state.reloads += 1) };
+
+  // Parameters shadow the real globals, so the snippet runs against the stubs.
+  new Function(
+    'window',
+    'location',
+    'EventSource',
+    'CustomEvent',
+    source[1]
+  )(state.window, location, StubEventSource, CustomEvent);
+  return state;
+}
+
+describe('createPreviewServer live reload channel', () => {
+  let dir: string;
+  let manifestPath: string;
+  let server: ReturnType<typeof createPreviewServer>;
+  let baseUrl: string;
+  let streams: ReturnType<typeof openReloadStream>[];
+
+  beforeEach(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'design-drafts-preview-reload-'));
+    manifestPath = join(dir, 'design-drafts.config.json');
+    writeFileSync(manifestPath, JSON.stringify({ name: 'Reload Draft' }));
+    writeFileSync(join(dir, 'index.html'), '<html><body><h1>home</h1></body></html>');
+    writeFileSync(join(dir, 'styles.css'), 'body { color: red; }');
+    writeFileSync(join(dir, 'notes.txt'), 'plain');
+    mkdirSync(join(dir, 'pages', 'sub'), { recursive: true });
+    writeFileSync(join(dir, 'pages', 'sub', 'p.html'), '<h1>nested</h1>');
+    streams = [];
+
+    server = createPreviewServer(dir);
+    await new Promise<void>((res) => server.listen(0, '127.0.0.1', res));
+    const { port } = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${port}`;
+  });
+
+  afterEach(async () => {
+    await Promise.all(streams.map((stream) => stream.close()));
+    await new Promise<void>((res) => server.close(() => res()));
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  const open = (): ReturnType<typeof openReloadStream> => {
+    const stream = openReloadStream(baseUrl);
+    streams.push(stream);
+    return stream;
+  };
+
+  it('injects the reload client into served html', async () => {
+    const html = await (await fetch(`${baseUrl}/index.html`)).text();
+    expect(html).toContain('data-design-drafts-preview="reload"');
+    expect(html).toContain('/__design-drafts/reload');
+    // Injected before </body>, so the document stays well-formed.
+    expect(html.indexOf('data-design-drafts-preview')).toBeLessThan(
+      html.lastIndexOf('</body>')
+    );
+  });
+
+  it('recomputes Content-Length for the rewritten html body', async () => {
+    const res = await fetch(`${baseUrl}/index.html`);
+    const html = await res.text();
+    expect(Number(res.headers.get('content-length'))).toBe(
+      Buffer.byteLength(html)
+    );
+  });
+
+  it('injects into the generated directory listing too', async () => {
+    expect(await (await fetch(`${baseUrl}/pages/sub/`)).text()).toContain(
+      'data-design-drafts-preview="reload"'
+    );
+  });
+
+  it('leaves non-html responses byte-identical', async () => {
+    expect(await (await fetch(`${baseUrl}/styles.css`)).text()).toBe(
+      'body { color: red; }'
+    );
+    expect(await (await fetch(`${baseUrl}/notes.txt`)).text()).toBe('plain');
+  });
+
+  it('serves the reload endpoint as an event stream', async () => {
+    const res = await open().ready;
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('text/event-stream');
+  });
+
+  it('emits a manifest-changed event when the manifest is edited', async () => {
+    const stream = open();
+    await stream.ready;
+    await waitFor(() => stream.text().includes('retry:'), 'the stream preamble');
+
+    writeFileSync(manifestPath, JSON.stringify({ name: 'Renamed Mid Session' }));
+    await waitFor(
+      () => stream.text().includes('event: manifest-changed'),
+      'the manifest-changed event'
+    );
+  });
+
+  it('keeps serving other listeners after one disconnects', async () => {
+    // A closed tab must not wedge the channel or leak its response object.
+    const closing = open();
+    const staying = open();
+    await Promise.all([closing.ready, staying.ready]);
+    await waitFor(() => staying.text().includes('retry:'), 'the stream preamble');
+    await closing.close();
+
+    writeFileSync(manifestPath, JSON.stringify({ name: 'Still Listening' }));
+    await waitFor(
+      () => staying.text().includes('event: manifest-changed'),
+      'the surviving listener to be notified'
+    );
+  });
+
+  it('reloads the page when nothing handles the event', async () => {
+    const client = await runReloadClient(baseUrl, 'http:');
+    expect(client.streams).toEqual(['/__design-drafts/reload']);
+
+    client.emit();
+    expect(client.reloads).toBe(1);
+  });
+
+  it('stands down when a listener cancels the event', async () => {
+    // The upgrade path: a published toolbar that rebuilds its axis switchers in
+    // place cancels the event and keeps the page's scroll position and state.
+    const client = await runReloadClient(baseUrl, 'http:');
+    client.window.addEventListener('design-drafts:manifest-changed', (event) => {
+      event.preventDefault();
+    });
+
+    client.emit();
+    expect(client.reloads).toBe(0);
+  });
+
+  it('is inert on a page opened from disk', async () => {
+    const client = await runReloadClient(baseUrl, 'file:');
+    expect(client.streams).toEqual([]);
+    expect(client.reloads).toBe(0);
+  });
+
+  it('ignores writes to files other than the manifest', async () => {
+    const stream = open();
+    await stream.ready;
+    await waitFor(() => stream.text().includes('retry:'), 'the stream preamble');
+
+    writeFileSync(join(dir, 'styles.css'), 'body { color: blue; }');
+    // Nothing to wait for, so prove the negative by letting the watcher's
+    // debounce elapse several times over before asserting.
+    await new Promise((res) => setTimeout(res, 300));
+    expect(stream.text()).not.toContain('event: manifest-changed');
+  });
+});
+
 describe('renderDirectoryIndex', () => {
   let dir: string;
 
@@ -509,6 +834,16 @@ describe('ensureDraftIndex', () => {
     writeFileSync(join(dir, 'index.html'), '<h1>mine</h1>');
     ensureDraftIndex(dir);
     expect(readFileSync(join(dir, 'index.html'), 'utf-8')).toBe('<h1>mine</h1>');
+  });
+
+  it('bakes no preview-only reload client into the pushed index', () => {
+    // The reload client is injected at serve time; `push` copies files, so
+    // nothing from the preview channel can reach a deployed draft.
+    writeFileSync(join(dir, 'about.html'), '');
+    ensureDraftIndex(dir);
+    expect(readFileSync(join(dir, 'index.html'), 'utf-8')).not.toContain(
+      'data-design-drafts-preview'
+    );
   });
 });
 
