@@ -1,4 +1,4 @@
-const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/chunks/chunk-DzGYsH_b.js","assets/chunks/chunk-Sg1e8hzK.js","assets/chunks/chunk-CIV5sg3E.js","assets/chunks/chunk-DDMcs2jv.js","assets/chunks/chunk-q44vHeK4.js","assets/static/src.B8dU2LIX.css","assets/chunks/chunk-E-1T6a23.js","assets/chunks/chunk-DnPPvupd.js"])))=>i.map(i=>d[i]);
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/chunks/chunk-3oK4aB8k.js","assets/chunks/chunk-Sg1e8hzK.js","assets/chunks/chunk-CIV5sg3E.js","assets/chunks/chunk-DDMcs2jv.js","assets/chunks/chunk-q44vHeK4.js","assets/static/src.B8dU2LIX.css","assets/chunks/chunk-tDq-0kWn.js","assets/chunks/chunk-DnPPvupd.js"])))=>i.map(i=>d[i]);
 import { n as __exportAll, r as __toESM } from "./chunk-Sg1e8hzK.js";
 import { r as usePageContext } from "./chunk-GZCHJOCC.js";
 import { n as require_react, t as require_jsx_runtime } from "./chunk-q44vHeK4.js";
@@ -1960,7 +1960,7 @@ function stopAmbience(fadeSecs = .6) {
 }
 //#endregion
 //#region renderer/PageShell.tsx
-var BarCanvas = clientOnly(() => __vitePreload(() => import("./chunk-DzGYsH_b.js").then((m) => m.BarCanvas), __vite__mapDeps([0,1,2,3,4,5,6,7])));
+var BarCanvas = clientOnly(() => __vitePreload(() => import("./chunk-3oK4aB8k.js").then((m) => m.BarCanvas), __vite__mapDeps([0,1,2,3,4,5,6,7])));
 /** Small theme picker shared by every shell. */
 function ThemeLinks() {
 	const [theme, setTheme] = useSiteTheme();

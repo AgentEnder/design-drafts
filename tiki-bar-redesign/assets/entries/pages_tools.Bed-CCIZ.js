@@ -1,46 +1,65 @@
 import { n as __exportAll } from "../chunks/chunk-Sg1e8hzK.js";
 import { n as onRenderClient, t as Loading_default } from "../chunks/chunk-GZCHJOCC.js";
 import { t as require_jsx_runtime } from "../chunks/chunk-q44vHeK4.js";
-import { t as _Layout_exports } from "../chunks/chunk-Cvio2paI.js";
-//#region src/app/app.tsx
+import { o as FaExternalLinkAlt, t as _Layout_exports } from "../chunks/chunk-CYRvVtg4.js";
+import { t as useData } from "../chunks/chunk-Ckj67tQv.js";
+//#region pages/tools/+Page.tsx
+var _Page_exports = /* @__PURE__ */ __exportAll({ Page: () => Page });
 var import_jsx_runtime = require_jsx_runtime();
-function App() {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
-		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", { children: "Welcome!" }),
-		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: "I'm Craigory" }),
-		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: "I'm a software engineer, currently focused on open source and developer tooling. I enjoy programming, tech conferences, woodworking and games." }),
-		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { children: "Links" }),
-		/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("ul", { children: [
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
-				href: "https://www.github.com/agentender",
-				children: "Github"
-			}) }),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
-				href: "https://www.linkedin.com/in/craigoryvcoppola",
-				children: "LinkedIn"
-			}) }),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
-				href: "https://www.twitter.com/@EnderAgent",
-				children: "Twitter"
-			}) })
-		] })
+function Page() {
+	const { tools } = useData();
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", { children: "Web Dev Tools" }),
+		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+			className: "tools-intro",
+			children: "A selection of web based tools that may come in handy during development or otherwise."
+		}),
+		/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+			className: "tools-grid",
+			children: tools.map((tool) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ToolCard, { tool }, tool.repo))
+		})
 	] });
 }
-//#endregion
-//#region pages/index/+Page.tsx
-var _Page_exports = /* @__PURE__ */ __exportAll({ Page: () => Page });
-function Page() {
-	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(App, {});
+function ToolCard({ tool }) {
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("article", {
+		className: "tool-card",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+				className: "tool-card-name",
+				children: "metadata" in tool && tool.metadata.name ? tool.metadata.name : tool.repo
+			}),
+			tool.description && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+				className: "tool-card-description",
+				children: tool.description
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "tool-card-actions",
+				children: [tool.deployment && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("a", {
+					href: tool.deployment,
+					className: "tool-card-launch",
+					target: "_blank",
+					rel: "noreferrer",
+					children: ["Launch", /* @__PURE__ */ (0, import_jsx_runtime.jsx)(FaExternalLinkAlt, {})]
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
+					href: tool.url,
+					className: "tool-card-source",
+					target: "_blank",
+					rel: "noreferrer",
+					children: "Source"
+				})]
+			})
+		]
+	});
 }
 //#endregion
-//#region \0virtual:vike:page-entry:client:/pages/index
+//#region \0virtual:vike:page-entry:client:/pages/tools
 var configValuesSerialized = {
 	["hasServerOnlyHook"]: {
 		type: "computed",
 		definedAtData: null,
 		valueSerialized: {
 			type: "js-serialized",
-			value: false
+			value: true
 		}
 	},
 	["isClientRuntimeLoaded"]: {
@@ -64,7 +83,7 @@ var configValuesSerialized = {
 		definedAtData: null,
 		valueSerialized: {
 			type: "js-serialized",
-			value: null
+			value: { "server": true }
 		}
 	},
 	["guardEnv"]: {
@@ -89,7 +108,7 @@ var configValuesSerialized = {
 	["Page"]: {
 		type: "standard",
 		definedAtData: {
-			"filePathToShowToUser": "/pages/index/+Page.tsx",
+			"filePathToShowToUser": "/pages/tools/+Page.tsx",
 			"fileExportPathToShowToUser": []
 		},
 		valueSerialized: {
