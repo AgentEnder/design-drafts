@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   type IndexPrompt,
   persistMarkdownIndexToManifest,
+  readMarkdownIndexChoice,
   readMarkdownIndexFromManifest,
   resolveMarkdownIndex,
 } from './markdown-index';
@@ -87,6 +88,67 @@ describe('persistMarkdownIndexToManifest', () => {
     expect(manifest.name.length).toBeGreaterThan(0);
     expect(manifest.pages).toEqual([{ coordinates: {}, path: 'index.html' }]);
     expect(manifest.createdAt).toBeTruthy();
+  });
+});
+
+describe('readMarkdownIndexChoice', () => {
+  it('resolves to nothing designated for a non-markdown draft', () => {
+    write('index.html', '<!doctype html>');
+    expect(readMarkdownIndexChoice(dir, manifestPath)).toEqual({
+      resolved: true,
+      indexSource: undefined,
+    });
+  });
+
+  it('resolves to nothing designated when a README already claims the index', () => {
+    write('README.md', '# Home');
+    write('design-drafts.config.json', '{"markdownIndex": "notes.md"}');
+    expect(readMarkdownIndexChoice(dir, manifestPath)).toEqual({
+      resolved: true,
+      indexSource: undefined,
+    });
+  });
+
+  it('resolves to the persisted doc', () => {
+    write('notes.md', '# Notes');
+    write('zoo.md', '# Zoo');
+    write('design-drafts.config.json', '{"markdownIndex": "zoo.md"}');
+    expect(readMarkdownIndexChoice(dir, manifestPath)).toEqual({
+      resolved: true,
+      indexSource: 'zoo.md',
+    });
+  });
+
+  it('resolves to nothing designated for a persisted generated-listing choice', () => {
+    write('notes.md', '# Notes');
+    write('design-drafts.config.json', '{"markdownIndex": null}');
+    expect(readMarkdownIndexChoice(dir, manifestPath)).toEqual({
+      resolved: true,
+      indexSource: undefined,
+    });
+  });
+
+  it('reports unresolved with the root-level candidates when only a prompt could settle it', () => {
+    write('notes.md', '# Notes');
+    write('zoo.md', '# Zoo');
+    write('guides/setup.md', '# Setup');
+    const choice = readMarkdownIndexChoice(dir, manifestPath);
+    expect(choice.resolved).toBe(false);
+    if (choice.resolved) return;
+    expect(choice.candidates.map((page) => page.sourcePath)).toEqual([
+      'notes.md',
+      'zoo.md',
+    ]);
+  });
+
+  it('resolves to nothing designated when a malformed manifest names nothing', () => {
+    // The half-written-save case: degrade to "no designated index", never throw.
+    write('design-drafts.config.json', '{"markdownIndex": "not');
+    write('guides/setup.md', '# Setup');
+    expect(readMarkdownIndexChoice(dir, manifestPath)).toEqual({
+      resolved: true,
+      indexSource: undefined,
+    });
   });
 });
 
