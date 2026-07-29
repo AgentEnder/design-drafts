@@ -95,54 +95,51 @@ describe('pagesPreviewUrl', () => {
 });
 
 describe('previewLocationMessage', () => {
-  it('states the URL is not reachable until the deploy builds', () => {
+  it('says the URL is not reachable until the deploy builds, in one line', () => {
     const message = previewLocationMessage({
       repo: 'acme/previews',
       branchName: 'drafts/homepage',
       site: { status: 'ok', siteUrl: 'https://acme.github.io/previews/' },
     });
-    expect(message).toContain('Preview will be at:');
-    expect(message).toContain('https://acme.github.io/previews/homepage/');
-    expect(message).toContain('Not live yet');
-    // The caveat gets its own line rather than trailing the URL.
-    expect(message.split('\n')[1].trim()).toBe(
-      'https://acme.github.io/previews/homepage/'
+    // The routine case is the payload plus an inline qualifier — nothing else.
+    expect(message).toBe(
+      'Preview (once built): https://acme.github.io/previews/homepage/'
     );
   });
 
-  it('flags an unconfirmed site root in the header, not just at the end', () => {
+  it('flags an unconfirmed site root without growing the output', () => {
     const message = previewLocationMessage({
       repo: 'acme/previews',
       branchName: 'drafts/homepage',
       site: { status: 'unknown' },
     });
-    expect(message).toContain('https://acme.github.io/previews/homepage/');
-    expect(message).toContain('custom domain');
-    // The doubt has to be readable before the URL, so the confirmed header
-    // must not be reused here.
-    expect(message.split('\n')[0]).toBe('Preview will probably be at:');
-    expect(message).not.toContain('Preview will be at:');
-    // Still says it is not live yet — that caveat is independent of this one.
-    expect(message).toContain('Not live yet');
+    expect(message).toBe(
+      'Preview (once built, unverified): https://acme.github.io/previews/homepage/'
+    );
+    // The confirmed and unconfirmed forms have to stay distinguishable: the
+    // confirmed qualifier must not appear verbatim in the unconfirmed one.
+    expect(message).not.toContain('Preview (once built):');
   });
 
-  it('names the whole set of reasons the Pages URL went unconfirmed', () => {
+  it('qualifies an unconfirmed URL in a word instead of listing causes', () => {
     // `unknown` is reached by a missing gh, an unauthenticated gh, a repo the
-    // token cannot read, or an unreachable GitHub — not connectivity alone.
+    // token cannot read, or an unreachable GitHub. Enumerating that in the
+    // default output is a troubleshooting matrix; `gh auth status` tells the
+    // one user who cares.
     const message = previewLocationMessage({
       repo: 'acme/previews',
       branchName: 'drafts/homepage',
       site: { status: 'unknown' },
     });
-    // Collapsed so the assertion tracks the wording, not where it wraps.
-    const flat = message.replace(/\s+/g, ' ');
+    expect(message).toContain('unverified');
     for (const cause of [
       'not installed',
       'not signed in',
       'no access to the repo',
       'unreachable',
+      'custom domain',
     ]) {
-      expect(flat).toContain(cause);
+      expect(message).not.toContain(cause);
     }
   });
 
@@ -153,7 +150,37 @@ describe('previewLocationMessage', () => {
       site: { status: 'not-enabled' },
     });
     expect(message).toContain('GitHub Pages is not enabled on acme/previews');
-    expect(message).not.toContain('Preview will be at:');
+    // An actionable error, so it carries the remediation command — but the URL
+    // it does promise is gated on enabling Pages, not merely on the build.
+    expect(message).toContain(
+      'gh workflow run deploy-preview.yml -f branch=drafts/homepage --repo acme/previews'
+    );
+    expect(message).toContain(
+      'Preview (once enabled and built): https://acme.github.io/previews/homepage/'
+    );
+    expect(message).not.toContain('Preview (once built)');
+  });
+
+  it('keeps every line short enough that the terminal never has to wrap it', () => {
+    // Hard-wrapped prose is the tell that output was written as a document.
+    // Every prose line has to be a whole sentence that fits a classic 80-col
+    // terminal, so nothing is ever split across lines by hand. URLs and
+    // commands are exempt: they are single tokens by nature.
+    for (const site of [
+      { status: 'ok', siteUrl: 'https://acme.github.io/previews/' },
+      { status: 'unknown' },
+      { status: 'not-enabled' },
+    ] as const) {
+      const lines = previewLocationMessage({
+        repo: 'acme/previews',
+        branchName: 'custom/homepage',
+        site,
+      }).split('\n');
+      for (const line of lines) {
+        if (line.includes('http') || line.trim().startsWith('gh ')) continue;
+        expect(line.length).toBeLessThanOrEqual(80);
+      }
+    }
   });
 
   it('tells a non-drafts branch to dispatch the deploy itself', () => {
