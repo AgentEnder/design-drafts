@@ -2,7 +2,7 @@ import { n as __exportAll, r as __toESM, t as __commonJSMin } from "./chunk-Sg1e
 import { n as require_react, t as require_jsx_runtime } from "./chunk-q44vHeK4.js";
 import { m as assertClientRouting, n as renderPageClient, u as normalizeUrlArgument } from "./chunk-DnPPvupd.js";
 import { n as PRESENTATIONS } from "./chunk-CIV5sg3E.js";
-import { t as initClientRouter } from "./chunk-CxqOSNUY.js";
+import { t as initClientRouter } from "./chunk-E-1T6a23.js";
 //#region ../../node_modules/.pnpm/three@0.185.1/node_modules/three/build/three.core.js
 var import_react = /* @__PURE__ */ __toESM(require_react(), 1);
 /**
@@ -67879,7 +67879,7 @@ function buildMaterials(ctx) {
 		g.fillStyle = bump ? "#808080" : "#7a6242";
 		g.fillRect(0, 0, 64, 64);
 		for (let i = -3; i < 12; i++) {
-			g.strokeStyle = bump ? i % 2 ? "#4a4a4a" : "#b8b8b8" : i % 2 ? "rgba(56,42,25,0.6)" : "rgba(154,126,88,0.55)";
+			g.strokeStyle = bump ? i % 2 ? "#303030" : "#d8d8d8" : i % 2 ? "rgba(38,26,14,0.9)" : "rgba(178,142,96,0.85)";
 			g.lineWidth = 7;
 			g.beginPath();
 			g.moveTo(i * 12 - 22, 72);
@@ -68852,6 +68852,8 @@ function buildProps(ctx) {
 		envMapIntensity: 1.4,
 		specularIntensity: 1
 	}));
+	const ropeVertexTint = M.rope.clone();
+	ropeVertexTint.vertexColors = true;
 	function netCanopy(x0, z0, x1, z1, sag, floats) {
 		const ceilY = ROOM.h - .12;
 		const surf = (u, v) => ceilY - sag * Math.sin(Math.PI * u) * Math.sin(Math.PI * v);
@@ -68860,6 +68862,18 @@ function buildProps(ctx) {
 		const avgSpan = (Math.abs(x1 - x0) + Math.abs(z1 - z0)) / 2;
 		const NL = Math.max(24, Math.round(avgSpan * Math.SQRT2 / .25));
 		const droopAt = (u, v, k, dir) => .016 * Math.sin(Math.PI * u) * Math.sin(Math.PI * v) * (.4 + .6 * Math.abs(Math.sin(k * 2.7 + dir * 1.3)));
+		const tint = (geo, m) => {
+			const n = geo.attributes.position.count;
+			const arr = new Float32Array(n * 3);
+			for (let i = 0; i < n; i++) {
+				arr[i * 3] = m;
+				arr[i * 3 + 1] = m * .97;
+				arr[i * 3 + 2] = m * .92;
+			}
+			geo.setAttribute("color", new BufferAttribute(arr, 3));
+			return geo;
+		};
+		const cordCurves = [];
 		for (const dir of [1, -1]) for (let k = 1; k < NL; k++) {
 			const c = k / NL * 2 - 1;
 			const u0 = Math.max(0, c);
@@ -68874,8 +68888,15 @@ function buildProps(ctx) {
 				if (dir === -1) u = 1 - u;
 				pts.push(new Vector3(x0 + (x1 - x0) * u, surf(u, v) - droopAt(u, v, k, dir), z0 + (z1 - z0) * v));
 			}
+			const curve = new CatmullRomCurve3(pts);
+			cordCurves.push({
+				curve,
+				u0,
+				u1
+			});
 			const rr = .0032 * (.85 + .3 * Math.abs(Math.sin(k * 7.13 + dir * 2.1)));
-			lineGeos.push(new TubeGeometry(new CatmullRomCurve3(pts), 10, rr, 3));
+			const shade = .72 + .55 * Math.abs(Math.sin(k * 5.7 + dir * 3.3));
+			lineGeos.push(tint(new TubeGeometry(curve, 10, rr, 3), shade));
 		}
 		[
 			[.16, .02],
@@ -68891,10 +68912,10 @@ function buildProps(ctx) {
 				new Vector3(px + .02 + .012 * i, top - len * .55, pz + .016),
 				new Vector3(px + .012, top - len, pz + .03 + .014 * i)
 			];
-			lineGeos.push(new TubeGeometry(new CatmullRomCurve3(pts), 6, .0028, 3));
+			lineGeos.push(tint(new TubeGeometry(new CatmullRomCurve3(pts), 6, .0028, 3), .85));
 			const endKnot = new SphereGeometry(.009, 5, 4);
 			endKnot.translate(px + .012, top - len, pz + .03 + .014 * i);
-			lineGeos.push(endKnot);
+			lineGeos.push(tint(endKnot, .7));
 		});
 		for (const [ua, va, ub, vb] of [
 			[
@@ -68923,30 +68944,42 @@ function buildProps(ctx) {
 			]
 		]) {
 			const pts = [new Vector3(x0 + (x1 - x0) * ua, surf(ua, va), z0 + (z1 - z0) * va), new Vector3(x0 + (x1 - x0) * ub, surf(ub, vb), z0 + (z1 - z0) * vb)];
-			lineGeos.push(new TubeGeometry(new CatmullRomCurve3(pts), 2, .006, 4));
+			lineGeos.push(tint(new TubeGeometry(new CatmullRomCurve3(pts), 2, .006, 4), .95));
 		}
 		const netGeo = mergeGeometries(lineGeos);
 		lineGeos.forEach((lg) => lg.dispose());
-		g.add(new Mesh(netGeo, M.rope));
+		g.add(new Mesh(netGeo, ropeVertexTint));
 		const knots = [];
+		const pA = new Vector3();
+		const pB = new Vector3();
 		for (let kA = 1; kA < NL; kA++) for (let kB = 1; kB < NL; kB++) {
 			const a = kA / NL * 2 - 1;
 			const b = 2 - kB / NL * 2;
 			const u = (a + b) / 2;
 			const v = (b - a) / 2;
 			if (u < .02 || u > .98 || v < .02 || v > .98) continue;
+			const A = cordCurves[kA - 1];
+			const B = cordCurves[NL - 1 + kB - 1];
+			const spanA = A.u1 - A.u0;
+			const spanB = B.u1 - B.u0;
+			if (spanA < 1e-4 || spanB < 1e-4) continue;
+			A.curve.getPoint(Math.min(1, Math.max(0, (u - A.u0) / spanA)), pA);
+			B.curve.getPoint(Math.min(1, Math.max(0, (1 - u - B.u0) / spanB)), pB);
 			knots.push([
-				u,
-				v,
-				(droopAt(u, v, kA, 1) + droopAt(u, v, kB, -1)) / 2
+				(pA.x + pB.x) / 2,
+				(pA.y + pB.y) / 2,
+				(pA.z + pB.z) / 2
 			]);
 		}
 		const knotMesh = new InstancedMesh(new OctahedronGeometry(.0085, 0), M.rope, knots.length);
 		const km = new Matrix4();
-		knots.forEach(([u, v, d], i) => {
+		const kc = new Color();
+		knots.forEach(([kx, ky, kz], i) => {
 			km.makeRotationY(i * 2.399 % 6.28);
-			km.setPosition(x0 + (x1 - x0) * u, surf(u, v) - d, z0 + (z1 - z0) * v);
+			km.setPosition(kx, ky, kz);
 			knotMesh.setMatrixAt(i, km);
+			const m = .72 + .5 * Math.abs(Math.sin(i * 3.7));
+			knotMesh.setColorAt(i, kc.setRGB(m, m * .97, m * .92));
 		});
 		knotMesh.frustumCulled = false;
 		g.add(knotMesh);
