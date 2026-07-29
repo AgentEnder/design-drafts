@@ -72,6 +72,54 @@ export function persistMarkdownIndexToManifest(
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 }
 
+/**
+ * What the draft itself determines about its index, with nobody asked.
+ * `resolved` carries the answer — `indexSource: undefined` meaning "no
+ * designated doc" — while an unresolved result means only a prompt can settle
+ * it, and names the docs that prompt would offer.
+ */
+export type MarkdownIndexChoice =
+  | { resolved: true; indexSource: string | undefined }
+  | { resolved: false; candidates: readonly MarkdownPage[] };
+
+const NOTHING_DESIGNATED = {
+  resolved: true,
+  indexSource: undefined,
+} as const satisfies MarkdownIndexChoice;
+
+/**
+ * The non-interactive half of `resolveMarkdownIndex` — everything that can be
+ * decided from the draft and its manifest alone.
+ *
+ * It is split out because the preview server re-reads the index choice on every
+ * request, and a request must never fire an interactive prompt at a terminal
+ * that has long since scrolled past. The server takes a resolved answer and
+ * falls back to whatever `preview` settled at startup otherwise.
+ */
+export function readMarkdownIndexChoice(
+  dir: string,
+  manifestPath: string
+): MarkdownIndexChoice {
+  if (!isMarkdownDraft(dir)) return NOTHING_DESIGNATED;
+  const pages = collectMarkdownPages(dir);
+  if (pages.some((page) => page.outputPath === 'index.html')) {
+    return NOTHING_DESIGNATED;
+  }
+
+  const persisted = readMarkdownIndexFromManifest(manifestPath);
+  if (persisted === null) return NOTHING_DESIGNATED;
+  if (
+    typeof persisted === 'string' &&
+    pages.some((page) => page.sourcePath === persisted)
+  ) {
+    return { resolved: true, indexSource: persisted };
+  }
+
+  const candidates = pages.filter((page) => !page.sourcePath.includes('/'));
+  if (candidates.length === 0) return NOTHING_DESIGNATED;
+  return { resolved: false, candidates };
+}
+
 const promptWithSelect: IndexPrompt = async (candidates) => {
   const choice = await select<string | null>({
     message: 'No README.md here — what should the draft index be?',
@@ -106,22 +154,10 @@ export async function resolveMarkdownIndex(
   manifestPath: string,
   prompt: IndexPrompt = promptWithSelect
 ): Promise<string | undefined> {
-  if (!isMarkdownDraft(dir)) return undefined;
-  const pages = collectMarkdownPages(dir);
-  if (pages.some((page) => page.outputPath === 'index.html')) return undefined;
+  const settled = readMarkdownIndexChoice(dir, manifestPath);
+  if (settled.resolved) return settled.indexSource;
 
-  const persisted = readMarkdownIndexFromManifest(manifestPath);
-  if (persisted === null) return undefined;
-  if (
-    typeof persisted === 'string' &&
-    pages.some((page) => page.sourcePath === persisted)
-  ) {
-    return persisted;
-  }
-
-  const candidates = pages.filter((page) => !page.sourcePath.includes('/'));
-  if (candidates.length === 0) return undefined;
-  const choice = await prompt(candidates);
+  const choice = await prompt(settled.candidates);
   persistMarkdownIndexToManifest(manifestPath, choice, dir);
   console.log(
     choice

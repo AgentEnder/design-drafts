@@ -84,6 +84,12 @@ When a requested directory has no `index.html` (e.g. a draft whose pages are
 generated index linking to every `.html` page in the draft so you can navigate
 without one.
 
+`design-drafts.config.json` is re-read on every request, so renaming the draft
+or re-designating its index takes effect without a restart. Open pages are told
+about the change over a small server-sent-events channel and refresh
+themselves — nothing to click, and nothing of the channel is baked into a
+pushed draft.
+
 ## Configuration
 
 Shared options (`--repo`, `--site-name`, `--template-ref`) can be supplied via
