@@ -1,0 +1,12 @@
+{
+  "$schema": "https://design-drafts.dev/schemas/draft-manifest.schema.json",
+  "name": "tiki-bar-redesign",
+  "prompt": "",
+  "pages": [
+    {
+      "coordinates": {},
+      "path": "index.html"
+    }
+  ],
+  "createdAt": "2026-07-29T13:35:29.099Z"
+}
