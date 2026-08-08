@@ -17,7 +17,7 @@ catalog:
   '@types/react-dom': ^19.2.3
   '@vitejs/plugin-react': ^6.0.2
   cli-forge: ^1.9.2
-  nx: 22.6.3
+  nx: 22.7.7
   nx-github-pages: ^1.0.0
   react: ^19.2.3
   react-dom: ^19.2.3
