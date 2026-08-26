@@ -23,8 +23,8 @@ export interface Annotation {
 
 const STORAGE_PREFIX = 'dd:annotate:';
 
-function storageKey(): string {
-  return STORAGE_PREFIX + currentPageUrl();
+function storageKey(pageUrl: string): string {
+  return STORAGE_PREFIX + pageUrl;
 }
 
 export function currentPageUrl(): string {
@@ -36,9 +36,9 @@ export function currentPageUrl(): string {
   return url.toString();
 }
 
-function safeRead(): Annotation[] {
+function safeRead(pageUrl: string): Annotation[] {
   try {
-    const raw = window.localStorage.getItem(storageKey());
+    const raw = window.localStorage.getItem(storageKey(pageUrl));
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -48,9 +48,9 @@ function safeRead(): Annotation[] {
   }
 }
 
-function safeWrite(annotations: Annotation[]): void {
+function safeWrite(pageUrl: string, annotations: Annotation[]): void {
   try {
-    window.localStorage.setItem(storageKey(), JSON.stringify(annotations));
+    window.localStorage.setItem(storageKey(pageUrl), JSON.stringify(annotations));
   } catch {
     // localStorage may be disabled, full, or denied — fail silently. The
     // user will at least have annotations for the rest of the session.
@@ -78,7 +78,7 @@ function belongsTo(draftId: string | undefined, annotation: Annotation): boolean
 }
 
 export function loadAnnotations(draftId: string | undefined): Annotation[] {
-  return safeRead().filter((a) => belongsTo(draftId, a));
+  return safeRead(currentPageUrl()).filter((a) => belongsTo(draftId, a));
 }
 
 // Enumerate the annotations on every page of `draftId`, keyed by page URL, so
@@ -121,20 +121,36 @@ export function loadAnnotationsByUrl(
   return out;
 }
 
-export function saveAnnotation(annotation: Annotation): void {
-  const all = safeRead();
+// `pageUrl` is required rather than defaulting to the current page. The panel
+// is tabbed across every page of the draft, so the annotation being written is
+// not necessarily on the page doing the writing — and a write that silently
+// assumed otherwise is what made Delete no-op and Edit copy an annotation onto
+// the wrong page. Making the caller name the page is what keeps that honest.
+export function saveAnnotation(annotation: Annotation, pageUrl: string): void {
+  const all = safeRead(pageUrl);
   const existing = all.findIndex((a) => a.id === annotation.id);
   if (existing >= 0) {
     all[existing] = annotation;
   } else {
     all.push(annotation);
   }
-  safeWrite(all);
+  safeWrite(pageUrl, all);
 }
 
-export function deleteAnnotation(id: string): void {
-  const all = safeRead().filter((a) => a.id !== id);
-  safeWrite(all);
+export function deleteAnnotation(id: string, pageUrl: string): void {
+  const remaining = safeRead(pageUrl).filter((a) => a.id !== id);
+  if (remaining.length) {
+    safeWrite(pageUrl, remaining);
+  } else {
+    // Drop the key rather than leaving `[]` behind, so an emptied page stops
+    // showing up as a tab (loadAnnotationsByUrl skips empty lists, but a dead
+    // key would still be walked on every read).
+    try {
+      window.localStorage.removeItem(storageKey(pageUrl));
+    } catch {
+      safeWrite(pageUrl, remaining);
+    }
+  }
 }
 
 export function generateId(): string {

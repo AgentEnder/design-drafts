@@ -34,7 +34,7 @@ describe('annotation storage scoped by draft', () => {
   });
 
   it('keeps annotations written for this draft', () => {
-    saveAnnotation(annotation({ draftId: 'toolbar-redesign' }));
+    saveAnnotation(annotation({ draftId: 'toolbar-redesign' }), currentPageUrl());
 
     expect(loadAnnotations('toolbar-redesign')).toHaveLength(1);
   });

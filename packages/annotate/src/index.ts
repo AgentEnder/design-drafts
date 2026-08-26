@@ -510,7 +510,7 @@ class AnnotateOverlay {
         createdAt: now,
         updatedAt: now,
       };
-      saveAnnotation(annotation);
+      saveAnnotation(annotation, currentPageUrl());
       this.composing = null;
       this.closeComposer();
       this.refreshPins();
@@ -929,11 +929,10 @@ class AnnotateOverlay {
       save.addEventListener('click', () => {
         const next = textarea.value.trim();
         if (!next) return;
-        saveAnnotation({
-          ...annotation,
-          comment: next,
-          updatedAt: Date.now(),
-        });
+        saveAnnotation(
+          { ...annotation, comment: next, updatedAt: Date.now() },
+          pageUrl
+        );
         this.editing = null;
         this.renderPanel();
       });
@@ -995,7 +994,7 @@ class AnnotateOverlay {
       remove.className = 'btn ghost danger';
       remove.textContent = 'Delete';
       remove.addEventListener('click', () => {
-        deleteAnnotation(annotation.id);
+        deleteAnnotation(annotation.id, pageUrl);
         this.refreshPins();
         this.renderPanel();
       });

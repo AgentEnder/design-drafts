@@ -32,7 +32,10 @@ The script is inert by default. To activate the overlay:
 
 When active, hovering an element outlines the nearest semantic block
 (heading, section, button, image, paragraph, …). Clicking pins a comment.
-Comments live in the right-side drawer and can be edited or deleted.
+Comments live in the right-side drawer and can be edited or deleted. The
+drawer is tabbed across every page of the draft you have annotated, so Edit
+and Delete act on the page whose tab is open — not on the one you happen to
+be standing on.
 
 ### The page is inert while annotating
 
