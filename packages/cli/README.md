@@ -37,9 +37,35 @@ design-drafts push ./dist --repo my-org/design-previews --site-name homepage-v2
 every `.md` file becomes a GitHub-flavored html page (tables, task lists,
 syntax-highlighted code, heading anchors) with a light/dark theme toggle and
 Pagefind full-text search. `README.md` becomes `index.html`, and relative links
-between markdown files are rewritten to the rendered pages. Search result
-links are wired to the GitHub Pages url inferred from `--repo`. Folders that
-contain any `.html` are pushed as-is.
+between markdown files are rewritten to the rendered pages. The sidebar mirrors
+your folder layout — one collapsible group per directory, opened to wherever you
+are — so a draft with `guides/` and `reference/` reads as those sections rather
+than one long list. Search result links are wired to the GitHub Pages url
+inferred from `--repo`. Folders that contain any `.html` are pushed as-is.
+
+### `design-drafts build [path]`
+
+Render a draft (default `.`) into a directory of static files — exactly the
+content `push` deploys, without git, a remote, or GitHub.
+
+```sh
+design-drafts build ./my-draft --out ../my-draft-site
+```
+
+- `--out <dir>` — **required.** Where to write the built site. It must sit
+  outside the draft: html left inside would make the next `preview` or `push`
+  read the draft as a hand-written html one and ship this build instead. There
+  is no default, because every obvious one breaks that rule.
+- `--base <path>` — the absolute path the built site will be served under, which
+  is what search result links resolve against. Defaults to the GitHub Pages path
+  derived from `--repo` when one is configured (so `build` and `push` agree),
+  otherwise `/`.
+- `--force` — replace the contents of a non-empty `--out`.
+- `--site-name`, `--repo`, `--prefix` — as for `push`.
+
+The one thing it does not reproduce is the deploy workflow `push` embeds in the
+branch: that is how a branch gets deployed, not part of the site, and the deploy
+strips it back out before publishing.
 
 ### `design-drafts init host`
 
@@ -81,8 +107,11 @@ the content at preview start; restart the preview to re-index new content.
 
 When a requested directory has no `index.html` (e.g. a draft whose pages are
 `about.html`, `pricing.html`, … with no home page yet), the server returns a
-generated index linking to every `.html` page in the draft so you can navigate
-without one.
+generated index linking to every page in the draft so you can navigate without
+one. It wears the same chrome as a rendered page — the draft's name, the theme
+toggle — and lays the pages out as the directory tree you wrote, one collapsible
+folder per directory, rather than a flat list of paths. `push` and `build` bake
+the same listing onto disk, since gh-pages 404s an index-less directory.
 
 `design-drafts.config.json` is re-read on every request, so renaming the draft
 or re-designating its index takes effect without a restart. Open pages are told
