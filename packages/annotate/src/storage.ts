@@ -121,6 +121,55 @@ export function loadAnnotationsByUrl(
   return out;
 }
 
+/**
+ * Removes every annotation `draftId` owns across all of `scope`, and returns
+ * how many went — the panel's Clear, which wipes exactly the set Export would
+ * have produced.
+ *
+ * The keys are collected before anything is written, because removing an
+ * emptied key mid-walk shifts every later index down and would silently skip
+ * half the pages. A key keeps whatever another draft left at the same URL, and
+ * is dropped outright once nothing is left in it.
+ */
+export function clearAnnotations(
+  scope: string,
+  draftId: string | undefined
+): number {
+  let removed = 0;
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i);
+      if (!key || !key.startsWith(STORAGE_PREFIX)) continue;
+      if (!key.slice(STORAGE_PREFIX.length).startsWith(scope)) continue;
+      keys.push(key);
+    }
+    for (const key of keys) {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) continue;
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        continue; // Leave malformed entries exactly as they are.
+      }
+      if (!Array.isArray(parsed)) continue;
+      const kept = parsed
+        .filter(isAnnotation)
+        .filter((a) => !belongsTo(draftId, a));
+      removed += parsed.filter(isAnnotation).length - kept.length;
+      if (kept.length) {
+        window.localStorage.setItem(key, JSON.stringify(kept));
+      } else {
+        window.localStorage.removeItem(key);
+      }
+    }
+  } catch {
+    // localStorage may be inaccessible; report what we managed to remove.
+  }
+  return removed;
+}
+
 // `pageUrl` is required rather than defaulting to the current page. The panel
 // is tabbed across every page of the draft, so the annotation being written is
 // not necessarily on the page doing the writing — and a write that silently

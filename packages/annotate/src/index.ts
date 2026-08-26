@@ -36,6 +36,7 @@ import { HOST_ID, STYLES } from './styles.js';
 import { containerElementOf, resolveTextRange } from './text-range.js';
 import {
   currentPageUrl,
+  clearAnnotations,
   deleteAnnotation,
   generateId,
   loadAnnotations,
@@ -80,6 +81,22 @@ const KEY_EVENTS = [
   'input',
   'beforeinput',
 ] as const;
+
+const CLEAR_LABEL = 'Clear';
+/** How long the panel's Clear stays armed before it forgets it was asked. */
+const CLEAR_ARM_MS = 4000;
+/** How long a button wears a result before returning to its own label. */
+const FLASH_MS = 1600;
+
+/** Says something on the button itself, then puts `label` back — the panel has
+ * nowhere to put a toast, and a result belongs on the control that produced it.
+ * Skips the reset if the panel closed in the meantime. */
+function flashLabel(button: HTMLElement, message: string, label: string): void {
+  button.textContent = message;
+  window.setTimeout(() => {
+    if (button.isConnected) button.textContent = label;
+  }, FLASH_MS);
+}
 
 function stopIfActive(overlay: { isActive(): boolean }) {
   return (event: Event): void => {
@@ -154,6 +171,8 @@ class AnnotateOverlay {
     range: Range | null;
   } | null = null;
   private editing: { id: string } | null = null;
+  /** Non-null while the panel's Clear is armed (see clearAll). */
+  private clearArmTimer: number | null = null;
   private pins: PinView[] = [];
 
   private rafScheduled = false;
@@ -761,6 +780,18 @@ class AnnotateOverlay {
     });
     actions.appendChild(exportBtn);
 
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'btn ghost clear-all';
+    clearBtn.textContent = CLEAR_LABEL;
+    clearBtn.title = 'Delete every annotation on this draft';
+    clearBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.clearAll(clearBtn);
+    });
+    actions.appendChild(clearBtn);
+
     const close = document.createElement('button');
     close.type = 'button';
     close.className = 'btn ghost';
@@ -792,6 +823,7 @@ class AnnotateOverlay {
   }
 
   private closePanel(): void {
+    this.disarmClear();
     if (this.panelEl) {
       this.panelEl.remove();
       this.panelEl = null;
@@ -1033,13 +1065,8 @@ class AnnotateOverlay {
       })
       .map(([url, annotations]) => ({ url, annotations }));
 
-    const label = button.textContent ?? 'Export';
-    const flash = (message: string): void => {
-      button.textContent = message;
-      window.setTimeout(() => {
-        button.textContent = label;
-      }, 1600);
-    };
+    const flash = (message: string): void =>
+      flashLabel(button, message, 'Export');
 
     if (!pages.some((page) => page.annotations.length)) {
       flash('Nothing yet');
@@ -1058,6 +1085,54 @@ class AnnotateOverlay {
         flash('Downloaded');
       }
     );
+  }
+
+  // ---- clear ----
+
+  // Wipes exactly what Export would have produced: this draft, every page.
+  //
+  // Two steps, because there is no undo behind it. The first click arms the
+  // button and says what it is about to take; the second commits. An armed
+  // button disarms itself, so a panel left open never sits one stray click
+  // away from losing a review.
+  private clearAll(button: HTMLElement): void {
+    if (this.clearArmTimer !== null) {
+      this.disarmClear();
+      const removed = clearAnnotations(this.draftScope, this.draftId);
+      this.editing = null;
+      this.refreshPins();
+      this.renderPanel();
+      flashLabel(button, `Cleared ${removed}`, CLEAR_LABEL);
+      return;
+    }
+
+    let total = 0;
+    for (const list of loadAnnotationsByUrl(
+      this.draftScope,
+      this.draftId
+    ).values()) {
+      total += list.length;
+    }
+    if (!total) {
+      flashLabel(button, 'Nothing yet', CLEAR_LABEL);
+      return;
+    }
+
+    button.classList.add('armed');
+    button.textContent = `Clear all ${total}?`;
+    this.clearArmTimer = window.setTimeout(() => {
+      this.clearArmTimer = null;
+      button.classList.remove('armed');
+      button.textContent = CLEAR_LABEL;
+    }, CLEAR_ARM_MS);
+  }
+
+  private disarmClear(): void {
+    if (this.clearArmTimer === null) return;
+    window.clearTimeout(this.clearArmTimer);
+    this.clearArmTimer = null;
+    const button = this.panelEl?.querySelector('.clear-all');
+    button?.classList.remove('armed');
   }
 
   // ---- toggle button ----

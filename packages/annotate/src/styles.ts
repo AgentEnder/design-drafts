@@ -24,6 +24,7 @@ export const BORDER_SOFT = 'rgba(0, 0, 0, 0.08)';
 export const TEXT = '#1d1d20';
 export const TEXT_MUTED = '#6b6b70';
 export const DANGER = '#dc2626';
+export const DANGER_SOFT = 'rgba(220, 38, 38, 0.12)';
 export const SHADOW =
   '0 10px 30px -8px rgba(0, 0, 0, 0.35), 0 2px 6px -2px rgba(0, 0, 0, 0.16)';
 
@@ -257,6 +258,17 @@ textarea.field:focus {
   background: ${SURFACE_SUNK};
 }
 
+/* Clear, waiting on its second click. The click after this one is the one that
+   takes the annotations, so the button stops reading as one more ghost control
+   while it waits. Specificity beats .btn.ghost, which would otherwise mute it
+   straight back to grey. */
+.btn.ghost.armed,
+.btn.ghost.armed:hover {
+  color: ${DANGER};
+  background: ${DANGER_SOFT};
+  border-color: ${DANGER_SOFT};
+}
+
 .panel {
   position: absolute;
   pointer-events: auto;
@@ -297,6 +309,7 @@ textarea.field:focus {
   display: flex;
   align-items: center;
   gap: 2px;
+  flex: none;
 }
 
 .panel-tabs {
@@ -363,6 +376,12 @@ textarea.field:focus {
   font-size: 12.5px;
   font-weight: 600;
   color: ${TEXT};
+  /* The head holds three controls, and an armed Clear grows to "Clear all 12?".
+     Give under pressure here rather than letting the buttons wrap. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .panel-body {

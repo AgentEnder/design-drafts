@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // The annotations panel: the list, its per-entry actions, and the bulk Clear.
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import './index.js';
 import { loadAnnotationsByUrl, type Annotation } from './storage.js';
@@ -140,5 +140,82 @@ describe('editing one annotation', () => {
     const byUrl = loadAnnotationsByUrl(ORIGIN, undefined);
     expect(byUrl.get(SIBLING)?.map((a) => a.comment)).toEqual(['new wording']);
     expect(byUrl.get(HERE)).toHaveLength(1);
+  });
+});
+
+describe('clearing every annotation', () => {
+  /** Addressed by class, not label: arming rewrites the label. */
+  function clearBtn(): HTMLButtonElement {
+    const found = shadow().querySelector<HTMLButtonElement>('.clear-all');
+    if (!found) throw new Error('no Clear button in the panel head');
+    return found;
+  }
+
+  function pages(): Map<string, unknown> {
+    return loadAnnotationsByUrl(ORIGIN, undefined);
+  }
+
+  it('asks first, naming what it is about to take', () => {
+    seed(HERE, [annotation({ id: 'here' })]);
+    seed(SIBLING, [annotation({ id: 'there' })]);
+    api().activate();
+
+    clearBtn().click();
+
+    expect(clearBtn().textContent).toBe('Clear all 2?');
+    // Armed is not committed: nothing has gone yet.
+    expect(pages().size).toBe(2);
+  });
+
+  it('clears every page of the draft on the second click', () => {
+    seed(HERE, [annotation({ id: 'here' })]);
+    seed(SIBLING, [annotation({ id: 'there' })]);
+    api().activate();
+
+    clearBtn().click();
+    clearBtn().click();
+
+    expect(pages().size).toBe(0);
+    expect(entries()).toHaveLength(0);
+    expect(shadow().querySelector('.panel-empty')).not.toBeNull();
+  });
+
+  // A panel left open must never sit one stray click away from losing a review.
+  it('disarms itself when the second click never comes', () => {
+    vi.useFakeTimers();
+    try {
+      seed(HERE, [annotation({ id: 'here' })]);
+      api().activate();
+      clearBtn().click();
+
+      vi.advanceTimersByTime(10_000);
+
+      expect(clearBtn().textContent).toBe('Clear');
+      clearBtn().click();
+      expect(pages().size).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('says so rather than arming when there is nothing to clear', () => {
+    api().activate();
+
+    clearBtn().click();
+
+    expect(clearBtn().textContent).toBe('Nothing yet');
+  });
+
+  it('leaves another draft sharing this URL alone', () => {
+    seed(HERE, [
+      annotation({ id: 'mine' }),
+      annotation({ id: 'theirs', draftId: 'other-draft' }),
+    ]);
+    api().activate();
+
+    clearBtn().click();
+    clearBtn().click();
+
+    expect(loadAnnotationsByUrl(ORIGIN, 'other-draft').get(HERE)).toHaveLength(1);
   });
 });

@@ -243,6 +243,20 @@ Nothing is inferred at runtime: ADR 0001 ruled out scraping framework
 internals for this, and that still holds. The overlay reads an attribute
 the page already chose to publish, or reports no source at all.
 
+## Clearing
+
+Beside **Export** is **Clear**, which deletes every annotation Export would
+have included: this draft, every page of it. Annotations another draft left
+at the same URL are untouched — the panel and the clear share one notion of
+which draft is which (see *Persistence* below).
+
+There is no undo, so it takes two clicks. The first arms the button and says
+what it is about to take (`Clear all 12?`); the second commits. An armed
+button disarms itself after a few seconds, so a drawer left open never sits
+one stray click away from losing a review.
+
+To remove a single annotation instead, use **Delete** on its entry.
+
 ## Bookmarklet: annotate a site you don't control
 
 The overlay normally arrives via a `<script>` tag the draft ships. To use
