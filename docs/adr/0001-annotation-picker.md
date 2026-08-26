@@ -203,6 +203,49 @@ initial annotate package.
   framework-agnostic answer to what `bippy` does for React only, and is
   cleanly separable from the annotate package itself.
 
+## Update, 2026-08-26: opportunistic component names
+
+This ADR accepted that "we are *not* getting component-name / source-file
+enrichment for free". The annotate package now takes some of it for free
+after all, in one quarantined module (`src/component.ts`), and the decision
+above is unchanged in substance — so this is a note rather than a
+superseding ADR.
+
+What changed is the size of the bet. The decision above rejected building
+the *picker* on React internals, because a picker whose value lived in a
+fiber walk would work on a fraction of drafts. Reading a component name for
+an annotation that is already complete without it is a different
+proposition: nothing depends on it, and every failure path returns null.
+
+It is worth having because it was measured rather than assumed:
+
+- React 18 development build — walking `__reactFiber$…` up from a DOM node
+  yields real names: `PricingSection › PricingCard › PricingCopy`.
+- `react.dev` in production — the same walk yields `eu`, `tR`, `d`, `r`,
+  `p`, `z`, `$`, `es`.
+
+The second result is why the walk alone isn't enough. Rather than infer the
+build from the shape of the names, the reader asks React: it creates the
+`_debug*` fields on a fiber only under `__DEV__`, and on those same two
+pages the development fiber owns four of them while react.dev's owns none.
+Development names are taken as written; outside a development build they
+must be at least three characters and start with a capital, which rejects
+all eight above while still admitting a production build that kept function
+names. `Component: eu` in an export would read as fact; silence does not.
+
+`__REACT_DEVTOOLS_GLOBAL_HOOK__` carries an explicit `bundleType` and would
+have been tidier, but it is installed by the DevTools extension rather than
+by React and was absent on both pages.
+
+The `bippy` concern in Option B stands and is why this is confined to one
+file with a null return on every branch. If React renames the fiber key or
+drops `_debugSource` — React 19 already did the latter — the lookup fails
+and annotations lose an optional line.
+
+The follow-up plugin below is still unbuilt and still worth building: it is
+the only route to an exact source coordinate on a non-React page, and the
+only one that works in production.
+
 ## Notes on uncertainty
 
 This spike was time-boxed and relied on public READMEs and package
