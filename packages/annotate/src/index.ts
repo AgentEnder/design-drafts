@@ -19,13 +19,21 @@ import {
 } from '@design-drafts/conventions/discover';
 import { readDraftId } from '@design-drafts/conventions/draft-id';
 
+import {
+  annotationsToMarkdown,
+  exportFilename,
+  type ExportPage,
+} from './export.js';
 import { pickAtPoint, type PickResult } from './picker.js';
 import {
   buildSelector,
+  describeAnchor,
+  describeSelector,
   resolveSelector,
   type SelectorBundle,
 } from './selectors.js';
-import { STYLES } from './styles.js';
+import { HOST_ID, STYLES } from './styles.js';
+import { containerElementOf, resolveTextRange } from './text-range.js';
 import {
   currentPageUrl,
   deleteAnnotation,
@@ -46,13 +54,38 @@ interface AnnotateApi {
 interface PinView {
   annotation: Annotation;
   element: Element | null;
+  /** Set only for a text annotation whose quote still resolves. When the
+   * annotation has a textRange but this is null the annotation is stale —
+   * see refreshPins. */
+  range: Range | null;
   pinNode: HTMLElement;
+  /** One tint node per line box of `range`; empty for element annotations. */
+  highlightNodes: HTMLElement[];
   number: number;
   stale: boolean;
 }
 
-const HOST_ID = 'design-drafts-annotate-root';
+/** What an annotation points at: a whole element, or a run of text inside
+ * one. Everything that positions UI against an annotation — outline, pin,
+ * flash, scroll — works on this rather than on Element alone. */
+type AnchorTarget = Element | Range;
+
 const QUERY_PARAM = 'annotate';
+
+/** Everything a page might hang a keyboard shortcut or an input mirror off. */
+const KEY_EVENTS = [
+  'keydown',
+  'keyup',
+  'keypress',
+  'input',
+  'beforeinput',
+] as const;
+
+function stopIfActive(overlay: { isActive(): boolean }) {
+  return (event: Event): void => {
+    if (overlay.isActive()) event.stopPropagation();
+  };
+}
 
 export type AnnotateMode = 'standalone' | 'integrated';
 
@@ -96,6 +129,9 @@ class AnnotateOverlay {
   private toggleEl: HTMLElement | null = null;
   private composerEl: HTMLElement | null = null;
   private pinLayer: HTMLElement | null = null;
+  private highlightLayer: HTMLElement | null = null;
+  /** Tint nodes for the selection being commented on but not yet saved. */
+  private pendingHighlight: HTMLElement[] = [];
 
   private active = false;
   // Which pages the panel may show, and which annotations on them are ours.
@@ -112,8 +148,11 @@ class AnnotateOverlay {
   private scopeRequested = false;
   private readonly draftId = readDraftId(document);
   private hovered: PickResult | null = null;
-  private composing: { selector: SelectorBundle; element: Element } | null =
-    null;
+  private composing: {
+    selector: SelectorBundle;
+    element: Element;
+    range: Range | null;
+  } | null = null;
   private editing: { id: string } | null = null;
   private pins: PinView[] = [];
 
@@ -127,9 +166,21 @@ class AnnotateOverlay {
     host.style.cssText = 'all: initial; position: fixed; inset: 0; z-index: 2147483100; pointer-events: none;';
     const root = host.attachShadow({ mode: 'open' });
 
-    const style = document.createElement('style');
-    style.textContent = STYLES;
-    root.appendChild(style);
+    // A constructable stylesheet rather than a <style> element. Chrome
+    // enforces `style-src` on DOM-inserted <style> tags, so on a site with a
+    // strict policy the bookmarklet would attach an overlay with no styles at
+    // all — worse than not attaching. adoptedStyleSheets isn't inline style
+    // and isn't checked, so the overlay renders wherever it runs.
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(STYLES);
+    root.adoptedStyleSheets = [sheet];
+
+    // Highlights paint under the pins, so a pin sitting at the end of a
+    // quote is never washed out by its own tint.
+    const highlightLayer = document.createElement('div');
+    highlightLayer.style.cssText =
+      'position: absolute; inset: 0; pointer-events: none;';
+    root.appendChild(highlightLayer);
 
     const pinLayer = document.createElement('div');
     pinLayer.style.cssText =
@@ -143,6 +194,21 @@ class AnnotateOverlay {
     outline.appendChild(outlineLabel);
     root.appendChild(outline);
 
+    // Keyboard events are `composed`, so anything typed into the composer
+    // escapes the shadow root and carries on to the page — retargeted, so by
+    // the time a page hotkey handler sees it `event.target` is this host
+    // <div> rather than a <textarea>. The usual "ignore keys typed in a form
+    // field" guard therefore doesn't fire, and a comment containing "t"
+    // triggers GitHub's file finder mid-sentence.
+    //
+    // Stopping them here, on the host, is the right place: the composer has
+    // already had the event by then (this is the bubble phase), and the page
+    // never will. The overlay's own key handling lives on window's capture
+    // phase, which runs earlier still, so Escape keeps working.
+    for (const type of KEY_EVENTS) {
+      host.addEventListener(type, stopIfActive(this));
+    }
+
     document.documentElement.appendChild(host);
 
     this.host = host;
@@ -150,6 +216,7 @@ class AnnotateOverlay {
     this.outlineEl = outline;
     this.outlineLabelEl = outlineLabel;
     this.pinLayer = pinLayer;
+    this.highlightLayer = highlightLayer;
 
     this.renderToggle();
     this.refreshPins();
@@ -167,6 +234,8 @@ class AnnotateOverlay {
     this.toggleEl = null;
     this.composerEl = null;
     this.pinLayer = null;
+    this.highlightLayer = null;
+    this.pendingHighlight = [];
     this.pins = [];
   }
 
@@ -192,9 +261,15 @@ class AnnotateOverlay {
     this.ensureDraftScope();
     this.mount();
     this.active = true;
-    document.addEventListener('pointermove', this.onPointerMove, true);
-    document.addEventListener('click', this.onClick, true);
-    document.addEventListener('keydown', this.onKeyDown, true);
+    // On `window` rather than `document`: capture runs window → document →
+    // … → target, so a page that registers its own capture-phase handler on
+    // window would otherwise see every click before the overlay does.
+    window.addEventListener('pointermove', this.onPointerMove, true);
+    window.addEventListener('click', this.onClick, true);
+    window.addEventListener('auxclick', this.onClick, true);
+    window.addEventListener('mousedown', this.onMouseButton, true);
+    window.addEventListener('mouseup', this.onMouseButton, true);
+    window.addEventListener('keydown', this.onKeyDown, true);
     window.addEventListener('scroll', this.onViewportChange, true);
     window.addEventListener('resize', this.onViewportChange, true);
     this.renderToggle();
@@ -213,9 +288,9 @@ class AnnotateOverlay {
       setTimeout(() => {
         const pin = this.pins.find((p) => p.annotation.id === revealId);
         if (pin?.element) {
-          const target = pin.element;
-          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          setTimeout(() => this.flashElement(target), 280);
+          const target: AnchorTarget = pin.range ?? pin.element;
+          this.scrollTargetIntoView(target);
+          setTimeout(() => this.flash(target), 280);
         }
       }, 60);
     }
@@ -224,9 +299,12 @@ class AnnotateOverlay {
   deactivate(): void {
     if (!this.active) return;
     this.active = false;
-    document.removeEventListener('pointermove', this.onPointerMove, true);
-    document.removeEventListener('click', this.onClick, true);
-    document.removeEventListener('keydown', this.onKeyDown, true);
+    window.removeEventListener('pointermove', this.onPointerMove, true);
+    window.removeEventListener('click', this.onClick, true);
+    window.removeEventListener('auxclick', this.onClick, true);
+    window.removeEventListener('mousedown', this.onMouseButton, true);
+    window.removeEventListener('mouseup', this.onMouseButton, true);
+    window.removeEventListener('keydown', this.onKeyDown, true);
     window.removeEventListener('scroll', this.onViewportChange, true);
     window.removeEventListener('resize', this.onViewportChange, true);
     this.hovered = null;
@@ -248,6 +326,13 @@ class AnnotateOverlay {
   private onPointerMove = (event: PointerEvent): void => {
     if (!this.active) return;
     if (this.composing) return;
+    // A held button means the reviewer is dragging out a text selection.
+    // Outlining whatever block the cursor crosses is noise during that.
+    if (event.buttons !== 0) {
+      this.hovered = null;
+      this.hideOutline();
+      return;
+    }
     if (this.eventCrossesOverlay(event)) {
       this.hovered = null;
       this.hideOutline();
@@ -260,20 +345,55 @@ class AnnotateOverlay {
       return;
     }
     this.hovered = pick;
-    this.drawOutline(pick);
+    this.drawOutline(pick.element, describeElement(pick.element));
+  };
+
+  // Mouse button events are stopped but NOT default-prevented: the browser's
+  // own text selection is a default action, so preventing it would break the
+  // thing the reviewer is here to do. Stopping propagation is enough to keep
+  // a page that routes on mousedown from navigating out from under them.
+  private onMouseButton = (event: MouseEvent): void => {
+    if (!this.active) return;
+    if (this.eventCrossesOverlay(event)) return;
+    event.stopPropagation();
   };
 
   private onClick = (event: MouseEvent): void => {
     if (!this.active) return;
     if (this.eventCrossesOverlay(event)) return;
-    if (this.composing) return;
-    const pick = pickAtPoint(event.clientX, event.clientY, this.host);
-    if (!pick) return;
+
+    // While annotating, the page is inert: a click is always a pick, never a
+    // navigation. A link is a perfectly reasonable thing to want to comment
+    // on, and letting it navigate takes the page away — along with any
+    // half-written comment. This runs before every early return below, so
+    // there is no path on which a click reaches the page.
     event.preventDefault();
     event.stopPropagation();
+
+    // Composer already open: swallow the click rather than discarding what
+    // has been typed. Escape and Cancel are the ways out.
+    if (this.composing) return;
+
+    // A live text selection is a more specific statement of intent than
+    // whatever element is under the cursor, so it wins. Snapshot the Range
+    // now: focusing the composer's textarea collapses the document
+    // selection, and from here on we paint our own highlight from this copy.
+    const range = pageSelectionRange();
+    const container = range ? containerElementOf(range) : null;
+    if (range && container) {
+      const selector = buildSelector(container, range);
+      if (selector.textRange) {
+        this.composing = { selector, element: container, range };
+        this.openComposer(boundsOf(range), range);
+        return;
+      }
+    }
+
+    const pick = pickAtPoint(event.clientX, event.clientY, this.host);
+    if (!pick) return;
     const selector = buildSelector(pick.element);
-    this.composing = { selector, element: pick.element };
-    this.openComposer(pick.rect);
+    this.composing = { selector, element: pick.element, range: null };
+    this.openComposer(pick.rect, null);
   };
 
   private onKeyDown = (event: KeyboardEvent): void => {
@@ -297,15 +417,24 @@ class AnnotateOverlay {
     requestAnimationFrame(() => {
       this.rafScheduled = false;
       this.repositionPins();
-      if (this.hovered) this.drawOutline(this.hovered);
+      if (this.composing?.range) {
+        this.syncHighlight(
+          this.pendingHighlight,
+          rectsOf(this.composing.range),
+          'range-highlight pending'
+        );
+      }
+      if (this.hovered) {
+        this.drawOutline(this.hovered.element, describeElement(this.hovered.element));
+      }
     });
   };
 
   // ---- outline ----
 
-  private drawOutline(pick: PickResult): void {
+  private drawOutline(target: AnchorTarget, label: string): void {
     if (!this.outlineEl || !this.outlineLabelEl) return;
-    const rect = pick.element.getBoundingClientRect();
+    const rect = boundsOf(target);
     if (rect.width === 0 && rect.height === 0) {
       this.hideOutline();
       return;
@@ -317,7 +446,7 @@ class AnnotateOverlay {
       height: `${rect.height}px`,
     });
     this.outlineEl.classList.add('visible');
-    this.outlineLabelEl.textContent = describeElement(pick.element);
+    this.outlineLabelEl.textContent = label;
   }
 
   private hideOutline(): void {
@@ -327,14 +456,26 @@ class AnnotateOverlay {
 
   // ---- composer ----
 
-  private openComposer(rect: DOMRect): void {
+  private openComposer(rect: DOMRect, range: Range | null): void {
     this.closeComposer();
     if (!this.root) return;
     const node = document.createElement('div');
     node.className = 'composer';
 
+    // The document selection is about to be collapsed by the textarea taking
+    // focus, so paint our own copy of it while the reviewer types.
+    if (range) {
+      this.syncHighlight(
+        this.pendingHighlight,
+        rectsOf(range),
+        'range-highlight pending'
+      );
+    }
+
     const textarea = document.createElement('textarea');
-    textarea.placeholder = 'Leave a note for this element…';
+    textarea.placeholder = range
+      ? 'Leave a note on this text…'
+      : 'Leave a note for this element…';
     textarea.rows = 3;
 
     const actions = document.createElement('div');
@@ -394,7 +535,14 @@ class AnnotateOverlay {
     if (this.composerEl) {
       this.composerEl.remove();
       this.composerEl = null;
+      // Drop the browser selection along with the composer. The overlay
+      // paints its own highlight from the snapshotted Range from here on, so
+      // leaving the live selection up double-tints the words — and worse, a
+      // later click elsewhere would read it as fresh intent and re-annotate
+      // the same text instead of what was actually clicked.
+      window.getSelection()?.removeAllRanges();
     }
+    this.syncHighlight(this.pendingHighlight, []);
   }
 
   // ---- pins ----
@@ -405,11 +553,35 @@ class AnnotateOverlay {
     const annotations = loadAnnotations(this.draftId);
     annotations.forEach((annotation, index) => {
       const result = resolveSelector(annotation.selector);
+      const textRange = annotation.selector.textRange;
+
+      // A text annotation whose container resolves but whose quote is gone
+      // is stale, not "close enough": silently widening a note about six
+      // words into a note about the whole paragraph changes what it says.
+      const range =
+        textRange && result.element
+          ? resolveTextRange(result.element, textRange)
+          : null;
+      const element = textRange && !range ? null : result.element;
+      const stale = !element;
+
       const pinNode = document.createElement('button');
       pinNode.type = 'button';
       pinNode.className = 'pin';
       pinNode.textContent = String(index + 1);
       pinNode.title = annotation.comment.slice(0, 200);
+      if (stale) pinNode.classList.add('stale');
+
+      const pin: PinView = {
+        annotation,
+        element,
+        range,
+        pinNode,
+        highlightNodes: [],
+        number: index + 1,
+        stale,
+      };
+
       pinNode.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -418,35 +590,65 @@ class AnnotateOverlay {
         this.renderPanel();
         this.scrollEntryIntoView(annotation.id);
       });
-      const targetEl = result.element;
-      if (targetEl) {
+
+      if (element) {
         pinNode.addEventListener('pointerenter', () => {
-          this.drawOutline({
-            element: targetEl,
-            rect: targetEl.getBoundingClientRect(),
-          });
+          // A text annotation already shows exactly which words it covers;
+          // deepening its tint reads better than boxing the line runs.
+          if (pin.range) {
+            for (const node of pin.highlightNodes) {
+              node.classList.add('hovered');
+            }
+            return;
+          }
+          this.drawOutline(element, describeElement(element));
         });
         pinNode.addEventListener('pointerleave', () => {
+          for (const node of pin.highlightNodes) {
+            node.classList.remove('hovered');
+          }
           this.hideOutline();
         });
       }
-      const stale = !result.element;
-      if (stale) pinNode.classList.add('stale');
+
       this.pinLayer!.appendChild(pinNode);
-      this.pins.push({
-        annotation,
-        element: result.element,
-        pinNode,
-        number: index + 1,
-        stale,
-      });
+      this.pins.push(pin);
     });
     this.repositionPins();
   }
 
   private clearPins(): void {
-    for (const pin of this.pins) pin.pinNode.remove();
+    for (const pin of this.pins) {
+      pin.pinNode.remove();
+      for (const node of pin.highlightNodes) node.remove();
+    }
     this.pins = [];
+  }
+
+  /** Reconcile a list of tint nodes against a list of rects, reusing what's
+   * already mounted. Called every animation frame during a scroll, so it
+   * mutates in place rather than rebuilding the nodes. */
+  private syncHighlight(
+    nodes: HTMLElement[],
+    rects: DOMRect[],
+    className = 'range-highlight'
+  ): void {
+    if (!this.highlightLayer) return;
+    while (nodes.length > rects.length) nodes.pop()?.remove();
+    while (nodes.length < rects.length) {
+      const node = document.createElement('div');
+      node.className = className;
+      this.highlightLayer.appendChild(node);
+      nodes.push(node);
+    }
+    rects.forEach((rect, i) => {
+      const node = nodes[i];
+      if (!node) return;
+      node.style.left = `${rect.left}px`;
+      node.style.top = `${rect.top}px`;
+      node.style.width = `${rect.width}px`;
+      node.style.height = `${rect.height}px`;
+    });
   }
 
   private repositionPins(): void {
@@ -474,10 +676,18 @@ class AnnotateOverlay {
     for (const pin of this.pins) {
       if (!pin.element) {
         pin.pinNode.style.display = 'none';
+        this.syncHighlight(pin.highlightNodes, []);
         continue;
       }
-      const rect = pin.element.getBoundingClientRect();
-      if (rect.width === 0 && rect.height === 0) {
+
+      // A text annotation gets one rect per line box, so a quote that wraps
+      // tints each line instead of one box swallowing the margins. The pin
+      // anchors to the LAST of them — it sits just past the end of the
+      // quoted words rather than off the paragraph's corner.
+      const rects = rectsOf(pin.range ?? pin.element);
+      this.syncHighlight(pin.highlightNodes, pin.range ? rects : []);
+      const rect = pin.range ? rects[rects.length - 1] : rects[0];
+      if (!rect || (rect.width === 0 && rect.height === 0)) {
         pin.pinNode.style.display = 'none';
         continue;
       }
@@ -535,6 +745,22 @@ class AnnotateOverlay {
     title.textContent = 'Annotations';
     head.appendChild(title);
 
+    const actions = document.createElement('div');
+    actions.className = 'panel-head-actions';
+
+    const exportBtn = document.createElement('button');
+    exportBtn.type = 'button';
+    exportBtn.className = 'btn ghost';
+    exportBtn.textContent = 'Export';
+    exportBtn.title =
+      'Copy every annotation on this draft as markdown, ready to paste to an agent';
+    exportBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.exportMarkdown(exportBtn);
+    });
+    actions.appendChild(exportBtn);
+
     const close = document.createElement('button');
     close.type = 'button';
     close.className = 'btn ghost';
@@ -544,7 +770,8 @@ class AnnotateOverlay {
       e.stopPropagation();
       this.deactivate();
     });
-    head.appendChild(close);
+    actions.appendChild(close);
+    head.appendChild(actions);
 
     const tabs = document.createElement('div');
     tabs.className = 'panel-tabs';
@@ -736,9 +963,9 @@ class AnnotateOverlay {
             (p) => p.annotation.id === annotation.id
           );
           if (!pin?.element) return;
-          const target = pin.element;
-          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          setTimeout(() => this.flashElement(target), 220);
+          const target: AnchorTarget = pin.range ?? pin.element;
+          this.scrollTargetIntoView(target);
+          setTimeout(() => this.flash(target), 220);
           return;
         }
         // Navigate to the other page with reveal intent. The destination
@@ -790,6 +1017,50 @@ class AnnotateOverlay {
     entry?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
+  // ---- export ----
+
+  // Render every annotation on every page of this draft as one markdown
+  // document and put it on the clipboard. Falls back to a file download:
+  // the async clipboard API needs a secure context, and a preview served
+  // over plain http on a LAN address isn't one.
+  private exportMarkdown(button: HTMLElement): void {
+    const currentUrl = currentPageUrl();
+    const byUrl = loadAnnotationsByUrl(this.draftScope, this.draftId);
+    const pages: ExportPage[] = Array.from(byUrl.entries())
+      .sort(([a], [b]) => {
+        if (a === currentUrl) return -1;
+        if (b === currentUrl) return 1;
+        return a.localeCompare(b);
+      })
+      .map(([url, annotations]) => ({ url, annotations }));
+
+    const label = button.textContent ?? 'Export';
+    const flash = (message: string): void => {
+      button.textContent = message;
+      window.setTimeout(() => {
+        button.textContent = label;
+      }, 1600);
+    };
+
+    if (!pages.some((page) => page.annotations.length)) {
+      flash('Nothing yet');
+      return;
+    }
+
+    const markdown = annotationsToMarkdown(pages, {
+      draftId: this.draftId,
+      exportedAt: new Date().toISOString(),
+    });
+
+    void copyText(markdown).then(
+      () => flash('Copied'),
+      () => {
+        downloadText(markdown, exportFilename(this.draftId));
+        flash('Downloaded');
+      }
+    );
+  }
+
   // ---- toggle button ----
 
   private renderToggle(): void {
@@ -821,30 +1092,54 @@ class AnnotateOverlay {
   // eye after a Reveal scroll. Repositions every animation frame for the
   // flash duration so user scrolling during the flash doesn't desync the
   // overlay from its target.
-  private flashElement(element: Element): void {
+  private flash(target: AnchorTarget): void {
     if (!this.root) return;
-    const initial = element.getBoundingClientRect();
-    if (initial.width === 0 && initial.height === 0) return;
+    const initial = rectsOf(target);
+    if (!initial.length) return;
 
-    const flash = document.createElement('div');
-    flash.className = 'flash';
-    this.root.appendChild(flash);
+    const nodes = initial.map(() => {
+      const node = document.createElement('div');
+      node.className = 'flash';
+      this.root!.appendChild(node);
+      return node;
+    });
 
     const FLASH_MS = 1100;
     const start = performance.now();
     const tick = (): void => {
-      const r = element.getBoundingClientRect();
-      flash.style.left = `${r.left}px`;
-      flash.style.top = `${r.top}px`;
-      flash.style.width = `${r.width}px`;
-      flash.style.height = `${r.height}px`;
+      const rects = rectsOf(target);
+      nodes.forEach((node, i) => {
+        const r = rects[i];
+        if (!r) {
+          node.style.display = 'none';
+          return;
+        }
+        node.style.display = '';
+        node.style.left = `${r.left}px`;
+        node.style.top = `${r.top}px`;
+        node.style.width = `${r.width}px`;
+        node.style.height = `${r.height}px`;
+      });
       if (performance.now() - start < FLASH_MS) {
         requestAnimationFrame(tick);
       } else {
-        flash.remove();
+        for (const node of nodes) node.remove();
       }
     };
     requestAnimationFrame(tick);
+  }
+
+  /** Bring an annotation's target to the middle of the viewport. A Range has
+   * no scrollIntoView of its own, so scroll to its measured box instead. */
+  private scrollTargetIntoView(target: AnchorTarget): void {
+    if (target instanceof Range) {
+      const rect = boundsOf(target);
+      const top =
+        window.scrollY + rect.top - (window.innerHeight - rect.height) / 2;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      return;
+    }
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   private isInsideOverlay(target: EventTarget | null): boolean {
@@ -881,6 +1176,63 @@ class AnnotateOverlay {
   }
 }
 
+/** The reviewer's current page selection, or null when there isn't one worth
+ * annotating. Selections inside a shadow tree — ours, or a draft's own web
+ * components — are skipped, matching the element picker, which also can't see
+ * past a shadow boundary. */
+function pageSelectionRange(): Range | null {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+    return null;
+  }
+  const range = selection.getRangeAt(0);
+  if (!range || range.collapsed) return null;
+  if (!range.toString().trim()) return null;
+  if (range.commonAncestorContainer.getRootNode() !== document) return null;
+  return range.cloneRange();
+}
+
+/** Boxes to paint for a target. An element has one; a Range has one per line
+ * box it wraps across. jsdom implements neither Range method, so both are
+ * guarded — the overlay has to survive being mounted in a test environment. */
+function rectsOf(target: AnchorTarget): DOMRect[] {
+  if (target instanceof Range) {
+    if (typeof target.getClientRects !== 'function') return [];
+    return Array.from(target.getClientRects());
+  }
+  return [target.getBoundingClientRect()];
+}
+
+/** The single box enclosing a target, for outlines and scroll math. */
+function boundsOf(target: AnchorTarget): DOMRect {
+  if (target instanceof Range && typeof target.getBoundingClientRect !== 'function') {
+    return new DOMRect(0, 0, 0, 0);
+  }
+  return target.getBoundingClientRect();
+}
+
+async function copyText(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  throw new Error('clipboard unavailable');
+}
+
+function downloadText(text: string, filename: string): void {
+  const url = URL.createObjectURL(
+    new Blob([text], { type: 'text/markdown;charset=utf-8' })
+  );
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  // Revoke on the next turn so the navigation has already started.
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 function describeElement(element: Element): string {
   const tag = element.tagName.toLowerCase();
   const id = element.id ? `#${element.id}` : '';
@@ -900,31 +1252,6 @@ function formatTabLabel(url: string, currentUrl: string): string {
   } catch {
     return url;
   }
-}
-
-function describeAnchor(bundle: SelectorBundle): string {
-  const tag = bundle.tagName;
-  if (bundle.annotateId) return `${tag} · #${bundle.annotateId}`;
-  if (bundle.headingAnchor) {
-    return `${tag} · under "${bundle.headingAnchor.text}"`;
-  }
-  if (bundle.elementId) return `${tag}#${bundle.elementId}`;
-  return `${tag} · ${bundle.preview}`;
-}
-
-function describeSelector(bundle: SelectorBundle, stale: boolean): string {
-  const lines: string[] = [];
-  if (stale) lines.push('STALE — selector did not resolve on this page');
-  lines.push(`Selector: ${bundle.cssPath || '(none)'}`);
-  if (bundle.annotateId) lines.push(`data-annotate-id: ${bundle.annotateId}`);
-  if (bundle.elementId) lines.push(`#${bundle.elementId}`);
-  if (bundle.headingAnchor) {
-    lines.push(
-      `Near heading "${bundle.headingAnchor.text}" (offset +${bundle.headingAnchor.offset})`
-    );
-  }
-  if (bundle.preview) lines.push(`Preview: ${bundle.preview}`);
-  return lines.join('\n');
 }
 
 function positionFloating(node: HTMLElement, rect: DOMRect): void {
@@ -1028,8 +1355,10 @@ class DesignDraftsAnnotations extends HTMLElement {
 
     if (this.mode === 'integrated') {
       const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
+      const sheet = new CSSStyleSheet();
+      sheet.replaceSync(TRIGGER_STYLES);
+      shadow.adoptedStyleSheets = [sheet];
       shadow.innerHTML = `
-        <style>${TRIGGER_STYLES}</style>
         <button class="trigger" type="button">
           <span class="dot" aria-hidden="true"></span>
           <span>Annotate</span>
