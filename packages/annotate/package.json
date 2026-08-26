@@ -37,8 +37,8 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsdown",
-    "typecheck": "tsc --noEmit",
+    "build": "tsdown && tsx tools/build-bookmarklet.ts",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tools/tsconfig.json",
     "test": "vitest run"
   },
   "devDependencies": {
