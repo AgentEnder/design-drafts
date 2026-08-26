@@ -13,7 +13,7 @@ import {
 } from 'node:fs';
 import { createServer, type Server, type ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
-import { extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { extname, isAbsolute, join, posix, relative, resolve, sep } from 'node:path';
 
 import { resolveDraftDir } from './draft-dir';
 import { CliError } from './errors';
@@ -21,12 +21,14 @@ import {
   buildSearchIndex,
   collectMarkdownPages,
   isMarkdownDraft,
+  type ListingEntry,
+  renderListingPage,
   renderMarkdownPageAt,
   renderMarkdownSite,
   type RenderMarkdownSiteOptions,
 } from '@design-drafts/markdown-site';
 import { readMarkdownIndexChoice, resolveMarkdownIndex } from './markdown-index';
-import { resolveDraftId } from './site-config';
+import { readManifestName, resolveDraftId } from './site-config';
 
 const DEFAULT_PORT = 4321;
 // When scanning for a free port (no explicit --port), give up after this many
@@ -135,13 +137,8 @@ export function collectHtmlPages(dir: string): string[] {
   return pages.sort();
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
+/** Header shown on a generated listing when the draft has no name to use. */
+const UNNAMED_DRAFT_TITLE = 'Draft preview';
 
 export interface DirectoryIndexOptions {
   /**
@@ -161,73 +158,80 @@ export interface DirectoryIndexOptions {
    * markdown index writes (see `MarkdownPage.aliasPaths`), so one document
    * isn't listed twice. */
   exclude?: readonly string[];
+  /** The draft's human-readable name, for the listing's header. */
+  siteName?: string;
+  /** Declared on the page so annotations left on the listing belong to this
+   * draft, exactly as they do on a rendered markdown page. */
+  draftId?: string;
 }
 
 /**
- * Renders a fallback index page that links to every `.html` page in the draft,
- * shown when the requested directory has no index.html of its own.
+ * The pages a generated listing should show, as root-relative POSIX paths
+ * paired with what to call them.
+ *
+ * The paths come from the html on disk, falling back to what the draft's
+ * markdown *will* render to when nothing has been rendered yet (the preview
+ * server's case — it renders on the fly and writes nothing). Titles always come
+ * from the markdown, so a listing built after a render still reads as
+ * "Deploying" rather than "deploying.html".
+ */
+function listingEntries(
+  draftDir: string,
+  indexSource: string | undefined,
+  exclude: readonly string[]
+): ListingEntry[] {
+  // Safe on a hand-written html draft too: an unrendered .md contributes a
+  // title for an output path that is not in `paths`, which no row looks up.
+  const titles = new Map(
+    collectMarkdownPages(draftDir, { indexSource }).map((page) => [
+      page.outputPath,
+      page.title,
+    ])
+  );
+  const html = collectHtmlPages(draftDir);
+  const paths = html.length > 0 ? html : [...titles.keys()];
+  return paths
+    .filter((path) => !exclude.includes(path))
+    .map((path) => ({ path, label: titles.get(path) ?? posix.basename(path) }));
+}
+
+/**
+ * Renders a fallback index page that links to every page in the draft, shown
+ * when the requested directory has no index.html of its own. It wears the same
+ * chrome as a rendered markdown page and lays the pages out as the directory
+ * tree the author wrote, rather than one flat list of paths.
  */
 export function renderDirectoryIndex(
   draftDir: string,
   options: DirectoryIndexOptions = {}
 ): string {
   const { rootAbsoluteLinks = true, indexSource, exclude = [] } = options;
-  let pages = collectHtmlPages(draftDir);
-  if (pages.length === 0 && isMarkdownDraft(draftDir)) {
-    // A markdown draft has no .html on disk yet, but every .md renders to a
-    // page — list those output paths so the fallback index isn't empty.
-    pages = collectMarkdownPages(draftDir, { indexSource }).map(
-      (page) => page.outputPath
-    );
-  }
-  pages = pages.filter((page) => !exclude.includes(page));
-  const items = pages.length
-    ? pages
-        .map((page) => {
-          const href = rootAbsoluteLinks ? `/${page}` : page;
-          return `        <li><a href="${href}">${escapeHtml(page)}</a></li>`;
-        })
-        .join('\n')
-    : '        <li class="empty">No pages found in this draft yet.</li>';
-
-  return `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Draft pages</title>
-    <style>
-      body { font: 16px/1.5 system-ui, sans-serif; margin: 3rem auto; max-width: 40rem; padding: 0 1rem; }
-      h1 { font-size: 1.25rem; }
-      ul { list-style: none; padding: 0; }
-      li { margin: 0.25rem 0; }
-      a { color: #2563eb; text-decoration: none; }
-      a:hover { text-decoration: underline; }
-      .empty { color: #6b7280; }
-    </style>
-  </head>
-  <body>
-    <h1>Draft pages</h1>
-    <p>No <code>index.html</code> here — listing the pages in this draft:</p>
-    <ul>
-${items}
-    </ul>
-  </body>
-</html>
-`;
+  return renderListingPage({
+    siteTitle: options.siteName ?? UNNAMED_DRAFT_TITLE,
+    // The brand link points back at this listing — it IS the draft's index.
+    indexHref: rootAbsoluteLinks ? '/' : 'index.html',
+    hrefPrefix: rootAbsoluteLinks ? '/' : '',
+    draftId: options.draftId,
+    entries: listingEntries(draftDir, indexSource, exclude),
+  });
 }
 
 /**
  * Bakes a generated page-listing index onto disk at `dir/index.html` when the
  * directory has none of its own. The preview server synthesises this listing
  * per request, but gh-pages serves static files only — a draft directory with
- * no `index.html` 404s there — so `push` calls this to persist the listing into
- * the branch content. Links are relative so they resolve under the `/<site>/`
- * base path the draft is deployed to. No-op when an index already exists.
+ * no `index.html` 404s there — so `push` and `build` call this to persist the
+ * listing into the output. Links are relative so they resolve under the
+ * `/<site>/` base path the draft is deployed to. No-op when an index already
+ * exists.
  */
 export function ensureDraftIndex(
   dir: string,
-  options: { exclude?: readonly string[] } = {}
+  options: {
+    exclude?: readonly string[];
+    siteName?: string;
+    draftId?: string;
+  } = {}
 ): void {
   const indexPath = join(dir, 'index.html');
   if (existsSync(indexPath)) {
@@ -238,6 +242,8 @@ export function ensureDraftIndex(
     renderDirectoryIndex(dir, {
       rootAbsoluteLinks: false,
       exclude: options.exclude,
+      siteName: options.siteName,
+      draftId: options.draftId,
     })
   );
 }
@@ -388,22 +394,30 @@ export function createPreviewServer(
   // render paths call this, so an asset request pays nothing for it, and a page
   // render already re-reads and re-renders its own source next to which one
   // small JSON parse is noise.
-  const renderOptions = (): RenderMarkdownSiteOptions => {
+  // When only a prompt could settle the index we keep the answer `preview`
+  // resolved at startup — a request must never open an interactive prompt.
+  const currentIndexSource = (): string | undefined => {
     const indexChoice = readMarkdownIndexChoice(draftDir, manifestPath);
-    return {
-      // The draft id a push would bake, which is what keeps one draft's
-      // annotations out of the next draft served from this same localhost URL.
-      draftId: resolveDraftId(manifestPath),
-      // When only a prompt could settle the index we keep the answer `preview`
-      // resolved at startup — a request must never open an interactive prompt.
-      indexSource: indexChoice.resolved
-        ? indexChoice.indexSource
-        : options.indexSource,
-      // On-the-fly markdown pages must match what the search bundle was built
-      // from, so they get the same wiring whenever search is configured.
-      ...(search ? { search: { basePath: '/' } } : {}),
-    };
+    return indexChoice.resolved ? indexChoice.indexSource : options.indexSource;
   };
+
+  const renderOptions = (): RenderMarkdownSiteOptions => ({
+    // The draft id a push would bake, which is what keeps one draft's
+    // annotations out of the next draft served from this same localhost URL.
+    draftId: resolveDraftId(manifestPath),
+    indexSource: currentIndexSource(),
+    // On-the-fly markdown pages must match what the search bundle was built
+    // from, so they get the same wiring whenever search is configured.
+    ...(search ? { search: { basePath: '/' } } : {}),
+  });
+
+  // The generated listing is a page of this draft too: same name in the header,
+  // same draft id, so annotations left on it file where the other pages' do.
+  const listingOptions = (): DirectoryIndexOptions => ({
+    siteName: readManifestName(manifestPath),
+    draftId: resolveDraftId(manifestPath),
+    indexSource: currentIndexSource(),
+  });
 
   // Open reload streams. A response drops out the moment its socket closes, so
   // a closed tab or a navigated-away page cannot accumulate here.
@@ -524,7 +538,7 @@ export function createPreviewServer(
             return;
           }
           // Otherwise serve a generated listing of the draft's pages.
-          sendHtml(res, renderDirectoryIndex(draftDir));
+          sendHtml(res, renderDirectoryIndex(draftDir, listingOptions()));
           return;
         }
         filePath = indexPath;
@@ -555,7 +569,7 @@ export function createPreviewServer(
         // pages link to it (the brand link) — so preview answers it with the
         // same generated listing rather than a 404.
         if (rel === 'index.html') {
-          sendHtml(res, renderDirectoryIndex(draftDir));
+          sendHtml(res, renderDirectoryIndex(draftDir, listingOptions()));
           return;
         }
       }

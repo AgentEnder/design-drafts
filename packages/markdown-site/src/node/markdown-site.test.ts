@@ -637,6 +637,31 @@ describe('renderMarkdownSite', () => {
     expect(index).not.toContain('<nav');
   });
 
+  it('groups the nav by directory, one collapsible folder per level', () => {
+    write('README.md', '# Home');
+    write('guides/setup.md', '# Setup');
+    write('reference/advanced/tuning.md', '# Tuning');
+    renderMarkdownSite(dir);
+
+    const index = readFileSync(join(dir, 'index.html'), 'utf-8');
+    expect(index).toContain('<summary>Guides</summary>');
+    expect(index).toContain('<summary>Reference</summary>');
+    expect(index).toContain('<summary>Advanced</summary>');
+  });
+
+  it('opens only the folders holding the page being rendered', () => {
+    write('README.md', '# Home');
+    write('guides/setup.md', '# Setup');
+    write('reference/cli.md', '# CLI');
+    renderMarkdownSite(dir);
+
+    // `<details open>` is the whole mechanism — no script runs to expand the
+    // current branch, so a draft opened straight off disk behaves the same.
+    const nested = readFileSync(join(dir, 'guides/setup.html'), 'utf-8');
+    expect(nested).toContain('<details open><summary>Guides</summary>');
+    expect(nested).toContain('<details><summary>Reference</summary>');
+  });
+
   it('includes the toolbar and annotate overlay scripts', () => {
     write('README.md', '# Docs');
     renderMarkdownSite(dir);

@@ -1,20 +1,10 @@
-import { DRAFT_ID_META_NAME } from '@design-drafts/conventions/draft-id';
 import { render } from 'preact-render-to-string';
 
-// Built client chrome, inlined into every page so rendered drafts stay
-// self-contained. theme-restore is raw source (not part of the bundle): it
-// must run in <head>, before first paint, to avoid a theme flash.
-import clientCss from '../../dist/client/page.css?raw';
-import clientJs from '../../dist/client/page.js?raw';
-import themeRestoreJs from '../client/theme-restore.js?raw';
+import { PageTreeList } from './nav-tree';
+import type { PageTreeNode } from './page-tree';
+import { Shell } from './shell';
 
 import type { HeadingEntry } from './renderer';
-
-export interface NavItem {
-  href: string;
-  label: string;
-  current: boolean;
-}
 
 export interface PageSearch {
   /** Relative path from this page's directory back to the draft root. */
@@ -33,7 +23,9 @@ export interface PageOptions {
   /** Relative href of the page's `.md` source, which ships alongside the
    * rendered html (both in a push and in preview) — the "view raw" link. */
   rawHref: string;
-  nav: readonly NavItem[] | null;
+  /** Every page in the draft, grouped by directory (see `buildPageTree`), or
+   * null for a single-page draft that has nothing to navigate between. */
+  nav: readonly PageTreeNode[] | null;
   toc: readonly HeadingEntry[] | null;
   search: PageSearch | null;
   draftId: string | undefined;
@@ -47,18 +39,10 @@ export interface PageOptions {
   canonicalHref?: string;
 }
 
-function Nav({ items }: { items: readonly NavItem[] }) {
+function Nav({ nodes }: { nodes: readonly PageTreeNode[] }) {
   return (
-    <nav class="pages-nav" aria-label="Pages">
-      <ul>
-        {items.map((item) => (
-          <li>
-            <a href={item.href} aria-current={item.current ? 'page' : undefined}>
-              {item.label}
-            </a>
-          </li>
-        ))}
-      </ul>
+    <nav class="pages-nav page-tree" aria-label="Pages">
+      <PageTreeList nodes={nodes} />
     </nav>
   );
 }
@@ -80,6 +64,81 @@ function Toc({ entries }: { entries: readonly HeadingEntry[] }) {
   );
 }
 
+/* Split button: copy is the default action; the caret reveals the secondary
+   one. The checkmark is inline svg — it draws itself in on a successful copy,
+   no icon font or request involved. */
+function PageActions(opts: PageOptions) {
+  return (
+    <>
+      {opts.search ? (
+        <button type="button" class="search-trigger">
+          <span>Search</span>
+          <kbd>⌘K</kbd>
+        </button>
+      ) : null}
+      <div class="md-actions">
+        <button
+          type="button"
+          class="copy-markdown"
+          aria-label="Copy this page's markdown source"
+        >
+          <svg
+            class="copy-check"
+            viewBox="0 0 16 16"
+            width="14"
+            height="14"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              d="M2.5 8.5l3.5 3.5 7.5-8"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <span class="copy-markdown-label">Copy markdown</span>
+        </button>
+        <button
+          type="button"
+          class="md-actions-toggle"
+          aria-label="More page actions"
+          aria-haspopup="true"
+          aria-expanded="false"
+        >
+          <svg
+            viewBox="0 0 10 6"
+            width="10"
+            height="6"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              d="M1 1l4 4 4-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <div class="md-actions-menu" hidden>
+          <a
+            class="view-raw"
+            href={opts.rawHref}
+            aria-label="View this page's raw markdown source"
+          >
+            View raw
+          </a>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function Page(opts: PageOptions) {
   const pageClass = [
     'page',
@@ -89,159 +148,55 @@ function Page(opts: PageOptions) {
     .filter(Boolean)
     .join(' ');
   return (
-    <html lang="en">
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        {opts.draftId ? (
-          <meta name={DRAFT_ID_META_NAME} content={opts.draftId} />
-        ) : null}
-        {opts.canonicalHref ? (
-          <link rel="canonical" href={opts.canonicalHref} />
-        ) : null}
-        <title>{opts.title}</title>
-        <script dangerouslySetInnerHTML={{ __html: themeRestoreJs }} />
-        <style dangerouslySetInnerHTML={{ __html: clientCss }} />
-      </head>
-      <body>
-        <header class="site-header">
-          <a class="site-title" href={opts.indexHref}>
-            {opts.siteTitle}
-          </a>
-          <div class="header-actions">
-            {opts.search ? (
-              <button type="button" class="search-trigger">
-                <span>Search</span>
-                <kbd>⌘K</kbd>
-              </button>
-            ) : null}
-            {/* Split button: copy is the default action; the caret reveals the
-                secondary one. The checkmark is inline svg — it draws itself in
-                on a successful copy, no icon font or request involved. */}
-            <div class="md-actions">
-              <button
-                type="button"
-                class="copy-markdown"
-                aria-label="Copy this page's markdown source"
-              >
-                <svg
-                  class="copy-check"
-                  viewBox="0 0 16 16"
-                  width="14"
-                  height="14"
-                  aria-hidden="true"
-                  focusable="false"
-                >
-                  <path
-                    d="M2.5 8.5l3.5 3.5 7.5-8"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-                <span class="copy-markdown-label">Copy markdown</span>
-              </button>
-              <button
-                type="button"
-                class="md-actions-toggle"
-                aria-label="More page actions"
-                aria-haspopup="true"
-                aria-expanded="false"
-              >
-                <svg
-                  viewBox="0 0 10 6"
-                  width="10"
-                  height="6"
-                  aria-hidden="true"
-                  focusable="false"
-                >
-                  <path
-                    d="M1 1l4 4 4-4"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
-              <div class="md-actions-menu" hidden>
-                <a
-                  class="view-raw"
-                  href={opts.rawHref}
-                  aria-label="View this page's raw markdown source"
-                >
-                  View raw
-                </a>
-              </div>
-            </div>
-            <button
-              type="button"
-              class="theme-toggle"
-              aria-label="Toggle color theme"
-            >
-              ◐ Theme
-            </button>
-          </div>
-        </header>
-        <div class={pageClass}>
-          {opts.nav ? <Nav items={opts.nav} /> : null}
-          <main
-            class="markdown-body"
-            data-pagefind-body={
-              opts.search && !opts.canonicalHref ? true : undefined
-            }
-            dangerouslySetInnerHTML={{ __html: opts.bodyHtml }}
-          />
-          {opts.toc ? <Toc entries={opts.toc} /> : null}
-        </div>
-        {opts.search ? (
-          // The search client reads its page-specific config from these data
-          // attributes, keeping the bundled script identical on every page.
-          <dialog
-            class="search-dialog"
-            aria-label="Search this draft"
-            data-ui-script={`${opts.search.rootPrefix}pagefind/pagefind-ui.js`}
-            data-ui-styles={`${opts.search.rootPrefix}pagefind/pagefind-ui.css`}
-            data-base-url={opts.search.basePath}
-          >
-            <div id="dd-search"></div>
-          </dialog>
-        ) : null}
-        {/* Enlarges a clicked content image. Inert until the client wires it,
-            and empty until then — the src is set from the image clicked. */}
-        <dialog class="lightbox" aria-label="Enlarged image">
-          <img class="lightbox-image" alt="" />
-          <p class="lightbox-caption" hidden></p>
+    <Shell
+      title={opts.title}
+      siteTitle={opts.siteTitle}
+      indexHref={opts.indexHref}
+      draftId={opts.draftId}
+      canonicalHref={opts.canonicalHref}
+      actions={<PageActions {...opts} />}
+    >
+      <div class={pageClass}>
+        {opts.nav ? <Nav nodes={opts.nav} /> : null}
+        <main
+          class="markdown-body"
+          data-pagefind-body={
+            opts.search && !opts.canonicalHref ? true : undefined
+          }
+          dangerouslySetInnerHTML={{ __html: opts.bodyHtml }}
+        />
+        {opts.toc ? <Toc entries={opts.toc} /> : null}
+      </div>
+      {opts.search ? (
+        // The search client reads its page-specific config from these data
+        // attributes, keeping the bundled script identical on every page.
+        <dialog
+          class="search-dialog"
+          aria-label="Search this draft"
+          data-ui-script={`${opts.search.rootPrefix}pagefind/pagefind-ui.js`}
+          data-ui-styles={`${opts.search.rootPrefix}pagefind/pagefind-ui.css`}
+          data-base-url={opts.search.basePath}
+        >
+          <div id="dd-search"></div>
         </dialog>
-        {/* The page's markdown source, for the copy button. JSON with every
-            `<` escaped, so no content — not even a literal `</script>` — can
-            terminate the element early. */}
-        <script
-          type="application/json"
-          id="dd-markdown-source"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(opts.markdownSource).replace(
-              /</g,
-              '\\u003C'
-            ),
-          }}
-        />
-        <script dangerouslySetInnerHTML={{ __html: clientJs }} />
-
-        {/* design-drafts overlays: inert until they have something to do. */}
-        <script
-          src="https://unpkg.com/@design-drafts/toolbar@0/dist/toolbar.js"
-          defer
-        />
-        <script
-          src="https://unpkg.com/@design-drafts/annotate@0/dist/annotate.js"
-          defer
-        />
-      </body>
-    </html>
+      ) : null}
+      {/* Enlarges a clicked content image. Inert until the client wires it,
+          and empty until then — the src is set from the image clicked. */}
+      <dialog class="lightbox" aria-label="Enlarged image">
+        <img class="lightbox-image" alt="" />
+        <p class="lightbox-caption" hidden></p>
+      </dialog>
+      {/* The page's markdown source, for the copy button. JSON with every
+          `<` escaped, so no content — not even a literal `</script>` — can
+          terminate the element early. */}
+      <script
+        type="application/json"
+        id="dd-markdown-source"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(opts.markdownSource).replace(/</g, '\\u003C'),
+        }}
+      />
+    </Shell>
   );
 }
 

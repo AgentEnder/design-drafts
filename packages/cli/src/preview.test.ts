@@ -837,6 +837,52 @@ describe('renderDirectoryIndex', () => {
     expect(html).not.toContain('href="/README.html"');
     expect(html).toContain('href="/about.html"');
   });
+
+  it('groups pages into collapsible folders rather than one flat list', () => {
+    mkdirSync(join(dir, 'pages', 'api'), { recursive: true });
+    writeFileSync(join(dir, 'pages', 'api', 'v2.html'), '');
+    const html = renderDirectoryIndex(dir);
+    expect(html).toContain('<summary>Pages</summary>');
+    expect(html).toContain('<summary>Api</summary>');
+    // Nothing is current on a listing, so every folder starts open.
+    expect(html).not.toContain('<details><summary>');
+  });
+
+  it('wears the same chrome as a rendered page', () => {
+    const html = renderDirectoryIndex(dir, {
+      siteName: 'Tinderbox docs',
+      draftId: 'tinderbox-docs',
+    });
+    // The listing is a page of the draft, not a bare file index: it carries the
+    // draft's name, the theme toggle, and the draft id annotations file under.
+    expect(html).toContain('Tinderbox docs');
+    expect(html).toContain('class="theme-toggle"');
+    expect(html).toContain('content="tinderbox-docs"');
+  });
+
+  it('titles markdown pages by their heading, even once they are rendered', () => {
+    // After a render the draft holds both .md and .html, so it no longer reads
+    // as a markdown draft — the titles must still come from the sources.
+    writeFileSync(join(dir, 'deploying.md'), '# How to deploy\n');
+    writeFileSync(join(dir, 'deploying.html'), '');
+    const html = renderDirectoryIndex(dir);
+    expect(html).toContain('>How to deploy<');
+  });
+
+  it('falls back to the file name when there is no title to read', () => {
+    expect(renderDirectoryIndex(dir)).toContain('>about.html<');
+  });
+
+  it('says so when the draft has no pages at all', () => {
+    const empty = mkdtempSync(join(tmpdir(), 'design-drafts-empty-'));
+    try {
+      expect(renderDirectoryIndex(empty)).toContain(
+        'No pages found in this draft yet.'
+      );
+    } finally {
+      rmSync(empty, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('ensureDraftIndex', () => {

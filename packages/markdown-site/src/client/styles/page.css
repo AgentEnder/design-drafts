@@ -265,9 +265,12 @@ body {
   .site-header { padding: 0.75rem 1rem; }
   .copy-markdown { min-width: 0; }
 }
-.pages-nav ul { list-style: none; margin: 0; padding: 0; }
-.pages-nav li { margin: 0.15rem 0; }
-.pages-nav a {
+/* Page trees. The sidebar nav and the generated page listing render the same
+   nested markup (see nav-tree.tsx) — one folder per directory the author
+   wrote — so they share a look and differ only in where they sit. */
+.page-tree ul { list-style: none; margin: 0; padding: 0; }
+.page-tree li { margin: 0.15rem 0; }
+.page-tree a {
   display: block;
   padding: 0.3rem 0.6rem;
   border-radius: 6px;
@@ -275,12 +278,78 @@ body {
   text-decoration: none;
   overflow-wrap: anywhere;
 }
-.pages-nav a:hover { color: var(--fg); background: var(--code-bg); }
-.pages-nav a[aria-current='page'] {
+.page-tree a:hover { color: var(--fg); background: var(--code-bg); }
+.page-tree a[aria-current='page'] {
   color: var(--fg);
   background: var(--code-bg);
   font-weight: 600;
 }
+/* A directory. The summary is the toggle and never a link, so the chevron and
+   the label always mean the same thing. Matches the collapsible-section
+   chevron in the document body above. */
+.page-tree summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  color: var(--fg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.page-tree summary::-webkit-details-marker { display: none; }
+/* The chevron hangs in the summary's own left padding, so a folder label lines
+   up with the page links beneath it instead of being indented past them.
+   Drawn as a clipped box rather than the `▸` glyph the document body uses:
+   a glyph rotates about its line box and drifts off the text, while a square
+   box of known size turns about its own centre. */
+.page-tree summary::before {
+  content: '';
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: -0.5rem;
+  vertical-align: middle;
+  background: var(--muted);
+  clip-path: polygon(15% 0%, 85% 50%, 15% 100%);
+}
+.page-tree details[open] > summary::before { transform: rotate(90deg); }
+.page-tree summary:hover { background: var(--code-bg); }
+.page-tree summary:hover::before { background: var(--fg); }
+/* Tie a folder's pages to the folder they belong to. */
+.page-tree details > ul {
+  margin-left: 0.6rem;
+  padding-left: 0.4rem;
+  border-left: 1px solid var(--border);
+}
+.page-tree .nav-group { margin-top: 0.5rem; }
+@media (prefers-reduced-motion: no-preference) {
+  .page-tree summary::before { transition: transform 0.15s ease; }
+}
+
+/* The generated listing shown for a draft directory with no index.html of its
+   own. It is the page's whole content rather than a sidebar, so the tree gets
+   the document's type scale back. */
+main.listing { max-width: 48rem; min-width: 0; }
+.listing h1 {
+  margin: 0 0 0.6em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.25;
+}
+.listing-note, .listing-empty { color: var(--muted); }
+.listing-note code {
+  background: var(--code-bg);
+  border-radius: 4px;
+  padding: 0.15em 0.35em;
+  font-size: 0.9em;
+}
+.listing-tree { margin-top: 1.5rem; }
+/* Undo the sidebar's compression: this tree is the page. */
+.listing-tree a { padding: 0.35rem 0.6rem; color: var(--link); }
+.listing-tree summary { font-size: 0.8rem; }
+
 main.markdown-body { max-width: 48rem; min-width: 0; }
 
 .markdown-body h1, .markdown-body h2, .markdown-body h3,

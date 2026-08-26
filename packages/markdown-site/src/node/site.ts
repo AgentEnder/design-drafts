@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join, posix } from 'node:path';
 
 import { collectMarkdownPages, isMarkdownDraft, type MarkdownPage } from './draft-scan';
+import { buildPageTree } from './page-tree';
 import { renderDocument } from './renderer';
 import { renderPage } from './page';
 
@@ -46,13 +47,19 @@ function renderSitePage(
   const renderedPath = aliasPath ?? page.outputPath;
   const fromDir = posix.dirname(renderedPath);
   const toRoot = posix.relative(fromDir, '.');
+  // The nav mirrors the folders the author wrote: `outputPath` is what decides
+  // where an entry lands in the tree, while the href is relative to the page
+  // being rendered so it resolves from any depth and under any base path.
   const nav =
     pages.length > 1
-      ? pages.map((other) => ({
-          href: posix.relative(fromDir, other.outputPath),
-          label: other.title,
-          current: other === page,
-        }))
+      ? buildPageTree(
+          pages.map((other) => ({
+            path: other.outputPath,
+            href: posix.relative(fromDir, other.outputPath),
+            label: other.title,
+            current: other === page,
+          }))
+        )
       : null;
   const { html: bodyHtml, headings } = renderDocument(markdown);
   // The h1 is the page title; h4+ is too deep to navigate by. A single entry
