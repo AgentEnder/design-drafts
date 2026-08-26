@@ -29,6 +29,10 @@ export const SHADOW =
 
 export const Z_BASE = 2147483100;
 
+// The overlay's shadow host id. Lives here rather than in index.ts because
+// the text walk in text-range.ts also has to recognise (and skip) it.
+export const HOST_ID = 'design-drafts-annotate-root';
+
 export const STYLES = `
 :host {
   all: initial;
@@ -90,6 +94,26 @@ button:focus-visible {
   35%  { opacity: 0; }
   55%  { opacity: 1; }
   100% { opacity: 0; }
+}
+
+/* Saved text annotations tint the exact words they're about. One node per
+   Range client rect, so a quote wrapping across lines highlights each line
+   box rather than one fat bounding box swallowing the margins. */
+.range-highlight {
+  position: absolute;
+  pointer-events: none;
+  background: ${ACCENT_SOFT};
+  border-bottom: 2px solid ${ACCENT};
+  border-radius: 2px;
+}
+
+/* The selection currently being commented on, before it is saved. */
+.range-highlight.pending {
+  background: rgba(79, 70, 229, 0.22);
+}
+
+.range-highlight.hovered {
+  background: rgba(79, 70, 229, 0.3);
 }
 
 .outline-label {
@@ -267,6 +291,12 @@ textarea.field:focus {
   justify-content: space-between;
   padding: 11px 13px;
   border-bottom: 1px solid ${BORDER_SOFT};
+}
+
+.panel-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .panel-tabs {
