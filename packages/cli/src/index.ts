@@ -15,6 +15,7 @@ import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
 import { cli } from 'cli-forge';
 
 import pkg from '../package.json';
+import { build, renderStagedDraft } from './build';
 import {
   homeJsonProvider,
   persistHomeConfigValue,
@@ -32,18 +33,13 @@ import {
 import { initDraft } from './init/draft';
 import { initHost } from './init/host';
 import { init } from './init/init';
-import {
-  buildSearchIndex,
-  collectMarkdownPages,
-  isMarkdownDraft,
-  renderMarkdownSite,
-} from '@design-drafts/markdown-site';
 import { resolveMarkdownIndex } from './markdown-index';
-import { ensureDraftIndex, preview } from './preview';
+import { preview } from './preview';
 import { refAdd } from './ref-add';
 import { validateSiteName } from './site-name';
 import {
   persistSiteNameToManifest,
+  readManifestName,
   resolveSiteName,
 } from './site-config';
 import { validatePrefix, validateRepo } from './validate';
@@ -321,44 +317,19 @@ async function pushHandler(args: PushArgs): Promise<void> {
       recursive: true,
       filter: (src) => !src.split(sep).includes('.git'),
     });
-    // A draft that is just markdown (no html at all) gets rendered into a
-    // browsable site: one themed, GFM-rendered html page per .md file, with
-    // README.md becoming index.html. Classic html drafts are left untouched.
-    // Search result links need the deployed base path, inferred from the repo.
-    const searchBasePath = pagesBasePath(repo, branchName);
-    // The site-name IS the draft id every page declares, so a page annotated in
-    // preview keeps its annotations once deployed (see resolveDraftId).
-    const draftId = siteName;
-    // Captured before rendering (which makes the dir no longer markdown-only):
-    // the alias copies of index pages, so the baked listing below — used when
-    // the draft has no index of its own — never lists a document twice.
-    const aliasPaths = isMarkdownDraft(tmpDir)
-      ? collectMarkdownPages(tmpDir, { indexSource }).flatMap(
-          (page) => page.aliasPaths
-        )
-      : [];
-    if (
-      renderMarkdownSite(tmpDir, {
-        siteName,
-        draftId,
-        indexSource,
-        search: { basePath: searchBasePath },
-      })
-    ) {
-      console.log('Rendered markdown pages into a browsable site.');
-      if (await buildSearchIndex(tmpDir)) {
-        console.log(`Search enabled (results resolve under ${searchBasePath}).`);
-      } else {
-        // Strip the search wiring so pages never reference a missing bundle.
-        renderMarkdownSite(tmpDir, { siteName, draftId, indexSource });
-      }
-    }
-    // Bake a page listing into drafts that ship no index.html of their own.
-    // The preview server fakes one per request, but gh-pages serves static
-    // files only, so without this the deployed draft root 404s when linked
-    // from the site index. Runs before the workflow embed so the listing never
+    // The site content itself — identical to what `design-drafts build`
+    // produces. Search result links need the deployed base path, inferred from
+    // the repo; the site-name IS the draft id every page declares, so a page
+    // annotated in preview keeps its annotations once deployed.
+    //
+    // Runs before the workflow embed so the generated page listing never
     // includes the `.github/` dir (which the deploy step strips out anyway).
-    ensureDraftIndex(tmpDir, { exclude: aliasPaths });
+    await renderStagedDraft(tmpDir, {
+      siteName,
+      displayName: readManifestName(manifestPath),
+      indexSource,
+      basePath: pagesBasePath(repo, branchName),
+    });
     await embedDeployWorkflow(repo, tmpDir);
     // Create the draft branch as the initial branch in one step — avoids git's
     // "using 'master'" hint and a redundant checkout.
@@ -553,6 +524,48 @@ const app = cli('design-drafts', {
         handler: (a) =>
           runHandler(() =>
             preview({ draft: a.path, port: a.port, open: a.open })
+          ),
+      })
+      .command('build', {
+        description:
+          'Render a draft into a directory of static files — the same content push deploys, without git or GitHub',
+        builder: (b) =>
+          b
+            .positional('path', {
+              type: 'string',
+              default: '.',
+              description: 'Draft directory to build (default: cwd)',
+            })
+            .option('out', {
+              type: 'string',
+              description:
+                'Directory to write the built site into (required; must be outside the draft)',
+            })
+            .option('base', {
+              type: 'string',
+              description:
+                'Absolute path the built site will be served under, for search result links (default: the Pages path for --repo when set, else "/")',
+            })
+            .option('prefix', {
+              type: 'string',
+              description:
+                'Branch prefix, which decides the deploy sub-path derived from --repo (default: "drafts/")',
+            })
+            .option('force', {
+              type: 'boolean',
+              description: 'Replace the contents of a non-empty --out',
+            }),
+        handler: (a) =>
+          runHandler(() =>
+            build({
+              path: a.path,
+              out: a.out,
+              base: a.base,
+              siteName: a['site-name'],
+              repo: a.repo,
+              prefix: a.prefix,
+              force: a.force,
+            })
           ),
       })
       // `push` is the `$0` default, registered LAST: its builder adds the greedy
