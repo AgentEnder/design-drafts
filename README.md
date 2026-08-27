@@ -111,6 +111,20 @@ force-pushes it to `drafts/<site-name>`, and exits. The
 [`Deploy Preview`](.github/workflows/deploy-preview.yml) workflow then publishes
 it to `https://<owner>.github.io/<repo>/<site-name>/`.
 
+A host repo can keep its Pages root for something else and publish drafts under
+a sub-path, by declaring it in the `design-drafts.config.json` on its default
+branch:
+
+```json
+{ "draftsPath": "d" }
+```
+
+This repo does that: the root serves the docs site, drafts land under
+`/design-drafts/d/<site-name>/`, and the index app lists them at
+`/design-drafts/d/`. The CLI fetches that file from the host's main branch to
+print the right URL and to bake the right base path into a draft's search
+links.
+
 The push prints that URL when it finishes — flagged as *not live yet*, because
 it only exists once the deploy workflow has finished building. If the repo
 serves Pages from a custom domain, the printed URL uses that domain's root
@@ -187,16 +201,20 @@ browser.
 
 ### The index site
 
-The deployed root (`/`) is a small Vike/React app
+The drafts root (`/d/`) is a small Vike/React app
 ([`packages/site`](packages/site)) that lists every live `drafts/*` preview so
-reviewers have one place to find them. It is rebuilt on every deploy.
+reviewers have one place to find them. It is rebuilt on every deploy. The Pages
+root above it serves the docs site ([`packages/docs`](packages/docs)).
 
 ---
 
 ## Configuration
 
 `push` resolves each value from, in order: a CLI flag, an env var
-(`DESIGN_DRAFTS_*`), then the global `~/design-drafts.config.json`. The site name
+(`DESIGN_DRAFTS_*`), then the global `~/design-drafts.config.json`. Where the
+host publishes drafts (`draftsPath`) comes instead from the host repo's own
+`design-drafts.config.json`, fetched from its default branch, falling back to
+the home config. The site name
 is the exception — it's derived from the manifest's `name` (slugified), so a
 draft's `design-drafts.config.json` is the only place it lives. Missing required
 values are prompted for; `--repo` and `--prefix` are persisted globally.
@@ -225,6 +243,7 @@ This is an [Nx](https://nx.dev) + pnpm monorepo.
 | [`packages/toolbar`](packages/toolbar)           | The single-file axis switcher injected into every preview.                    |
 | [`packages/annotate`](packages/annotate)         | The single-file inline-annotation overlay.                                    |
 | [`packages/site`](packages/site)                 | The Vike/React index site that lists live previews.                           |
+| [`packages/docs`](packages/docs)                 | The user-facing docs site at the Pages root, rendered by the CLI itself.      |
 | [`examples/`](examples)                          | Worked drafts: a marketing site, a docs portal, an internal dashboard.        |
 | [`docs/`](docs)                                  | Conventions, ADRs, and the anti-pattern catalog.                              |
 
