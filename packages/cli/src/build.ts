@@ -19,6 +19,7 @@ import {
 import { CONFIG_FILENAME, DEFAULT_PREFIX } from './config';
 import { CliError } from './errors';
 import { pagesBasePath } from './github';
+import { resolveDraftsPath } from './remote-config';
 import { resolveMarkdownIndex } from './markdown-index';
 import { collectHtmlPages, ensureDraftIndex } from './preview';
 import {
@@ -142,22 +143,25 @@ interface ResolvedBasePath {
  * Where the built site will be served from, which is the one thing a build
  * cannot infer from the draft: it decides the search result links.
  *
- * An explicit `--base` wins. Failing that, a configured `--repo` reproduces
- * exactly what a push would bake, so `build` and `push` agree by default for
- * anyone who has pushed before. With neither, the site is assumed to be served
- * from a root.
+ * An explicit `--base` wins, and costs nothing. Failing that, a configured
+ * `--repo` reproduces exactly what a push would bake — including the drafts
+ * sub-path that repo declares — so `build` and `push` agree by default for
+ * anyone who has pushed before. That path asks the host over the network;
+ * `--base` is the offline answer. With neither, the site is assumed to be
+ * served from a root.
  */
-function resolveBasePath(
+async function resolveBasePath(
   base: string | undefined,
   repo: string | undefined,
   branchName: string
-): ResolvedBasePath {
+): Promise<ResolvedBasePath> {
   if (base !== undefined) {
     return { basePath: normalizeBasePath(base), reason: '--base' };
   }
   if (repo && validateRepo(repo).ok) {
+    const draftsPath = await resolveDraftsPath(repo);
     return {
-      basePath: pagesBasePath(repo, branchName),
+      basePath: pagesBasePath(repo, branchName, draftsPath),
       reason: `the GitHub Pages path for ${repo} (pass --base to override)`,
     };
   }
@@ -228,7 +232,7 @@ export async function build(options: BuildOptions): Promise<void> {
   }
 
   const branchName = `${options.prefix ?? DEFAULT_PREFIX}${siteName}`;
-  const { basePath, reason } = resolveBasePath(
+  const { basePath, reason } = await resolveBasePath(
     options.base,
     options.repo,
     branchName

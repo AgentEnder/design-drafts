@@ -27,6 +27,7 @@ afterEach(() => {
   rmSync(draft, { recursive: true, force: true });
   rmSync(join(out, '..'), { recursive: true, force: true });
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 function write(relPath: string, content: string): void {
@@ -38,6 +39,20 @@ function write(relPath: string, content: string): void {
 /** A manifest with a name, so nothing in the run reaches for a prompt. */
 function manifest(name = 'Build test draft'): void {
   write('design-drafts.config.json', JSON.stringify({ name }));
+}
+
+/** Stands in for the design-drafts.config.json on the host repo's default
+ * branch, which `--repo` reads to learn where that host publishes drafts.
+ * `null` is a host that declares nothing, which is the common case and a 404. */
+function hostDeclares(config: { draftsPath: string } | null): void {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () =>
+      config
+        ? { ok: true, status: 200, text: async () => JSON.stringify(config) }
+        : { ok: false, status: 404, text: async () => '' }
+    )
+  );
 }
 
 describe('build', () => {
@@ -109,11 +124,27 @@ describe('build', () => {
     manifest('My draft');
     write('README.md', '# Home\n');
     write('notes.md', '# Notes\n');
+    hostDeclares(null);
 
     await build({ path: draft, out, repo: 'my-org/previews' });
 
     expect(readFileSync(join(out, 'index.html'), 'utf-8')).toContain(
       'data-base-url="/previews/my-draft/"'
+    );
+  });
+
+  // A host that keeps its site root for something else publishes drafts under
+  // a sub-path; search links have to resolve there, not one directory up.
+  it('honors the drafts sub-path the host repo declares', async () => {
+    manifest('My draft');
+    write('README.md', '# Home\n');
+    write('notes.md', '# Notes\n');
+    hostDeclares({ draftsPath: 'd' });
+
+    await build({ path: draft, out, repo: 'my-org/previews' });
+
+    expect(readFileSync(join(out, 'index.html'), 'utf-8')).toContain(
+      'data-base-url="/previews/d/my-draft/"'
     );
   });
 

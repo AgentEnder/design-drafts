@@ -42,6 +42,7 @@ import {
   readManifestName,
   resolveSiteName,
 } from './site-config';
+import { resolveDraftsPath } from './remote-config';
 import { validatePrefix, validateRepo } from './validate';
 
 const CLI_VERSION: string = pkg.version;
@@ -302,6 +303,10 @@ async function pushHandler(args: PushArgs): Promise<void> {
   const indexSource = await resolveMarkdownIndex(sourcePath, manifestPath);
 
   const branchName = `${prefix}${siteName}`;
+  // Where this host publishes drafts. Read once and used twice: the base path
+  // baked into the site's search links, and the URL printed at the end. The
+  // page the reviewer opens and the links inside it cannot disagree.
+  const draftsPath = await resolveDraftsPath(repo);
   const tmpDir = mkdtempSync(join(tmpdir(), 'design-drafts-'));
   // Keep the commit message OUTSIDE the working tree so `git add .` can't
   // accidentally stage it. `git commit -F` is the cleanest way to feed a
@@ -328,7 +333,7 @@ async function pushHandler(args: PushArgs): Promise<void> {
       siteName,
       displayName: readManifestName(manifestPath),
       indexSource,
-      basePath: pagesBasePath(repo, branchName),
+      basePath: pagesBasePath(repo, branchName, draftsPath),
     });
     await embedDeployWorkflow(repo, tmpDir);
     // Create the draft branch as the initial branch in one step — avoids git's
@@ -360,6 +365,7 @@ async function pushHandler(args: PushArgs): Promise<void> {
         repo,
         branchName,
         site: lookupPagesSite(repo, sourcePath),
+        draftsPath,
       })
     );
   } finally {
@@ -395,6 +401,11 @@ const app = cli('design-drafts', {
       // Only the home config feeds CLI defaults (repo, prefix). There is no
       // per-project options file: a draft's `design-drafts.config.json` IS the
       // manifest, read explicitly where needed, not merged as CLI options.
+      //
+      // The host repo's copy, on its default branch, is a third place the same
+      // filename is read from (see remote-config.ts). It cannot be a provider
+      // here: fetching it is async, and it needs `repo` — resolved from this
+      // very chain — before it knows what to fetch.
       .config(homeJsonProvider)
       .command('init', {
         description:

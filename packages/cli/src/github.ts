@@ -25,6 +25,19 @@ function previewDir(branchName: string): string {
 }
 
 /**
+ * Where a draft sits relative to the Pages site root: its own directory,
+ * under whatever sub-path the host publishes drafts beneath.
+ *
+ * `draftsPath` comes from the host repo's own config (see remote-config.ts)
+ * and is empty for a host that publishes to the site root,
+ * which is the default and the common case.
+ */
+function draftDir(branchName: string, draftsPath: string): string {
+  const dir = previewDir(branchName);
+  return draftsPath ? `${draftsPath}/${dir}` : dir;
+}
+
+/**
  * Picks a remote URL for a GitHub repo using auth that actually works.
  *
  * `gh config get git_protocol` reflects the transport the user authenticated
@@ -53,10 +66,19 @@ export function githubRemoteUrl(repo: string, cwd: string): string {
  * Custom Pages domains can't be inferred from the repo and are ignored — for a
  * user pages repo the path-only form works under one anyway, and callers that
  * need the real site root ask GitHub for it via `lookupPagesSite`.
+ *
+ * `draftsPath` is the one part no amount of inference reaches: a host that
+ * keeps its site root for something else publishes drafts beneath it and says
+ * so in the config on its default branch (see `resolveDraftsPath`). Empty, the
+ * default, means drafts sit directly at the site root.
  */
-export function pagesBasePath(repo: string, branchName: string): string {
+export function pagesBasePath(
+  repo: string,
+  branchName: string,
+  draftsPath = ''
+): string {
   const [owner, name] = repo.split('/');
-  const dir = previewDir(branchName);
+  const dir = draftDir(branchName, draftsPath);
   const isUserPagesRepo =
     name.toLowerCase() === `${owner.toLowerCase()}.github.io`;
   return isUserPagesRepo ? `/${dir}/` : `/${name}/${dir}/`;
@@ -106,21 +128,26 @@ export function lookupPagesSite(repo: string, cwd: string): PagesSite {
  * Composes the absolute URL a pushed draft will be served from.
  *
  * `siteUrl` is the site root as GitHub reported it (`lookupPagesSite`); the
- * draft's directory sits directly beneath it, whatever domain or path that
- * root turns out to be. Without it we fall back to the default
- * `<owner>.github.io` origin plus `pagesBasePath` — correct unless a custom
- * domain is configured, which callers must say out loud.
+ * draft sits beneath it, whatever domain or path that root turns out to be.
+ * Without it we fall back to the default `<owner>.github.io` origin plus
+ * `pagesBasePath` — correct unless a custom domain is configured, which
+ * callers must say out loud.
+ *
+ * `draftsPath` applies either way: a reported site root accounts for the
+ * domain and the repo segment, but knows nothing of a layout the host chose
+ * for itself.
  */
 export function pagesPreviewUrl(
   repo: string,
   branchName: string,
-  siteUrl?: string
+  opts: { siteUrl?: string; draftsPath?: string } = {}
 ): string {
+  const { siteUrl, draftsPath = '' } = opts;
   if (siteUrl) {
-    return `${siteUrl.replace(/\/+$/, '')}/${previewDir(branchName)}/`;
+    return `${siteUrl.replace(/\/+$/, '')}/${draftDir(branchName, draftsPath)}/`;
   }
   const owner = repo.split('/')[0].toLowerCase();
-  return `https://${owner}.github.io${pagesBasePath(repo, branchName)}`;
+  return `https://${owner}.github.io${pagesBasePath(repo, branchName, draftsPath)}`;
 }
 
 /**
@@ -138,14 +165,15 @@ export function previewLocationMessage(opts: {
   repo: string;
   branchName: string;
   site: PagesSite;
+  /** The host's declared drafts sub-path; empty for a site-root host. */
+  draftsPath?: string;
 }): string {
-  const { repo, branchName, site } = opts;
+  const { repo, branchName, site, draftsPath = '' } = opts;
   const dispatch = `gh workflow run deploy-preview.yml -f branch=${branchName} --repo ${repo}`;
-  const url = pagesPreviewUrl(
-    repo,
-    branchName,
-    site.status === 'ok' ? site.siteUrl : undefined
-  );
+  const url = pagesPreviewUrl(repo, branchName, {
+    siteUrl: site.status === 'ok' ? site.siteUrl : undefined,
+    draftsPath,
+  });
 
   if (site.status === 'not-enabled') {
     // No Pages means no CNAME either, so the default github.io form is the one

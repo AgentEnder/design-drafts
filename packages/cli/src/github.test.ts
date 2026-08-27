@@ -30,6 +30,20 @@ describe('pagesBasePath', () => {
   it('matches the user pages repo case-insensitively', () => {
     expect(pagesBasePath('Acme/ACME.github.io', 'drafts/x')).toBe('/x/');
   });
+
+  // A host that keeps its site root for something else (docs, a landing page)
+  // publishes drafts under a sub-path, declared in the config on its main branch.
+  it('inserts the sub-path the host publishes drafts under', () => {
+    expect(pagesBasePath('acme/previews', 'drafts/homepage', 'd')).toBe(
+      '/previews/d/homepage/'
+    );
+  });
+
+  it('inserts it for a user pages repo too', () => {
+    expect(pagesBasePath('acme/acme.github.io', 'drafts/homepage', 'd')).toBe(
+      '/d/homepage/'
+    );
+  });
 });
 
 describe('pagesPreviewUrl', () => {
@@ -67,11 +81,9 @@ describe('pagesPreviewUrl', () => {
 
   it('hangs the draft off the site root GitHub reported', () => {
     expect(
-      pagesPreviewUrl(
-        'acme/previews',
-        'drafts/homepage',
-        'https://acme.github.io/previews/'
-      )
+      pagesPreviewUrl('acme/previews', 'drafts/homepage', {
+        siteUrl: 'https://acme.github.io/previews/',
+      })
     ).toBe('https://acme.github.io/previews/homepage/');
   });
 
@@ -79,17 +91,34 @@ describe('pagesPreviewUrl', () => {
     // A CNAME moves the site to the domain root, so the `/previews/` segment
     // `pagesBasePath` would add is simply wrong there.
     expect(
-      pagesPreviewUrl(
-        'acme/previews',
-        'drafts/homepage',
-        'https://previews.acme.com/'
-      )
+      pagesPreviewUrl('acme/previews', 'drafts/homepage', {
+        siteUrl: 'https://previews.acme.com/',
+      })
     ).toBe('https://previews.acme.com/homepage/');
+  });
+
+  it("hangs the draft off the host's drafts sub-path", () => {
+    expect(
+      pagesPreviewUrl('acme/previews', 'drafts/homepage', { draftsPath: 'd' })
+    ).toBe('https://acme.github.io/previews/d/homepage/');
+  });
+
+  // The reported site root already accounts for the domain and repo segment,
+  // but it cannot know about a sub-path the host chose — that still applies.
+  it('applies the sub-path under a reported site root as well', () => {
+    expect(
+      pagesPreviewUrl('acme/previews', 'drafts/homepage', {
+        siteUrl: 'https://previews.acme.com/',
+        draftsPath: 'd',
+      })
+    ).toBe('https://previews.acme.com/d/homepage/');
   });
 
   it('tolerates a site root without a trailing slash', () => {
     expect(
-      pagesPreviewUrl('acme/previews', 'drafts/homepage', 'https://previews.acme.com')
+      pagesPreviewUrl('acme/previews', 'drafts/homepage', {
+        siteUrl: 'https://previews.acme.com',
+      })
     ).toBe('https://previews.acme.com/homepage/');
   });
 });
@@ -104,6 +133,18 @@ describe('previewLocationMessage', () => {
     // The routine case is the payload plus an inline qualifier — nothing else.
     expect(message).toBe(
       'Preview (once built): https://acme.github.io/previews/homepage/'
+    );
+  });
+
+  it("names the host's drafts sub-path in the URL it promises", () => {
+    const message = previewLocationMessage({
+      repo: 'acme/previews',
+      branchName: 'drafts/homepage',
+      site: { status: 'ok', siteUrl: 'https://acme.github.io/previews/' },
+      draftsPath: 'd',
+    });
+    expect(message).toBe(
+      'Preview (once built): https://acme.github.io/previews/d/homepage/'
     );
   });
 
