@@ -1,5 +1,27 @@
 import { readdirSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
 import type { GlobalContextServer } from 'vike/types';
+
+/** Dropped into every published draft directory by the deploy workflow, which
+ * is the only thing that can speak for a draft that has no manifest of its own
+ * (a plain folder of html, pushed before manifests existed). */
+const DEPLOY_MARKER = '.design-draft';
+
+/** The manifest a draft carries in its own source, which is what makes a
+ * directory recognizable when PAGES_DIR points at drafts on disk rather than
+ * at a staged gh-pages tree — running this app locally, say. */
+const DRAFT_MANIFEST = 'design-drafts.config.json';
+
+/**
+ * Whether `dir` is a draft rather than something else the deploy left in
+ * PAGES_DIR. Either signal is conclusive on its own, and this app's own build
+ * output carries neither.
+ */
+function isPublishedDraft(dir: string): boolean {
+  return (
+    existsSync(join(dir, DEPLOY_MARKER)) || existsSync(join(dir, DRAFT_MANIFEST))
+  );
+}
 
 export interface BranchEntry {
   name: string;
@@ -9,8 +31,9 @@ export interface BranchEntry {
 }
 
 // Environment-variable contract consumed by this build step:
-//   PAGES_DIR              — directory whose top-level subdirectories become
-//                            preview entries on the index.
+//   PAGES_DIR              — directory holding the deployed drafts. Its
+//                            top-level draft directories become the entries on
+//                            the index (see isPublishedDraft).
 //   DESIGN_DRAFTS_PREFIX   — branch prefix used when querying GitHub for the
 //                            corresponding PR (default: "drafts/").
 //   DESIGN_DRAFTS_REPO     — "owner/repo" used for the GitHub API lookup. In
@@ -20,11 +43,15 @@ export interface BranchEntry {
 //                            locally is fine — we just skip and log.
 
 // The deploy-preview workflow stages each prefixed branch (e.g. `drafts/foo`)
-// at `<staging>/foo/` — i.e. it strips the configured branch prefix before
-// writing to gh-pages. As a result the listing logic here is intentionally
-// prefix-agnostic: it surfaces every top-level directory under PAGES_DIR.
-// That choice also keeps any pre-existing (un-prefixed) preview directories
-// on the deployed gh-pages branch visible during the soft transition.
+// at `<PAGES_DIR>/foo/` — i.e. it strips the configured branch prefix before
+// writing to gh-pages. The listing logic here is therefore prefix-agnostic: it
+// surfaces directories, not branches.
+//
+// It does NOT surface every directory, though, because this app is deployed
+// into PAGES_DIR alongside the drafts it lists — so a naive scan reports its
+// own `assets/` and `compare/` output as two more previews, which is exactly
+// what the published index used to do. A draft is identified positively
+// instead, by something only a draft has.
 export async function onCreateGlobalContext(
   context: Partial<GlobalContextServer>
 ): Promise<void> {
@@ -44,7 +71,12 @@ export async function onCreateGlobalContext(
       entries.map((e) => `${e.isDirectory() ? 'd' : 'f'} ${e.name}`)
     );
     const baseEntries: BranchEntry[] = entries
-      .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
+      .filter(
+        (entry) =>
+          entry.isDirectory() &&
+          !entry.name.startsWith('.') &&
+          isPublishedDraft(join(pagesDir, entry.name))
+      )
       .map((entry) => ({
         name: entry.name,
         path: `/${entry.name}/`,

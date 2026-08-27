@@ -106,6 +106,10 @@ jobs:
           rm -rf ".gh-pages-staging/\${PREVIEW_DIR}"
           mkdir -p ".gh-pages-staging/\${PREVIEW_DIR}"
           cp -a /tmp/branch-content/. ".gh-pages-staging/\${PREVIEW_DIR}/"
+          # Marks the directory as a draft. The index app is deployed into this
+          # same directory, and lists what it finds there — without the mark it
+          # reads its own assets/ and compare/ output back as two more drafts.
+          touch ".gh-pages-staging/\${PREVIEW_DIR}/.design-draft"
 
       - name: Remove deleted branch's directory
         if: github.event_name == 'delete'
