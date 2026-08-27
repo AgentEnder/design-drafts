@@ -29,6 +29,14 @@ export interface RenderMarkdownSiteOptions {
    * `CollectMarkdownPagesOptions`).
    */
   indexSource?: string;
+  /**
+   * Whether the draft has a manifest, which decides whether the toolbar ships.
+   * It is an axis switcher over that manifest and gives up without one, so a
+   * draft with no manifest gets no toolbar rather than an element that never
+   * renders a bar. Defaults to false: a caller that knows nothing about a
+   * manifest is a caller with nothing to switch.
+   */
+  hasManifest?: boolean;
 }
 
 function renderSitePage(
@@ -76,6 +84,7 @@ function renderSitePage(
     rawHref: posix.relative(fromDir, page.sourcePath),
     nav,
     draftId: options.draftId,
+    toolbar: options.hasManifest ?? false,
     canonicalHref: aliasPath
       ? posix.relative(fromDir, page.outputPath)
       : undefined,

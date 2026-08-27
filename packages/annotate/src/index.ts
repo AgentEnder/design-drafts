@@ -127,12 +127,18 @@ function commandKeyLabel(): string {
 
 export type AnnotateMode = 'standalone' | 'integrated';
 
+/** Where the panel opens. A host at the foot of the viewport (the toolbar
+ * bar) needs the panel above it; a host at the top (a page header) wants it
+ * where a floating panel would already be. */
+export type PanelAnchor = 'viewport-top' | 'above-trigger';
+
 export interface AnnotateOverlayOptions {
   mode?: AnnotateMode;
   // In integrated mode, the trigger lives outside the overlay's shadow root
-  // (typically in the toolbar's slot). The overlay reads the trigger's
-  // position to anchor the panel above it.
+  // (the toolbar's slot, or a page header). The overlay reads the trigger's
+  // host chain so clicks on it are not swallowed by the picker.
   triggerElement?: HTMLElement | null;
+  panelAnchor?: PanelAnchor;
 }
 
 // Minimal "is this a draft manifest" gate for root discovery. Annotate only
@@ -151,10 +157,12 @@ class AnnotateOverlay {
   private outlineLabelEl: HTMLElement | null = null;
   private mode: AnnotateMode;
   private triggerElement: HTMLElement | null;
+  private panelAnchor: PanelAnchor;
 
   constructor(options: AnnotateOverlayOptions = {}) {
     this.mode = options.mode ?? 'standalone';
     this.triggerElement = options.triggerElement ?? null;
+    this.panelAnchor = options.panelAnchor ?? 'viewport-top';
   }
 
   setTriggerElement(el: HTMLElement | null): void {
@@ -778,7 +786,7 @@ class AnnotateOverlay {
     if (!this.root || this.panelEl) return;
     const panel = document.createElement('div');
     panel.className =
-      this.mode === 'integrated' ? 'panel integrated' : 'panel';
+      this.panelAnchor === 'above-trigger' ? 'panel above-trigger' : 'panel';
 
     const head = document.createElement('div');
     head.className = 'panel-head';
@@ -1445,6 +1453,7 @@ class DesignDraftsAnnotations extends HTMLElement {
   private overlay: AnnotateOverlay | null = null;
   private trigger: HTMLButtonElement | null = null;
   private mode: AnnotateMode = 'standalone';
+  private panelAnchor: PanelAnchor = 'viewport-top';
 
   connectedCallback(): void {
     if (this.overlay) return;
@@ -1452,7 +1461,27 @@ class DesignDraftsAnnotations extends HTMLElement {
 
     // Detect whether we're hosted inside a <dd-toolbar>. If so, render an
     // inline trigger button that surfaces in the toolbar's slot.
-    this.mode = this.closest('dd-toolbar') ? 'integrated' : 'standalone';
+    //
+    // Re-read on every connection rather than once: moving this element runs
+    // disconnect and connect, and it does get moved — a toolbar with no
+    // manifest renders no bar, so it re-homes what was slotted into it and
+    // leaves. Arriving on the body is what turns the inline trigger back into
+    // the floating toggle.
+    // Two kinds of host: the toolbar, and a page that says it has chrome of
+    // its own with `inline` (the markdown-site header, whose search, menu and
+    // theme controls a floating toggle would otherwise land on top of).
+    const toolbar = this.closest('dd-toolbar');
+    const hosted = toolbar !== null || this.hasAttribute('inline');
+    this.mode = hosted ? 'integrated' : 'standalone';
+    // Only a bar at the foot of the viewport needs the panel lifted off it.
+    this.panelAnchor = toolbar ? 'above-trigger' : 'viewport-top';
+
+    if (this.mode === 'standalone' && this.shadowRoot) {
+      // A shadow root from an earlier integrated connection outlives the move,
+      // and the trigger in it would render in the page's flow beside the
+      // floating toggle this mode is about to add.
+      this.shadowRoot.replaceChildren();
+    }
 
     if (this.mode === 'integrated') {
       const shadow = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
@@ -1460,8 +1489,8 @@ class DesignDraftsAnnotations extends HTMLElement {
       sheet.replaceSync(TRIGGER_STYLES);
       shadow.adoptedStyleSheets = [sheet];
       shadow.innerHTML = `
-        <button class="trigger" type="button">
-          <span class="dot" aria-hidden="true"></span>
+        <button class="trigger" part="trigger" type="button">
+          <span class="dot" part="dot" aria-hidden="true"></span>
           <span>Annotate</span>
         </button>
       `;
@@ -1475,6 +1504,7 @@ class DesignDraftsAnnotations extends HTMLElement {
     this.overlay = new AnnotateOverlay({
       mode: this.mode,
       triggerElement: this.mode === 'integrated' ? this : null,
+      panelAnchor: this.panelAnchor,
     });
     this.overlay.mount();
 

@@ -48,6 +48,27 @@ export class DesignDraftsToolbar extends HTMLElement {
   private state: TuckState = 'revealed';
   private armed = false;
 
+  /**
+   * Leaves the page, having put back anything that was slotted in.
+   *
+   * A toolbar with no manifest renders no bar, and an element that renders
+   * nothing is not harmless here: it stays in normal flow at the end of
+   * <body>, and the annotate overlay mounts its trigger inside any
+   * <dd-toolbar> it finds. The trigger inherited this element's position and
+   * rendered as a line of text at the foot of the page rather than floating.
+   *
+   * Children move to <body> rather than going with it. They are not the
+   * toolbar's to delete, and annotate re-reads its surroundings when it is
+   * moved, so landing on the body is what tells it to float its own toggle.
+   */
+  private retire(): void {
+    const parent = this.parentNode ?? document.body;
+    while (this.firstChild) {
+      parent.insertBefore(this.firstChild, this);
+    }
+    this.remove();
+  }
+
   async connectedCallback(): Promise<void> {
     if (this.handles) return;
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
@@ -60,6 +81,7 @@ export class DesignDraftsToolbar extends HTMLElement {
     const resolved = await loadManifest();
     if (!resolved) {
       document.removeEventListener('pointermove', this.onPointerMove, true);
+      this.retire();
       return;
     }
 

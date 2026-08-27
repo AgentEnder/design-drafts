@@ -406,6 +406,9 @@ export function createPreviewServer(
     // annotations out of the next draft served from this same localhost URL.
     draftId: resolveDraftId(manifestPath),
     indexSource: currentIndexSource(),
+    // Read per request like everything else here: adding a manifest to a draft
+    // mid-session is exactly when you want the toolbar to start appearing.
+    hasManifest: existsSync(manifestPath),
     // On-the-fly markdown pages must match what the search bundle was built
     // from, so they get the same wiring whenever search is configured.
     ...(search ? { search: { basePath: '/' } } : {}),

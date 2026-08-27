@@ -63,6 +63,9 @@ export async function renderStagedDraft(
     siteName: options.displayName ?? siteName,
     draftId: siteName,
     indexSource,
+    // The toolbar switches between a manifest's pages, so it only ships to a
+    // draft that has one. Read from the staged copy, which is what deploys.
+    hasManifest: existsSync(join(stageDir, CONFIG_FILENAME)),
   };
   // Captured before rendering (which makes the dir no longer markdown-only):
   // the alias copies of index pages, so the baked listing below — used when

@@ -662,14 +662,6 @@ describe('renderMarkdownSite', () => {
     expect(nested).toContain('<details><summary>Reference</summary>');
   });
 
-  it('includes the toolbar and annotate overlay scripts', () => {
-    write('README.md', '# Docs');
-    renderMarkdownSite(dir);
-    const html = readFileSync(join(dir, 'index.html'), 'utf-8');
-    expect(html).toContain('@design-drafts/toolbar');
-    expect(html).toContain('@design-drafts/annotate');
-  });
-
   it('renders on the fly without writing when asked for one page', () => {
     write('README.md', '# Home\n\nWelcome!');
     write('guides/setup.md', '# Setup');
@@ -705,5 +697,60 @@ describe('renderMarkdownSite', () => {
     // preact-render-to-string escapes &, <, and " in text (a bare > is
     // harmless in html text content).
     expect(html).toContain('<title>Docs &lt;script> &amp; &quot;quotes&quot;</title>');
+  });
+});
+
+// The toolbar reads the draft's manifest to build its axis switcher, and gives
+// up when there is none. Shipping it to a draft that has no manifest leaves an
+// element on the page that never renders a bar, which the annotate trigger
+// then mounts into (see the toolbar package). Nothing to switch, no toolbar.
+describe('the toolbar script', () => {
+  it('is shipped to a draft that has a manifest', () => {
+    write('README.md', '# Home\n');
+
+    renderMarkdownSite(dir, { hasManifest: true });
+
+    expect(readFileSync(join(dir, 'index.html'), 'utf-8')).toContain(
+      'toolbar@0/dist/toolbar.js'
+    );
+  });
+
+  it('is withheld from a draft that has none', () => {
+    write('README.md', '# Home\n');
+
+    renderMarkdownSite(dir, { hasManifest: false });
+
+    const html = readFileSync(join(dir, 'index.html'), 'utf-8');
+    expect(html).not.toContain('toolbar.js');
+    // Annotate does not read the manifest, so it ships either way.
+    expect(html).toContain('annotate@0/dist/annotate.js');
+  });
+});
+
+// Annotate ships to every page, and its floating toggle sits at the top-right
+// of the viewport — where this shell already puts the search button, the page
+// menu and the theme toggle. So the header hosts the trigger instead, unless
+// the toolbar is there to host it.
+describe('the annotate trigger', () => {
+  function headerOf(html: string): string {
+    return html.slice(html.indexOf('<header'), html.indexOf('</header>'));
+  }
+
+  it('is hosted by the header when the page has no toolbar', () => {
+    write('README.md', '# Home\n');
+
+    renderMarkdownSite(dir, { hasManifest: false });
+
+    const html = readFileSync(join(dir, 'index.html'), 'utf-8');
+    expect(headerOf(html)).toContain('<dd-annotations inline');
+  });
+
+  it('is left to the toolbar when there is one', () => {
+    write('README.md', '# Home\n');
+
+    renderMarkdownSite(dir, { hasManifest: true });
+
+    const html = readFileSync(join(dir, 'index.html'), 'utf-8');
+    expect(html).not.toContain('<dd-annotations');
   });
 });

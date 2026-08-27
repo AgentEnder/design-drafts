@@ -29,6 +29,8 @@ export interface PageOptions {
   toc: readonly HeadingEntry[] | null;
   search: PageSearch | null;
   draftId: string | undefined;
+  /** Whether to ship the toolbar. See `ShellOptions.toolbar`. */
+  toolbar?: boolean;
   /**
    * Set on an alias copy of an index page (see `MarkdownPage.aliasPaths`):
    * the href of the canonical page it duplicates. Such a copy is kept out of
@@ -153,6 +155,7 @@ function Page(opts: PageOptions) {
       siteTitle={opts.siteTitle}
       indexHref={opts.indexHref}
       draftId={opts.draftId}
+      toolbar={opts.toolbar}
       canonicalHref={opts.canonicalHref}
       actions={<PageActions {...opts} />}
     >

@@ -8,6 +8,17 @@ import clientCss from '../../dist/client/page.css?raw';
 import clientJs from '../../dist/client/page.js?raw';
 import themeRestoreJs from '../client/theme-restore.js?raw';
 
+// The annotate overlay's custom element, rendered into the header below. JSX
+// knows nothing about it otherwise; `inline` is the overlay's own attribute
+// for "this page hosts the trigger".
+declare module 'preact' {
+  namespace JSX {
+    interface IntrinsicElements {
+      'dd-annotations': { inline?: string };
+    }
+  }
+}
+
 export interface ShellOptions {
   /** The `<title>`. */
   title: string;
@@ -21,6 +32,14 @@ export interface ShellOptions {
    * no manifest name to derive one from.
    */
   draftId?: string;
+  /**
+   * Whether the draft has a manifest for the toolbar to read. The toolbar is
+   * an axis switcher over that manifest and gives up without one, leaving an
+   * element on the page that never renders a bar — which the annotate trigger
+   * then mounts into and inherits the position of. Nothing to switch, no
+   * toolbar.
+   */
+  toolbar?: boolean;
   /** Set on a duplicate copy of a page: the href of the canonical original. */
   canonicalHref?: string;
   /** Header controls placed before the theme toggle. */
@@ -57,6 +76,12 @@ export function Shell(opts: ShellOptions) {
           </a>
           <div class="header-actions">
             {opts.actions}
+            {/* The overlay's own toggle floats at the top-right, over these
+                controls. Hosting it here puts it beside them instead — unless
+                the toolbar is on the page, which is the better host and takes
+                it. `inline` is what tells the overlay this page has chrome of
+                its own; without it the element still renders nothing here. */}
+            {opts.toolbar ? null : <dd-annotations inline=""></dd-annotations>}
             <button
               type="button"
               class="theme-toggle"
@@ -70,10 +95,12 @@ export function Shell(opts: ShellOptions) {
         <script dangerouslySetInnerHTML={{ __html: clientJs }} />
 
         {/* design-drafts overlays: inert until they have something to do. */}
-        <script
-          src="https://unpkg.com/@design-drafts/toolbar@0/dist/toolbar.js"
-          defer
-        />
+        {opts.toolbar ? (
+          <script
+            src="https://unpkg.com/@design-drafts/toolbar@0/dist/toolbar.js"
+            defer
+          />
+        ) : null}
         <script
           src="https://unpkg.com/@design-drafts/annotate@0/dist/annotate.js"
           defer

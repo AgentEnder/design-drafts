@@ -286,11 +286,11 @@ textarea.field:focus {
   z-index: 2;
 }
 
-/* In integrated mode the panel anchors above the toolbar (which lives at
-   the bottom of the viewport) instead of floating at the top-right.
-   Standalone-mode toggle is suppressed; the toolbar's slot button drives
-   activation. */
-.panel.integrated {
+/* Lifted off a host that sits at the foot of the viewport — the toolbar bar —
+   instead of opening at the top-right. A host at the top of the page (a
+   markdown-site header) keeps the default anchoring above. Either way the
+   standalone toggle is suppressed; the host's own button drives activation. */
+.panel.above-trigger {
   top: auto;
   right: 16px;
   bottom: 76px;
