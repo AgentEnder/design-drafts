@@ -168,7 +168,18 @@ jobs:
           touch ".gh-pages-staging/d/${PREVIEW_DIR}/.design-draft"
 
       - name: Build docs site
-        run: npx nx build docs
+        run: |
+          # The docs sit at the Pages root, which for a project repo is
+          # /<repo>/. That segment is a deploy fact, not something the docs
+          # know, so it is supplied here rather than hardcoded in the
+          # package. Unset, the docs build resolves to "/", which is what a
+          # local static server wants — and, being explicit, never falls
+          # through to the CLI's --repo default, which would derive a draft's
+          # path rather than the site root.
+          # (A user pages repo would serve from "/"; the general rule lives in
+          # pagesBasePath. This workflow only ever runs for this repo.)
+          export DOCS_BASE="/${GITHUB_REPOSITORY#*/}/"
+          npx nx build docs
 
       - name: Copy docs site into staging
         run: |

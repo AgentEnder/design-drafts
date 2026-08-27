@@ -208,9 +208,15 @@ importers:
 
   packages/docs:
     devDependencies:
+      '@design-drafts/annotate':
+        specifier: workspace:*
+        version: link:../annotate
       '@design-drafts/cli':
         specifier: workspace:*
         version: link:../cli
+      '@design-drafts/toolbar':
+        specifier: workspace:*
+        version: link:../toolbar
 
   packages/markdown-site:
     dependencies:
