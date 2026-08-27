@@ -1,0 +1,21 @@
+{
+  "name": "@design-drafts/docs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The docs site at the root of the published Pages site, rendered by design-drafts itself.",
+  "type": "module",
+  "scripts": {
+    "build": "design-drafts build content --out dist --base /design-drafts/ --site-name design-drafts-docs --force"
+  },
+  "devDependencies": {
+    "@design-drafts/cli": "workspace:*"
+  },
+  "nx": {
+    "name": "docs",
+    "targets": {
+      "build": {
+        "outputs": ["{projectRoot}/dist"]
+      }
+    }
+  }
+}
