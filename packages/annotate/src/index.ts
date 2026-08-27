@@ -104,6 +104,27 @@ function stopIfActive(overlay: { isActive(): boolean }) {
   };
 }
 
+/** Commits the note in `field` on ⌘↵ (⌃↵ elsewhere), so a reviewer whose
+ * hands are already on the keys never has to go find Save.
+ *
+ * Bound on the field rather than added to the overlay's window handler:
+ * only the textarea knows which note is under the cursor — the composer's
+ * new one, or one of the panel's entries. A bare Enter is left alone; a
+ * note is prose and needs its line breaks. */
+function saveOnCommandEnter(field: HTMLTextAreaElement, save: () => void): void {
+  field.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    if (!event.metaKey && !event.ctrlKey) return;
+    event.preventDefault();
+    save();
+  });
+}
+
+/** Names the modifier the reviewer actually has, for the hint on Save. */
+function commandKeyLabel(): string {
+  return /Mac|iPhone|iPad|iPod/.test(navigator.userAgent) ? '⌘' : 'Ctrl+';
+}
+
 export type AnnotateMode = 'standalone' | 'integrated';
 
 export interface AnnotateOverlayOptions {
@@ -513,7 +534,8 @@ class AnnotateOverlay {
     save.className = 'btn primary';
     save.textContent = 'Save';
     save.type = 'button';
-    save.addEventListener('click', () => {
+    save.title = `Save (${commandKeyLabel()}↵)`;
+    const commit = (): void => {
       const value = textarea.value.trim();
       if (!value || !this.composing) {
         this.closeComposer();
@@ -534,7 +556,9 @@ class AnnotateOverlay {
       this.closeComposer();
       this.refreshPins();
       this.renderPanel();
-    });
+    };
+    save.addEventListener('click', commit);
+    saveOnCommandEnter(textarea, commit);
 
     actions.appendChild(cancel);
     actions.appendChild(save);
@@ -958,7 +982,8 @@ class AnnotateOverlay {
       save.type = 'button';
       save.className = 'btn primary';
       save.textContent = 'Save';
-      save.addEventListener('click', () => {
+      save.title = `Save (${commandKeyLabel()}↵)`;
+      const commit = (): void => {
         const next = textarea.value.trim();
         if (!next) return;
         saveAnnotation(
@@ -967,7 +992,9 @@ class AnnotateOverlay {
         );
         this.editing = null;
         this.renderPanel();
-      });
+      };
+      save.addEventListener('click', commit);
+      saveOnCommandEnter(textarea, commit);
       actions.appendChild(cancel);
       actions.appendChild(save);
 

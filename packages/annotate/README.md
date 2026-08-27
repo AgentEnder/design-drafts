@@ -54,6 +54,11 @@ field" guard never fires, and on GitHub a comment containing "t" opens the
 file finder mid-sentence. The overlay stops those events at its host, after
 the composer has had them and before the page can.
 
+`⌘↵` (`Ctrl+↵` off the Mac) saves the note you're typing, in the composer
+and when editing one from the panel. Reviewing is a typing job, and most
+notes are a line long — going to find Save for each one is the slow part.
+A bare `Enter` still breaks the line, because a note is prose.
+
 ### Commenting on text, not just blocks
 
 Highlight any run of text before you click and the comment anchors to
