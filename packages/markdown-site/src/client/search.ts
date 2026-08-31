@@ -13,6 +13,29 @@ declare const PagefindUI: new (options: {
   showSubResults: boolean;
 }) => unknown;
 
+/**
+ * Whether a key event came from something the reader is typing into. Checked
+ * against `composedPath()` rather than `event.target`: events crossing a
+ * shadow boundary (the annotate composer, any component a draft embeds) are
+ * retargeted to the host element by the time a window listener sees them, so
+ * the real field is only visible on the path.
+ */
+export function originatesFromEditable(event: KeyboardEvent): boolean {
+  const target = event.composedPath()[0] ?? event.target;
+  if (!(target instanceof HTMLElement)) return false;
+  if (
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.tagName === 'SELECT'
+  ) {
+    return true;
+  }
+  return (
+    target.isContentEditable ||
+    target.closest('[contenteditable]:not([contenteditable="false"])') !== null
+  );
+}
+
 export function initSearch(): void {
   const dialog = document.querySelector<HTMLDialogElement>('.search-dialog');
   const trigger = document.querySelector<HTMLButtonElement>('.search-trigger');
@@ -48,13 +71,7 @@ export function initSearch(): void {
       return;
     }
     if (event.key === '/' && !event.metaKey && !event.ctrlKey && !event.altKey && !dialog.open) {
-      const target = event.target;
-      const typing =
-        target instanceof HTMLElement &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable);
-      if (!typing) {
+      if (!originatesFromEditable(event)) {
         event.preventDefault();
         openSearch();
       }

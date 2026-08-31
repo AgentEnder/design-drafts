@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "jsdom": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
@@ -36,7 +37,9 @@
     "name": "markdown-site",
     "targets": {
       "test": {
-        "dependsOn": ["build"]
+        "dependsOn": [
+          "build"
+        ]
       }
     }
   }
