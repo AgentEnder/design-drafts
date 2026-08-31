@@ -13,7 +13,17 @@ import {
 } from 'node:fs';
 import { createServer, type Server, type ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
-import { extname, isAbsolute, join, posix, relative, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import {
+  dirname,
+  extname,
+  isAbsolute,
+  join,
+  posix,
+  relative,
+  resolve,
+  sep,
+} from 'node:path';
 
 import { resolveDraftDir } from './draft-dir';
 import { CliError } from './errors';
@@ -40,6 +50,98 @@ const MANIFEST_FILE = 'design-drafts.config.json';
 /** Root-relative path of the live-reload stream. Under a `__`-prefixed segment
  * so it cannot collide with a real page in the draft. */
 const RELOAD_PATH = '__design-drafts/reload';
+
+/** Root-relative prefix the preview server serves locally built overlay
+ * bundles under, in the same reserved `__` segment as the reload stream. */
+const OVERLAYS_PATH = '__design-drafts/overlays';
+
+/** The overlay packages a page may load from a CDN, each shipping one bundle
+ * at `dist/<name>.js`. */
+const OVERLAY_PACKAGES = ['toolbar', 'annotate'] as const;
+export type OverlayPackage = (typeof OVERLAY_PACKAGES)[number];
+
+/**
+ * Where to look for locally built overlays: the draft's own tree first, then
+ * the CLI's.
+ *
+ * The second root is what makes a linked checkout work on a draft in some
+ * OTHER repo — the common dogfooding setup, where `design-drafts` on PATH is
+ * a symlink into this repo. The draft-relative walk can never reach a sibling
+ * checkout, but the CLI module's real path (Node resolves the symlink) sits
+ * inside it, right next to `packages/cli/node_modules/@design-drafts/` where
+ * the workspace links toolbar and annotate. Those links exist because the CLI
+ * declares both as `workspace:*` devDependencies — dev on purpose: a registry
+ * install of the CLI never gets them, so published-CLI users keep the CDN.
+ */
+export function defaultOverlayRoots(draftDir: string): string[] {
+  const roots = [draftDir];
+  try {
+    roots.push(dirname(fileURLToPath(import.meta.url)));
+  } catch {
+    // Not running from a file: URL — the draft-relative root still applies.
+  }
+  return roots;
+}
+
+/**
+ * The built bundle for `@design-drafts/<pkg>` nearest to any of `roots`, or
+ * null when none is installed — which is every draft outside a checkout or a
+ * project that installed the overlay packages, and means the CDN reference
+ * stands.
+ *
+ * Each walk mirrors Node resolution — `node_modules` in the root, then each
+ * ancestor — rather than `require.resolve`, so a package whose exports map
+ * doesn't expose `dist/` still resolves. Roots are searched in order, so an
+ * overlay installed next to the draft beats the CLI's own copy.
+ */
+export function findLocalOverlay(
+  roots: readonly string[],
+  pkg: OverlayPackage
+): string | null {
+  for (const root of roots) {
+    for (let dir = root; ; dir = dirname(dir)) {
+      const candidate = join(
+        dir,
+        'node_modules',
+        '@design-drafts',
+        pkg,
+        'dist',
+        `${pkg}.js`
+      );
+      if (existsSync(candidate)) return candidate;
+      if (dirname(dir) === dir) break;
+    }
+  }
+  return null;
+}
+
+/**
+ * Points a page's CDN overlay references at the locally served copies, for
+ * each overlay that is actually installed next to the draft. Pages load the
+ * overlays from unpkg or jsDelivr at whatever version pin they were
+ * scaffolded with (see `init/templates.ts` and the markdown shell); while
+ * developing the overlays themselves, that means a preview always shows the
+ * *released* toolbar, and a local change is invisible until published. Served
+ * bytes only: the files on disk keep their pinned CDN reference, and a pushed
+ * draft is copied off disk, so nothing here reaches a deploy.
+ */
+export function rewriteOverlayScripts(
+  html: string,
+  roots: readonly string[]
+): string {
+  let out = html;
+  for (const pkg of OVERLAY_PACKAGES) {
+    if (!findLocalOverlay(roots, pkg)) continue;
+    // Any version pin (or none): the rewrite is "use the local build", and
+    // which release the page asked for is exactly what it overrides.
+    const cdn = new RegExp(
+      `https://(?:unpkg\\.com|cdn\\.jsdelivr\\.net/npm)/@design-drafts/${pkg}(?:@[^/"'\\s]*)?/dist/${pkg}\\.js`,
+      'g'
+    );
+    out = out.replace(cdn, `/${OVERLAYS_PATH}/${pkg}.js`);
+  }
+  return out;
+}
 
 /**
  * How long to let writes settle before announcing a manifest change. Saving one
@@ -272,6 +374,13 @@ export interface PreviewServerOptions {
    * listing was chosen.
    */
   indexSource?: string;
+  /**
+   * Where to search for locally built overlay bundles (see
+   * `findLocalOverlay`). Defaults to `defaultOverlayRoots(draftDir)`; tests
+   * pass `[draftDir]` so what they find never depends on the checkout the
+   * suite happens to run in.
+   */
+  overlayRoots?: readonly string[];
 }
 
 /**
@@ -317,7 +426,10 @@ export async function prepareMarkdownSearch(
  * It is injected by the server rather than shipped in `@design-drafts/toolbar`
  * because every page loads the toolbar from unpkg (see `init/templates.ts` and
  * the markdown renderer) — code added to that package reaches nobody's preview
- * until it is published, whereas anything the server injects works today.
+ * until it is published, whereas anything the server injects works today. (A
+ * draft with the overlay packages installed next to it is the exception —
+ * `rewriteOverlayScripts` serves those local builds — but the reload client
+ * has to work for everyone.)
  *
  * The custom event fires first and `location.reload()` is only the fallback: a
  * toolbar that knows how to rebuild its axis switchers in place cancels the
@@ -365,10 +477,12 @@ export function createPreviewServer(
   draftDir: string,
   options: PreviewServerOptions = {}
 ): Server {
+  const overlayRoots = options.overlayRoots ?? defaultOverlayRoots(draftDir);
   const sendHtml = (res: ServerResponse, html: string): void => {
-    // Every HTML response is rewritten to carry the reload client, so the
-    // length has to be recomputed from the rewritten body.
-    const body = injectReloadClient(html);
+    // Every HTML response is rewritten to carry the reload client and to
+    // prefer locally built overlays, so the length has to be recomputed from
+    // the rewritten body.
+    const body = injectReloadClient(rewriteOverlayScripts(html, overlayRoots));
     res.writeHead(200, {
       'Content-Type': 'text/html; charset=utf-8',
       'Content-Length': Buffer.byteLength(body),
@@ -489,6 +603,34 @@ export function createPreviewServer(
       };
       res.on('close', drop);
       res.on('error', drop);
+      return;
+    }
+
+    // Locally built overlay bundles, referenced by the rewrite in sendHtml.
+    // Resolved per request like everything else here: rebuilding the toolbar
+    // mid-session and reloading the page is the whole point of serving these.
+    if (rel.startsWith(`${OVERLAYS_PATH}/`)) {
+      const name = posix.basename(rel, '.js');
+      const pkg = OVERLAY_PACKAGES.find((candidate) => candidate === name);
+      const artifact = pkg ? findLocalOverlay(overlayRoots, pkg) : null;
+      if (artifact) {
+        try {
+          const body = readFileSync(artifact);
+          res.writeHead(200, {
+            'Content-Type': 'text/javascript; charset=utf-8',
+            'Content-Length': body.length,
+            // Never cached: the artifact changes on every rebuild, and a
+            // stale overlay here defeats the reason this route exists.
+            'Cache-Control': 'no-cache',
+          });
+          res.end(body);
+          return;
+        } catch {
+          // Artifact vanished between the check and the read — 404 below.
+        }
+      }
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Not found');
       return;
     }
 
@@ -712,6 +854,21 @@ export async function preview(opts: PreviewOptions): Promise<void> {
   const url = `http://localhost:${port}/`;
 
   console.log(`\nServing draft at ${url}`);
+
+  // Say which overlays come from a local build, or the preview looks like it
+  // is ignoring the change someone just made to the released behaviour.
+  const overlayRoots = defaultOverlayRoots(draftDir);
+  const localOverlays = OVERLAY_PACKAGES.filter((pkg) =>
+    findLocalOverlay(overlayRoots, pkg)
+  );
+  if (localOverlays.length) {
+    console.log(
+      `Serving local builds for ${localOverlays
+        .map((pkg) => `@design-drafts/${pkg}`)
+        .join(', ')} instead of the released CDN bundles.`
+    );
+  }
+
   console.log('Press Ctrl+C to stop.');
 
   if (opts.open !== false) {

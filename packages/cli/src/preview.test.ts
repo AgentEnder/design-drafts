@@ -16,11 +16,14 @@ import {
   collectHtmlPages,
   contentTypeFor,
   createPreviewServer,
+  defaultOverlayRoots,
   ensureDraftIndex,
+  findLocalOverlay,
   prepareMarkdownSearch,
   type PreviewSearch,
   renderDirectoryIndex,
   resolveServedFile,
+  rewriteOverlayScripts,
 } from './preview';
 
 describe('contentTypeFor', () => {
@@ -139,6 +142,138 @@ describe('createPreviewServer', () => {
     // The fallback lists every page in the draft, linked root-absolute.
     expect(html).toContain('href="/pages/sub/p.html"');
     expect(html).toContain('href="/pages/withindex/index.html"');
+  });
+});
+
+describe('local overlay builds', () => {
+  let dir: string;
+  let server: ReturnType<typeof createPreviewServer>;
+  let baseUrl: string;
+
+  /** A built toolbar "artifact" installed next to the draft, the way a pnpm
+   * workspace links it or a project installs it. Only the toolbar: annotate
+   * stays uninstalled so each page carries one of each case. */
+  const TOOLBAR_SOURCE = 'console.log("local toolbar build");';
+
+  beforeEach(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'design-drafts-preview-overlays-'));
+    writeFileSync(join(dir, 'design-drafts.config.json'), '{}');
+    const toolbarDist = join(
+      dir,
+      'node_modules',
+      '@design-drafts',
+      'toolbar',
+      'dist'
+    );
+    mkdirSync(toolbarDist, { recursive: true });
+    writeFileSync(join(toolbarDist, 'toolbar.js'), TOOLBAR_SOURCE);
+    writeFileSync(
+      join(dir, 'index.html'),
+      [
+        '<html><body>',
+        '<script src="https://unpkg.com/@design-drafts/toolbar@0/dist/toolbar.js" defer></script>',
+        '<script src="https://cdn.jsdelivr.net/npm/@design-drafts/toolbar@0.2.0/dist/toolbar.js" defer></script>',
+        '<script src="https://unpkg.com/@design-drafts/annotate@0/dist/annotate.js" defer></script>',
+        '</body></html>',
+      ].join('\n')
+    );
+
+    // Roots pinned to the draft: the default roots include the CLI's own
+    // location, which in this checkout has real overlay builds linked next to
+    // it — the suite must not depend on those.
+    server = createPreviewServer(dir, { overlayRoots: [dir] });
+    await new Promise<void>((res) => server.listen(0, '127.0.0.1', res));
+    const { port } = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${port}`;
+  });
+
+  afterEach(async () => {
+    await new Promise<void>((res) => server.close(() => res()));
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('rewrites CDN references to the local route, from either CDN and any pin', async () => {
+    const html = await (await fetch(`${baseUrl}/`)).text();
+
+    expect(html).not.toContain('unpkg.com/@design-drafts/toolbar');
+    expect(html).not.toContain('cdn.jsdelivr.net/npm/@design-drafts/toolbar');
+    expect(
+      html.match(/\/__design-drafts\/overlays\/toolbar\.js/g)
+    ).toHaveLength(2);
+  });
+
+  it('leaves an overlay with no local build on its CDN', async () => {
+    const html = await (await fetch(`${baseUrl}/`)).text();
+
+    expect(html).toContain(
+      'https://unpkg.com/@design-drafts/annotate@0/dist/annotate.js'
+    );
+  });
+
+  it('serves the local artifact, uncached, at the rewritten URL', async () => {
+    const res = await fetch(`${baseUrl}/__design-drafts/overlays/toolbar.js`);
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe(
+      'text/javascript; charset=utf-8'
+    );
+    expect(res.headers.get('cache-control')).toBe('no-cache');
+    expect(await res.text()).toBe(TOOLBAR_SOURCE);
+  });
+
+  it('404s an overlay that has no local build, and unknown names', async () => {
+    const annotate = await fetch(
+      `${baseUrl}/__design-drafts/overlays/annotate.js`
+    );
+    const unknown = await fetch(
+      `${baseUrl}/__design-drafts/overlays/whatever.js`
+    );
+
+    expect(annotate.status).toBe(404);
+    expect(unknown.status).toBe(404);
+  });
+
+  it('finds an artifact installed above the draft, the workspace layout', () => {
+    const nested = join(dir, 'drafts', 'my-draft');
+    mkdirSync(nested, { recursive: true });
+
+    expect(findLocalOverlay([nested], 'toolbar')).toBe(
+      join(dir, 'node_modules', '@design-drafts', 'toolbar', 'dist', 'toolbar.js')
+    );
+    expect(findLocalOverlay([nested], 'annotate')).toBeNull();
+  });
+
+  it('searches later roots when the draft resolves nothing — the linked-CLI case', () => {
+    const elsewhere = mkdtempSync(join(tmpdir(), 'design-drafts-sibling-'));
+    try {
+      expect(findLocalOverlay([elsewhere, dir], 'toolbar')).toBe(
+        join(dir, 'node_modules', '@design-drafts', 'toolbar', 'dist', 'toolbar.js')
+      );
+    } finally {
+      rmSync(elsewhere, { recursive: true, force: true });
+    }
+  });
+
+  it('rewrites nothing when no root resolves a local overlay', () => {
+    const bare = mkdtempSync(join(tmpdir(), 'design-drafts-no-overlays-'));
+    try {
+      const html =
+        '<script src="https://unpkg.com/@design-drafts/toolbar@0/dist/toolbar.js"></script>';
+
+      expect(rewriteOverlayScripts(html, [bare])).toBe(html);
+    } finally {
+      rmSync(bare, { recursive: true, force: true });
+    }
+  });
+
+  it('default roots are the draft first, then the CLI module', () => {
+    const roots = defaultOverlayRoots(dir);
+
+    expect(roots[0]).toBe(dir);
+    expect(roots).toHaveLength(2);
+    // The CLI-relative root is what makes a globally linked checkout serve
+    // its own overlay builds for drafts in other repos.
+    expect(roots[1]).toContain('cli');
   });
 });
 

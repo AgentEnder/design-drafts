@@ -159,12 +159,18 @@ importers:
         specifier: ^1.5.2
         version: 1.5.2
     devDependencies:
+      '@design-drafts/annotate':
+        specifier: workspace:*
+        version: link:../annotate
       '@design-drafts/conventions':
         specifier: workspace:*
         version: link:../conventions
       '@design-drafts/markdown-site':
         specifier: workspace:*
         version: link:../markdown-site
+      '@design-drafts/toolbar':
+        specifier: workspace:*
+        version: link:../toolbar
       '@types/node':
         specifier: 'catalog:'
         version: 18.16.9
@@ -245,6 +251,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 18.16.9
+      jsdom:
+        specifier: 'catalog:'
+        version: 29.1.1
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

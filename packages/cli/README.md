@@ -119,6 +119,20 @@ about the change over a small server-sent-events channel and refresh
 themselves — nothing to click, and nothing of the channel is baked into a
 pushed draft.
 
+Pages reference the toolbar and annotate overlays from a CDN at a pinned
+release. When a *local* build of one is installed — as
+`node_modules/@design-drafts/toolbar/dist/toolbar.js` next to the draft, in
+any of its ancestor directories, or next to the CLI itself — the preview
+serves that build instead, rewriting the page's CDN reference on the way out.
+The draft's own copy wins over the CLI's. The CLI-relative lookup is what
+makes a globally linked checkout of this repo serve its freshly built
+overlays for a draft in any other repo; a CLI installed from the registry
+carries no overlay builds (they are devDependencies), so published installs
+keep the CDN. The startup banner says when local builds are in play. The
+lookup runs per request, so rebuilding an overlay mid-session takes effect on
+the next reload; the files on disk keep their pinned CDN reference, and
+pushed drafts are untouched.
+
 ## Configuration
 
 Shared options (`--repo`, `--site-name`, `--template-ref`) can be supplied via
