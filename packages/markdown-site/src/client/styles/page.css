@@ -455,6 +455,15 @@ main.markdown-body { max-width: 48rem; min-width: 0; }
 }
 .markdown-body th { font-weight: 600; }
 .markdown-body tr:nth-child(2n) td { background: var(--code-bg); }
+/* Frontmatter is metadata, not content: smaller, muted, keys left-aligned,
+   multi-line values keeping their layout. */
+.markdown-body .md-frontmatter { font-size: 85%; color: var(--muted); }
+.markdown-body .md-frontmatter th {
+  text-align: left;
+  white-space: nowrap;
+  vertical-align: top;
+}
+.markdown-body .md-frontmatter td { white-space: pre-wrap; }
 .markdown-body code {
   font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
   font-size: 85%;

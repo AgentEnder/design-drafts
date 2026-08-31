@@ -12,6 +12,7 @@ import {
   renderMarkdownPageAt,
   renderMarkdownSite,
 } from './index';
+import { renderDocument } from './renderer';
 
 let dir: string;
 
@@ -98,6 +99,18 @@ describe('collectMarkdownPages', () => {
     const bySource = Object.fromEntries(pages.map((p) => [p.sourcePath, p.title]));
     expect(bySource['README.md']).toBe('The Real Title');
     expect(bySource['untitled.md']).toBe('untitled');
+  });
+
+  it('prefers a frontmatter title over the first heading', () => {
+    write('doc.md', '---\ntitle: From Frontmatter\n---\n\n# From Heading\n');
+    const pages = collectMarkdownPages(dir);
+    expect(pages[0].title).toBe('From Frontmatter');
+  });
+
+  it('never mistakes a yaml comment in frontmatter for a heading', () => {
+    write('doc.md', '---\n# not a heading\nstatus: draft\n---\n\nno headings here\n');
+    const pages = collectMarkdownPages(dir);
+    expect(pages[0].title).toBe('doc');
   });
 
   it('sorts the index page first, then alphabetically', () => {
@@ -221,6 +234,64 @@ describe('renderMarkdownDocument', () => {
   it('leaves absolute urls alone, even when they end in .md', () => {
     const html = renderMarkdownDocument('[raw](https://example.com/file.md)');
     expect(html).toContain('href="https://example.com/file.md"');
+  });
+});
+
+describe('renderMarkdownDocument frontmatter', () => {
+  const doc = '---\ntitle: Popover design\nstatus: Proposed\n---\n\n# Heading\n\nbody\n';
+
+  it('renders a leading frontmatter block as a table, not as markdown', () => {
+    const html = renderMarkdownDocument(doc);
+    expect(html).toContain('class="md-frontmatter"');
+    expect(html).toContain('<th scope="row">title</th>');
+    expect(html).toContain('<td>Popover design</td>');
+    // Fed to marked, the opening fence becomes an <hr> and the key lines a
+    // setext heading — neither may survive.
+    expect(html).not.toContain('<hr');
+  });
+
+  it('keeps frontmatter keys out of the captured headings', () => {
+    const { headings } = renderDocument(doc);
+    expect(headings).toHaveLength(1);
+    expect(headings[0].label).toBe('Heading');
+  });
+
+  it('groups indented continuation lines under their key', () => {
+    const html = renderMarkdownDocument(
+      '---\nmetadata:\n  type: user\n  scope: global\n---\n\nbody\n'
+    );
+    expect(html).toContain('<th scope="row">metadata</th>');
+    expect(html).toContain('type: user');
+    expect(html).not.toContain('<th scope="row">  type</th>');
+  });
+
+  it('unquotes quoted scalar values', () => {
+    const html = renderMarkdownDocument('---\ntitle: "Quoted: yes"\n---\n\nbody\n');
+    expect(html).toContain('<td>Quoted: yes</td>');
+  });
+
+  it('escapes html-sensitive characters in keys and values', () => {
+    const html = renderMarkdownDocument('---\ntitle: <script>alert(1)</script>\n---\n\nbody\n');
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&lt;script&gt;');
+  });
+
+  it('hides a frontmatter block with nothing to tabulate', () => {
+    const html = renderMarkdownDocument('---\n# just a comment\n---\n\nbody\n');
+    expect(html).not.toContain('md-frontmatter');
+    expect(html).not.toContain('just a comment');
+  });
+
+  it('treats an unclosed fence as ordinary markdown, not frontmatter', () => {
+    const html = renderMarkdownDocument('---\n\nnot frontmatter\n');
+    expect(html).toContain('<hr');
+    expect(html).toContain('not frontmatter');
+  });
+
+  it('treats a fence below the first line as a thematic break', () => {
+    const html = renderMarkdownDocument('intro\n\n---\n\nkey: value\n\n---\n');
+    expect(html).not.toContain('md-frontmatter');
+    expect(html).toContain('<hr');
   });
 });
 

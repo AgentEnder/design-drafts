@@ -2,6 +2,8 @@ import hljs from 'highlight.js/lib/common';
 import { Marked, type Tokens } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 
+import { splitFrontmatter, type FrontmatterEntry } from './frontmatter';
+
 export interface HeadingEntry {
   depth: number;
   id: string;
@@ -130,13 +132,39 @@ function buildSectionTree(markdown: string, marked: Marked): {
   };
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** GitHub-style frontmatter rendering: the block becomes a key/value table at
+ * the top of the page. A block with no pairs (empty, or only comments) renders
+ * nothing — hidden beats mangled. */
+function renderFrontmatter(entries: readonly FrontmatterEntry[]): string {
+  if (!entries.length) return '';
+  const rows = entries
+    .map(
+      (entry) =>
+        `<tr><th scope="row">${escapeHtml(entry.key)}</th><td>${escapeHtml(entry.value)}</td></tr>`
+    )
+    .join('\n');
+  return `<table class="md-frontmatter">\n<tbody>\n${rows}\n</tbody>\n</table>\n`;
+}
+
 export function renderDocument(markdown: string): {
   html: string;
   headings: HeadingEntry[];
 } {
+  // Frontmatter must come off before lexing: marked reads the opening fence as
+  // an <hr> and the key lines as a setext heading, which would then seed a
+  // phantom section and toc entry.
+  const { entries, body } = splitFrontmatter(markdown);
   const headings: HeadingEntry[] = [];
   const marked = createMarked(headings);
-  const { tree, defsSuffix } = buildSectionTree(markdown, marked);
+  const { tree, defsSuffix } = buildSectionTree(body, marked);
 
   const parseChunk = (raw: string): string => {
     if (!raw.trim()) return '';
@@ -162,13 +190,13 @@ ${content}${children}</div>
 `;
   };
 
-  return { html: renderSection(tree), headings };
+  return { html: renderFrontmatter(entries) + renderSection(tree), headings };
 }
 
-/** Renders GitHub-flavored markdown to an html fragment: tables, task lists,
- * strikethrough, highlighted code fences, heading anchors, collapsible
- * sections, and relative `.md` links rewritten to their rendered `.html`
- * twins. */
+/** Renders GitHub-flavored markdown to an html fragment: frontmatter as a
+ * key/value table, tables, task lists, strikethrough, highlighted code fences,
+ * heading anchors, collapsible sections, and relative `.md` links rewritten to
+ * their rendered `.html` twins. */
 export function renderMarkdownDocument(markdown: string): string {
   return renderDocument(markdown).html;
 }

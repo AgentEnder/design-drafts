@@ -1,12 +1,14 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, posix, relative, sep } from 'node:path';
 
+import { splitFrontmatter } from './frontmatter';
+
 /** A markdown source file and the html page it renders to, both as
  * draft-root-relative POSIX paths. */
 export interface MarkdownPage {
   sourcePath: string;
   outputPath: string;
-  /** First heading in the document, falling back to the filename stem. */
+  /** Frontmatter `title:`, else the first heading, else the filename stem. */
   title: string;
   /**
    * Extra paths the page is also written to. A doc that renders as its
@@ -121,12 +123,17 @@ export function collectMarkdownPages(
     // The path this doc would render to if it weren't an index. When they
     // differ, both are written so links either way resolve.
     const naturalPath = sourcePath.replace(/\.md$/i, '.html');
+    // Headings are scanned in the body only: a `# comment` line inside
+    // frontmatter is yaml, not a title.
+    const { entries, body } = splitFrontmatter(markdown);
     return {
       sourcePath,
       outputPath,
       aliasPaths: naturalPath === outputPath ? [] : [naturalPath],
       title:
-        firstHeading(markdown) ?? posix.basename(sourcePath).replace(/\.md$/i, ''),
+        entries.find((entry) => entry.key === 'title')?.value ||
+        firstHeading(body) ||
+        posix.basename(sourcePath).replace(/\.md$/i, ''),
     };
   });
   return pages.sort((a, b) => {
