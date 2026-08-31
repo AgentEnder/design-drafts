@@ -25,6 +25,14 @@ export const TEXT = '#1d1d20';
 export const TEXT_MUTED = '#6b6b70';
 export const DANGER = '#dc2626';
 export const DANGER_SOFT = 'rgba(220, 38, 38, 0.12)';
+
+// Suggested-edit kinds each own a hue, used consistently across their tint,
+// their pin and their panel badge so the page and the drawer read the same
+// language. Delete borrows the danger red; replace and reword get their own.
+export const REPLACE = '#d97706';
+export const REPLACE_SOFT = 'rgba(217, 119, 6, 0.16)';
+export const REWORD = '#7c3aed';
+export const REWORD_SOFT = 'rgba(124, 58, 237, 0.14)';
 export const SHADOW =
   '0 10px 30px -8px rgba(0, 0, 0, 0.35), 0 2px 6px -2px rgba(0, 0, 0, 0.16)';
 
@@ -117,6 +125,74 @@ button:focus-visible {
   background: rgba(79, 70, 229, 0.3);
 }
 
+/* Suggested-edit tints. Delete draws a strike bar through the middle of each
+   line rect — strikethrough the reader recognises, without touching the
+   page's own DOM. */
+.range-highlight.kind-delete {
+  background: ${DANGER_SOFT};
+  border-bottom-color: ${DANGER};
+}
+.range-highlight.kind-delete::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  background: ${DANGER};
+  border-radius: 1px;
+}
+.range-highlight.kind-delete.hovered {
+  background: rgba(220, 38, 38, 0.26);
+}
+
+.range-highlight.kind-replace {
+  background: ${REPLACE_SOFT};
+  border-bottom-color: ${REPLACE};
+}
+.range-highlight.kind-replace.hovered {
+  background: rgba(217, 119, 6, 0.3);
+}
+
+.range-highlight.kind-reword {
+  background: ${REWORD_SOFT};
+  border-bottom-color: ${REWORD};
+}
+.range-highlight.kind-reword.hovered {
+  background: rgba(124, 58, 237, 0.3);
+}
+
+/* An insertion doesn't tint the selected words — they aren't wrong, something
+   is missing after them. Its one node is a caret bar just past the last rect
+   (repositionPins derives that rect), so kind-insert restyles the tint node
+   into the caret. */
+.range-highlight.kind-insert {
+  background: ${ACCENT};
+  border-bottom: 0;
+  border-radius: 1px;
+}
+.range-highlight.kind-insert.hovered {
+  background: ${ACCENT};
+  box-shadow: 0 0 0 3px ${ACCENT_SOFT};
+}
+
+/* The pill of actions a live selection offers. Selection alone is inert —
+   this is the only path from a selection to an annotation. */
+.selection-popover {
+  position: absolute;
+  pointer-events: auto;
+  z-index: 3;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: ${SURFACE};
+  border: 1px solid ${BORDER};
+  border-radius: 10px;
+  box-shadow: ${SHADOW};
+  white-space: nowrap;
+}
+
 .outline-label {
   position: absolute;
   pointer-events: none;
@@ -169,6 +245,12 @@ button:focus-visible {
   background: ${TEXT_MUTED};
   color: ${ON_ACCENT};
 }
+
+/* Pins keep their number — it's what ties a pin to its panel entry and its
+   export heading — and say their kind with the hue their tint already uses. */
+.pin.kind-delete { background: ${DANGER}; }
+.pin.kind-replace { background: ${REPLACE}; }
+.pin.kind-reword { background: ${REWORD}; }
 
 .composer {
   position: absolute;
@@ -431,6 +513,20 @@ textarea.field:focus {
 .entry-num.stale {
   background: ${TEXT_MUTED};
 }
+
+.entry-kind {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: ${SURFACE_SUNK};
+  color: ${TEXT_MUTED};
+}
+.entry-kind.kind-delete { color: ${DANGER}; background: ${DANGER_SOFT}; }
+.entry-kind.kind-replace { color: ${REPLACE}; background: ${REPLACE_SOFT}; }
+.entry-kind.kind-reword { color: ${REWORD}; background: ${REWORD_SOFT}; }
+.entry-kind.kind-insert { color: ${ACCENT}; background: ${ACCENT_SOFT}; }
 
 .entry-anchor {
   font-size: 11px;

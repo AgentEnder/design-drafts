@@ -7,6 +7,20 @@
 
 import type { SelectorBundle } from './selectors.js';
 
+/** What the reviewer is saying about the anchored text. `comment` is a plain
+ * note; the rest are suggested edits, and the annotation's `comment` field
+ * holds each kind's payload — the replacement text, the inserted text, the
+ * rewording guidance, or (for delete) an optional why-note. The tuple doubles
+ * as the runtime validator for stored records, so type and check can't drift. */
+export const ANNOTATION_KINDS = [
+  'comment',
+  'delete',
+  'replace',
+  'insert',
+  'reword',
+] as const;
+export type AnnotationKind = (typeof ANNOTATION_KINDS)[number];
+
 export interface Annotation {
   id: string;
   /** The draft this annotation was written against, as the page declared it
@@ -16,9 +30,21 @@ export interface Annotation {
    * server) stay separate. */
   draftId?: string;
   selector: SelectorBundle;
+  kind: AnnotationKind;
+  /** The kind's payload: note, replacement, insertion, or guidance. Empty is
+   * legal only for `delete`, which is complete without prose. */
   comment: string;
   createdAt: number;
   updatedAt: number;
+}
+
+/** An annotation as it may sit in storage: records written before kinds
+ * existed carry none. Reads normalize those to `comment` rather than
+ * migrating the stored bytes. */
+type StoredAnnotation = Omit<Annotation, 'kind'> & { kind?: AnnotationKind };
+
+function normalizeKind(stored: StoredAnnotation): Annotation {
+  return stored.kind ? (stored as Annotation) : { ...stored, kind: 'comment' };
 }
 
 const STORAGE_PREFIX = 'dd:annotate:';
@@ -42,7 +68,7 @@ function safeRead(pageUrl: string): Annotation[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isAnnotation);
+    return parsed.filter(isAnnotation).map(normalizeKind);
   } catch {
     return [];
   }
@@ -57,7 +83,7 @@ function safeWrite(pageUrl: string, annotations: Annotation[]): void {
   }
 }
 
-function isAnnotation(value: unknown): value is Annotation {
+function isAnnotation(value: unknown): value is StoredAnnotation {
   if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
   return (
@@ -67,13 +93,18 @@ function isAnnotation(value: unknown): value is Annotation {
     typeof v.updatedAt === 'number' &&
     typeof v.selector === 'object' &&
     v.selector !== null &&
-    (v.draftId === undefined || typeof v.draftId === 'string')
+    (v.draftId === undefined || typeof v.draftId === 'string') &&
+    (v.kind === undefined ||
+      ANNOTATION_KINDS.includes(v.kind as AnnotationKind))
   );
 }
 
 /** Whether `annotation` belongs to the draft the reading page declares. A page
  * that declares no draft sees only annotations that declare none either. */
-function belongsTo(draftId: string | undefined, annotation: Annotation): boolean {
+function belongsTo(
+  draftId: string | undefined,
+  annotation: StoredAnnotation
+): boolean {
   return annotation.draftId === draftId;
 }
 
@@ -108,7 +139,8 @@ export function loadAnnotationsByUrl(
         if (Array.isArray(list)) {
           const valid = list
             .filter(isAnnotation)
-            .filter((a) => belongsTo(draftId, a));
+            .filter((a) => belongsTo(draftId, a))
+            .map(normalizeKind);
           if (valid.length) out.set(url, valid);
         }
       } catch {

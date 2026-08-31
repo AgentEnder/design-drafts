@@ -314,6 +314,110 @@ function locate(
   return last ? { node: last, offset: last.data.length } : null;
 }
 
+/** `checkVisibility` shipped with two generations of option names —
+ * `checkOpacity`/`checkVisibilityCSS` first, `opacityProperty`/
+ * `visibilityProperty` once the spec settled. Passing both sets means every
+ * engine that has the method honours the request. */
+interface VisibilityCheckOptions {
+  checkOpacity?: boolean;
+  checkVisibilityCSS?: boolean;
+  opacityProperty?: boolean;
+  visibilityProperty?: boolean;
+}
+
+/**
+ * Whether `element` would actually be seen by a reader.
+ *
+ * `checkVisibility` walks the ancestor chain and covers `display: none`,
+ * `visibility: hidden`, `opacity: 0` and `content-visibility` in one call.
+ * Where it doesn't exist (jsdom; older engines) everything reports visible —
+ * degrading to the old behaviour is safer than painting nothing.
+ */
+export function isElementVisible(element: Element): boolean {
+  const check = (
+    element as Element & {
+      checkVisibility?: (options?: VisibilityCheckOptions) => boolean;
+    }
+  ).checkVisibility;
+  if (typeof check !== 'function') return true;
+  return check.call(element, {
+    checkOpacity: true,
+    checkVisibilityCSS: true,
+    opacityProperty: true,
+    visibilityProperty: true,
+  });
+}
+
+/**
+ * The boxes to paint for `range` — one per line box of its VISIBLE text.
+ *
+ * `range.getClientRects()` alone is wrong in two ways. It reports layout, not
+ * visibility: text hidden with `visibility: hidden` or `opacity: 0` (a
+ * citation popover parked in the DOM for hover) keeps its rects, so a
+ * selection swept across it paints tint lines where the reader sees nothing.
+ * And Chrome adds the border boxes of whole elements contained in the range
+ * on top of the text rects, double-tinting even fully visible selections.
+ *
+ * Walking the range's text nodes fixes both: only text contributes, and each
+ * node's parent is vetted with `isElementVisible` before its rects count.
+ * The walk is `textNodesOf`, the same one capture and resolution use.
+ * Visibility filtering stays a PAINT-time concern — offsets deliberately
+ * still count hidden text, so an annotation's anchor doesn't shift when a
+ * popover opens or closes between visits.
+ */
+export function visibleTextRects(range: Range): DOMRect[] {
+  // jsdom implements neither Range.getClientRects nor layout; the overlay
+  // has to survive being mounted in a test environment.
+  if (typeof range.getClientRects !== 'function') return [];
+  const container = containerElementOf(range);
+  if (!container) return [];
+
+  const visibleParents = new Map<Element, boolean>();
+  const isVisibleCached = (parent: Element): boolean => {
+    let known = visibleParents.get(parent);
+    if (known === undefined) {
+      known = isElementVisible(parent);
+      visibleParents.set(parent, known);
+    }
+    return known;
+  };
+
+  const rects: DOMRect[] = [];
+  for (const node of textNodesOf(container)) {
+    let intersects: boolean;
+    try {
+      intersects = range.intersectsNode(node);
+    } catch {
+      continue;
+    }
+    if (!intersects) continue;
+    const parent = node.parentElement;
+    if (!parent || !isVisibleCached(parent)) continue;
+
+    // Clamp the node's span to the selection, so the first and last nodes
+    // contribute only their selected characters.
+    const sub = document.createRange();
+    try {
+      sub.setStart(node, 0);
+      sub.setEnd(node, node.data.length);
+      if (sub.compareBoundaryPoints(Range.START_TO_START, range) < 0) {
+        sub.setStart(range.startContainer, range.startOffset);
+      }
+      if (sub.compareBoundaryPoints(Range.END_TO_END, range) > 0) {
+        sub.setEnd(range.endContainer, range.endOffset);
+      }
+    } catch {
+      continue;
+    }
+    if (typeof sub.getClientRects !== 'function') continue;
+    for (const rect of Array.from(sub.getClientRects())) {
+      // A zero-area rect is a collapsed artifact, not a line of text.
+      if (rect.width > 0 && rect.height > 0) rects.push(rect);
+    }
+  }
+  return rects;
+}
+
 /** Render the quote inside its captured neighbourhood, with the selected run
  * delimited. A short quote — "the", "Free", "Save" — identifies nothing on its
  * own, in the panel or in an export; the words around it are what make it a

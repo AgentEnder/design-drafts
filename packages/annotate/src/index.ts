@@ -22,6 +22,8 @@ import { readDraftId } from '@design-drafts/conventions/draft-id';
 import {
   annotationsToMarkdown,
   exportFilename,
+  KIND_GLYPH,
+  KIND_LABEL,
   type ExportPage,
 } from './export.js';
 import { pickAtPoint, type PickResult } from './picker.js';
@@ -33,8 +35,13 @@ import {
   type SelectorBundle,
 } from './selectors.js';
 import { HOST_ID, STYLES } from './styles.js';
-import { containerElementOf, resolveTextRange } from './text-range.js';
 import {
+  containerElementOf,
+  resolveTextRange,
+  visibleTextRects,
+} from './text-range.js';
+import {
+  ANNOTATION_KINDS,
   currentPageUrl,
   clearAnnotations,
   deleteAnnotation,
@@ -43,6 +50,7 @@ import {
   loadAnnotationsByUrl,
   saveAnnotation,
   type Annotation,
+  type AnnotationKind,
 } from './storage.js';
 
 interface AnnotateApi {
@@ -125,6 +133,37 @@ function commandKeyLabel(): string {
   return /Mac|iPhone|iPad|iPod/.test(navigator.userAgent) ? '⌘' : 'Ctrl+';
 }
 
+/** Tooltip per popover action, spelling out the one behavioural asymmetry:
+ * Delete needs no prose, so it doesn't open a composer. */
+const KIND_TITLES: Record<AnnotationKind, string> = {
+  comment: 'Leave a note on this text',
+  delete: 'Suggest deleting this text — saves immediately',
+  replace: 'Suggest replacing this text',
+  insert: 'Suggest inserting text after this',
+  reword: 'Ask for this text to be reworded',
+};
+
+/** What the composer's body means for each kind, said in its placeholder. */
+const KIND_PLACEHOLDERS: Record<AnnotationKind, string> = {
+  comment: 'Leave a note on this text…',
+  delete: 'Why cut this? (optional)',
+  replace: 'Replacement text…',
+  insert: 'Text to insert after the selection…',
+  reword: 'How should this read? (“tighter”, “less formal”)…',
+};
+
+function highlightClassOf(kind: AnnotationKind): string {
+  return kind === 'comment' ? 'range-highlight' : `range-highlight kind-${kind}`;
+}
+
+/** An insertion paints a caret bar just past the quoted words instead of
+ * tinting them — the words aren't wrong, something is missing after them. */
+function caretRectAfter(rects: DOMRect[]): DOMRect[] {
+  const last = rects[rects.length - 1];
+  if (!last) return [];
+  return [new DOMRect(last.right + 1, last.top, 3, last.height)];
+}
+
 export type AnnotateMode = 'standalone' | 'integrated';
 
 /** Where the panel opens. A host at the foot of the viewport (the toolbar
@@ -198,7 +237,18 @@ class AnnotateOverlay {
     selector: SelectorBundle;
     element: Element;
     range: Range | null;
+    kind: AnnotationKind;
   } | null = null;
+  /** The pill of actions shown over a live selection. */
+  private selectionPopoverEl: HTMLElement | null = null;
+  /** Range snapshot behind the popover. Clicking one of its actions would
+   * collapse the live selection before the click lands (the pill prevents
+   * that on mousedown, but belt-and-braces), so actions read this copy. */
+  private pendingSelection: Range | null = null;
+  private selectionDebounce: number | null = null;
+  /** True between mousedown and mouseup: a selection still being dragged out
+   * shouldn't flash the popover under the moving cursor. */
+  private mouseIsDown = false;
   private editing: { id: string } | null = null;
   /** Non-null while the panel's Clear is armed (see clearAll). */
   private clearArmTimer: number | null = null;
@@ -284,6 +334,8 @@ class AnnotateOverlay {
     this.pinLayer = null;
     this.highlightLayer = null;
     this.pendingHighlight = [];
+    this.selectionPopoverEl = null;
+    this.pendingSelection = null;
     this.pins = [];
   }
 
@@ -320,6 +372,9 @@ class AnnotateOverlay {
     window.addEventListener('keydown', this.onKeyDown, true);
     window.addEventListener('scroll', this.onViewportChange, true);
     window.addEventListener('resize', this.onViewportChange, true);
+    // selectionchange only fires on document, and it is how keyboard-made
+    // selections (double-click, shift+arrows, ⌘A) reach the popover.
+    document.addEventListener('selectionchange', this.onSelectionChange);
     this.renderToggle();
     this.openPanel();
     this.refreshPins();
@@ -355,6 +410,12 @@ class AnnotateOverlay {
     window.removeEventListener('keydown', this.onKeyDown, true);
     window.removeEventListener('scroll', this.onViewportChange, true);
     window.removeEventListener('resize', this.onViewportChange, true);
+    document.removeEventListener('selectionchange', this.onSelectionChange);
+    if (this.selectionDebounce !== null) {
+      window.clearTimeout(this.selectionDebounce);
+      this.selectionDebounce = null;
+    }
+    this.hideSelectionPopover();
     this.hovered = null;
     this.composing = null;
     this.closeComposer();
@@ -373,6 +434,12 @@ class AnnotateOverlay {
 
   private onPointerMove = (event: PointerEvent): void => {
     if (!this.active) return;
+    // A drag released outside the window never delivers its mouseup; the
+    // first buttonless move is when we learn the button is up again.
+    if (event.buttons === 0 && this.mouseIsDown) {
+      this.mouseIsDown = false;
+      this.scheduleSelectionCheck();
+    }
     if (this.composing) return;
     // A held button means the reviewer is dragging out a text selection.
     // Outlining whatever block the cursor crosses is noise during that.
@@ -402,6 +469,16 @@ class AnnotateOverlay {
   // a page that routes on mousedown from navigating out from under them.
   private onMouseButton = (event: MouseEvent): void => {
     if (!this.active) return;
+    // Tracked before the overlay check on purpose: a drag that starts on the
+    // page and ends over the panel still has to clear the flag.
+    if (event.type === 'mousedown') this.mouseIsDown = true;
+    if (event.type === 'mouseup') {
+      this.mouseIsDown = false;
+      // Immediately, not debounced: the selection is final at release, and a
+      // popover that lags behind the mouse invites a habit-click on the
+      // selection — which collapses it — before the pill has even appeared.
+      this.syncSelectionPopover();
+    }
     if (this.eventCrossesOverlay(event)) return;
     event.stopPropagation();
   };
@@ -422,27 +499,142 @@ class AnnotateOverlay {
     // has been typed. Escape and Cancel are the ways out.
     if (this.composing) return;
 
-    // A live text selection is a more specific statement of intent than
-    // whatever element is under the cursor, so it wins. Snapshot the Range
-    // now: focusing the composer's textarea collapses the document
-    // selection, and from here on we paint our own highlight from this copy.
-    const range = pageSelectionRange();
-    const container = range ? containerElementOf(range) : null;
-    if (range && container) {
-      const selector = buildSelector(container, range);
-      if (selector.textRange) {
-        this.composing = { selector, element: container, range };
-        this.openComposer(boundsOf(range), range);
-        return;
-      }
+    // A live selection means this click belongs to the selection gesture —
+    // the drag that made it, a double-click, a shift-click extension. The
+    // popover owns selections; a click converts nothing, so the selection
+    // stays free for ⌘C and the context menu. A genuine "click somewhere
+    // else" collapsed the selection on its own mousedown and never lands
+    // here with one alive.
+    if (pageSelectionRange()) {
+      this.syncSelectionPopover();
+      return;
+    }
+    // A click that dismisses a visible pill is spent on the dismissal — a
+    // reviewer clicking away from a selection is backing out, and answering
+    // that with a fresh element composer would punish every retry.
+    if (this.selectionPopoverEl) {
+      this.hideSelectionPopover();
+      return;
     }
 
     const pick = pickAtPoint(event.clientX, event.clientY, this.host);
     if (!pick) return;
     const selector = buildSelector(pick.element);
-    this.composing = { selector, element: pick.element, range: null };
+    this.composing = {
+      selector,
+      element: pick.element,
+      range: null,
+      kind: 'comment',
+    };
     this.openComposer(pick.rect, null);
   };
+
+  // ---- selection popover ----
+
+  private onSelectionChange = (): void => {
+    if (!this.active) return;
+    this.scheduleSelectionCheck();
+  };
+
+  /** Debounced: selectionchange fires for every character swept while
+   * dragging, and the popover appearing mid-drag would sit under the moving
+   * cursor. */
+  private scheduleSelectionCheck(): void {
+    if (this.selectionDebounce !== null) {
+      window.clearTimeout(this.selectionDebounce);
+    }
+    this.selectionDebounce = window.setTimeout(() => {
+      this.selectionDebounce = null;
+      this.syncSelectionPopover();
+    }, 180);
+  }
+
+  private syncSelectionPopover(): void {
+    if (!this.active || this.composing || this.mouseIsDown) return;
+    const range = pageSelectionRange();
+    if (!range || !containerElementOf(range)) {
+      this.hideSelectionPopover();
+      return;
+    }
+    this.showSelectionPopover(range);
+  }
+
+  private showSelectionPopover(range: Range): void {
+    if (!this.root) return;
+    this.pendingSelection = range;
+    if (!this.selectionPopoverEl) {
+      const node = document.createElement('div');
+      node.className = 'selection-popover';
+      // Mousedown on the pill must not collapse the page selection — the
+      // browser would clear it before the click lands, and the debounced
+      // selectionchange would pull this pill out from under the click.
+      node.addEventListener('mousedown', (e) => e.preventDefault());
+      for (const kind of ANNOTATION_KINDS) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn ghost';
+        btn.textContent = `${KIND_GLYPH[kind]} ${KIND_LABEL[kind]}`;
+        btn.title = KIND_TITLES[kind];
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const pending = this.pendingSelection;
+          if (pending) this.beginTextAnnotation(kind, pending);
+        });
+        node.appendChild(btn);
+      }
+      this.root.appendChild(node);
+      this.selectionPopoverEl = node;
+    }
+    const rects = rectsOf(range);
+    const rect = rects[rects.length - 1] ?? boundsOf(range);
+    positionFloating(this.selectionPopoverEl, rect);
+  }
+
+  private hideSelectionPopover(): void {
+    this.pendingSelection = null;
+    if (this.selectionPopoverEl) {
+      this.selectionPopoverEl.remove();
+      this.selectionPopoverEl = null;
+    }
+  }
+
+  /** A popover action was chosen: turn the snapshotted selection into an
+   * annotation. Delete saves on the spot — "strike this" is a complete
+   * statement, and a composer would make it slower than a plain comment —
+   * while every other kind opens the composer for its payload. */
+  private beginTextAnnotation(kind: AnnotationKind, range: Range): void {
+    const container = containerElementOf(range);
+    if (!container) return;
+    const selector = buildSelector(container, range);
+    if (!selector.textRange) return;
+    this.hideSelectionPopover();
+    // The pill kept the live selection alive; from here the overlay paints
+    // its own copy, and a lingering selection would just re-summon the pill.
+    window.getSelection()?.removeAllRanges();
+
+    if (kind === 'delete') {
+      const now = Date.now();
+      saveAnnotation(
+        {
+          id: generateId(),
+          draftId: this.draftId,
+          selector,
+          kind,
+          comment: '',
+          createdAt: now,
+          updatedAt: now,
+        },
+        currentPageUrl()
+      );
+      this.refreshPins();
+      this.renderPanel();
+      return;
+    }
+
+    this.composing = { selector, element: container, range, kind };
+    this.openComposer(boundsOf(range), range);
+  }
 
   private onKeyDown = (event: KeyboardEvent): void => {
     if (event.key === 'Escape') {
@@ -454,6 +646,13 @@ class AnnotateOverlay {
       if (this.editing) {
         this.editing = null;
         this.renderPanel();
+        return;
+      }
+      if (this.selectionPopoverEl) {
+        this.hideSelectionPopover();
+        // Dropping the selection too, or the next selectionchange tick —
+        // scroll, focus shift — would read it as fresh and re-show the pill.
+        window.getSelection()?.removeAllRanges();
         return;
       }
     }
@@ -520,9 +719,10 @@ class AnnotateOverlay {
       );
     }
 
+    const kind = this.composing?.kind ?? 'comment';
     const textarea = document.createElement('textarea');
     textarea.placeholder = range
-      ? 'Leave a note on this text…'
+      ? KIND_PLACEHOLDERS[kind]
       : 'Leave a note for this element…';
     textarea.rows = 3;
 
@@ -555,6 +755,7 @@ class AnnotateOverlay {
         id: generateId(),
         draftId: this.draftId,
         selector: this.composing.selector,
+        kind: this.composing.kind,
         comment: value,
         createdAt: now,
         updatedAt: now,
@@ -619,8 +820,19 @@ class AnnotateOverlay {
       const pinNode = document.createElement('button');
       pinNode.type = 'button';
       pinNode.className = 'pin';
+      // The number is what ties a pin to its panel entry and its export
+      // heading, so a suggested edit says its kind with hue and title
+      // rather than replacing the digit with a glyph.
       pinNode.textContent = String(index + 1);
-      pinNode.title = annotation.comment.slice(0, 200);
+      if (annotation.kind !== 'comment') {
+        pinNode.classList.add(`kind-${annotation.kind}`);
+      }
+      pinNode.title =
+        annotation.kind === 'comment'
+          ? annotation.comment.slice(0, 200)
+          : [KIND_LABEL[annotation.kind], annotation.comment.slice(0, 200)]
+              .filter(Boolean)
+              .join(' — ');
       if (stale) pinNode.classList.add('stale');
 
       const pin: PinView = {
@@ -736,7 +948,15 @@ class AnnotateOverlay {
       // anchors to the LAST of them — it sits just past the end of the
       // quoted words rather than off the paragraph's corner.
       const rects = rectsOf(pin.range ?? pin.element);
-      this.syncHighlight(pin.highlightNodes, pin.range ? rects : []);
+      const paintRects =
+        pin.range && pin.annotation.kind === 'insert'
+          ? caretRectAfter(rects)
+          : rects;
+      this.syncHighlight(
+        pin.highlightNodes,
+        pin.range ? paintRects : [],
+        highlightClassOf(pin.annotation.kind)
+      );
       const rect = pin.range ? rects[rects.length - 1] : rects[0];
       if (!rect || (rect.width === 0 && rect.height === 0)) {
         pin.pinNode.style.display = 'none';
@@ -959,6 +1179,15 @@ class AnnotateOverlay {
     num.textContent = String(number);
     head.appendChild(num);
 
+    if (annotation.kind !== 'comment') {
+      const kindBadge = document.createElement('span');
+      kindBadge.className = `entry-kind kind-${annotation.kind}`;
+      kindBadge.textContent = `${KIND_GLYPH[annotation.kind]} ${
+        KIND_LABEL[annotation.kind]
+      }`;
+      head.appendChild(kindBadge);
+    }
+
     const anchor = document.createElement('div');
     anchor.className = 'entry-anchor';
     const anchorText = stale
@@ -993,7 +1222,9 @@ class AnnotateOverlay {
       save.title = `Save (${commandKeyLabel()}↵)`;
       const commit = (): void => {
         const next = textarea.value.trim();
-        if (!next) return;
+        // A delete is complete without prose, so its note may be emptied;
+        // every other kind's body IS the annotation.
+        if (!next && annotation.kind !== 'delete') return;
         saveAnnotation(
           { ...annotation, comment: next, updatedAt: Date.now() },
           pageUrl
@@ -1302,12 +1533,13 @@ function pageSelectionRange(): Range | null {
 }
 
 /** Boxes to paint for a target. An element has one; a Range has one per line
- * box it wraps across. jsdom implements neither Range method, so both are
- * guarded — the overlay has to survive being mounted in a test environment. */
+ * box of its VISIBLE text — visibleTextRects filters out text that keeps
+ * layout while hidden (a parked popover's `visibility: hidden` body has real
+ * rects, and painting them puts tint lines where the reader sees nothing).
+ * It also guards the Range methods jsdom doesn't implement. */
 function rectsOf(target: AnchorTarget): DOMRect[] {
   if (target instanceof Range) {
-    if (typeof target.getClientRects !== 'function') return [];
-    return Array.from(target.getClientRects());
+    return visibleTextRects(target);
   }
   return [target.getBoundingClientRect()];
 }

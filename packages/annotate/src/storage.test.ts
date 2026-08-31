@@ -177,3 +177,37 @@ describe('annotation storage scoped by draft', () => {
     });
   });
 });
+
+describe('annotation kinds', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    window.history.replaceState(null, '', '/index.html');
+  });
+
+  // The fixture helper builds records with no `kind`, exactly like a review
+  // stored before kinds existed — reads must not strand it.
+  it('normalizes a record stored before kinds existed to a comment', () => {
+    seed(currentPageUrl(), [annotation()]);
+
+    expect(loadAnnotations(undefined)[0]?.kind).toBe('comment');
+  });
+
+  it('round-trips a suggested edit, including delete’s empty note', () => {
+    saveAnnotation(
+      annotation({ kind: 'delete', comment: '' }),
+      currentPageUrl()
+    );
+
+    const [stored] = loadAnnotations(undefined);
+    expect(stored?.kind).toBe('delete');
+    expect(stored?.comment).toBe('');
+  });
+
+  it('drops a record whose kind it does not know', () => {
+    seed(currentPageUrl(), [
+      { ...annotation(), kind: 'sparkle' } as unknown as Annotation,
+    ]);
+
+    expect(loadAnnotations(undefined)).toHaveLength(0);
+  });
+});

@@ -11,8 +11,26 @@ import {
   type ElementAnchor,
   type SelectorBundle,
 } from './selectors.js';
-import type { Annotation } from './storage.js';
+import type { Annotation, AnnotationKind } from './storage.js';
 import { quoteInContext, textZones } from './text-range.js';
+
+/** One glyph and one word per kind, shared by the export, the pins and the
+ * panel so page and drawer read the same language. */
+export const KIND_GLYPH: Record<AnnotationKind, string> = {
+  comment: '💬',
+  delete: '✂',
+  replace: '⇄',
+  insert: '+',
+  reword: '✎',
+};
+
+export const KIND_LABEL: Record<AnnotationKind, string> = {
+  comment: 'Comment',
+  delete: 'Delete',
+  replace: 'Replace',
+  insert: 'Insert',
+  reword: 'Reword',
+};
 
 export interface ExportPage {
   url: string;
@@ -47,15 +65,46 @@ export function annotationsToMarkdown(
     // Numbering restarts per page so it lines up with the pins the reviewer
     // is looking at, which are also numbered per page.
     page.annotations.forEach((annotation, index) => {
-      lines.push(`### ${index + 1}. ${describeAnchor(annotation.selector)}`, '');
+      // A comment keeps the bare heading annotations always had; a suggested
+      // edit leads with what to do, so a skimming agent sees the verb first.
+      const kindTag =
+        annotation.kind === 'comment'
+          ? ''
+          : `${KIND_GLYPH[annotation.kind]} ${KIND_LABEL[annotation.kind]} · `;
+      lines.push(
+        `### ${index + 1}. ${kindTag}${describeAnchor(annotation.selector)}`,
+        ''
+      );
       lines.push(...anchorLines(annotation.selector));
       lines.push('');
-      lines.push(annotation.comment.trim());
+      lines.push(...instructionLines(annotation));
       lines.push('');
     });
   }
 
   return lines.join('\n');
+}
+
+// The body of an entry: what the reviewer wants done. Each edit kind renders
+// as an explicit instruction against "the marked text" — the ⟦ ⟧ run in the
+// Context line above it — so an agent acts on the instruction rather than
+// inferring one from prose.
+function instructionLines(annotation: Annotation): string[] {
+  const note = annotation.comment.trim();
+  switch (annotation.kind) {
+    case 'delete':
+      return note
+        ? ['Delete the marked text.', '', note]
+        : ['Delete the marked text.'];
+    case 'replace':
+      return [`Replace the marked text with: “${note}”`];
+    case 'insert':
+      return [`Insert after the marked text: “${note}”`];
+    case 'reword':
+      return [`Reword the marked text: ${note}`];
+    case 'comment':
+      return [note];
+  }
 }
 
 // What the reader needs to find this spot again — ordered by how well each
@@ -107,7 +156,10 @@ function anchorSection(bundle: SelectorBundle): string[] {
   // left it. Both make the same promise — this names that element and no other.
   if (anchors.length === 1) {
     const anchor = anchors[0]!;
-    return [`- Anchor (rendered DOM${uniqueNote(anchor)}):`, ...selectorLines(anchor, '  ')];
+    return [
+      `- Anchor (rendered DOM${uniqueNote(anchor)}${hiddenNote(anchor)}):`,
+      ...selectorLines(anchor, '  '),
+    ];
   }
 
   // Several: the selection crossed markup, so each run is named with the
@@ -125,7 +177,7 @@ function anchorSection(bundle: SelectorBundle): string[] {
     const text = zones[i];
     if (!text) return;
     n++;
-    lines.push(`  ${n}. \`${text}\`${uniqueNote(anchor)}`);
+    lines.push(`  ${n}. \`${text}\`${uniqueNote(anchor)}${hiddenNote(anchor)}`);
     lines.push(...selectorLines(anchor, '     '));
   });
   return lines;
@@ -147,6 +199,13 @@ function selectorLines(anchor: ElementAnchor, indent: string): string[] {
  * worth spending a reader's attention on. */
 function uniqueNote(anchor: ElementAnchor): string {
   return anchor.unique ? '' : ' — WARNING: matches more than one element';
+}
+
+/** A selection swept across a parked popover captures text the reader never
+ * saw. The quote has to keep it — the offsets count it — but an agent should
+ * know not to hunt the visible page for it. */
+function hiddenNote(anchor: ElementAnchor): string {
+  return anchor.hidden ? ' (hidden at capture)' : '';
 }
 
 /** Filename for the download fallback, derived from the draft. */

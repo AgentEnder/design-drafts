@@ -61,14 +61,45 @@ A bare `Enter` still breaks the line, because a note is prose.
 
 ### Commenting on text, not just blocks
 
-Highlight any run of text before you click and the comment anchors to
-those exact words instead of their container. There's no mode to switch:
-a live selection is a more specific statement of intent than the element
-under the cursor, so it wins. Press `Escape` to back out.
+Highlight any run of text and a pill of actions appears at the end of the
+selection:
+
+> 💬 Comment · ✂ Delete · ⇄ Replace · + Insert · ✎ Reword
+
+The selection itself stays inert — `⌘C`, the context menu and re-selecting
+all behave natively, so quoting page text into a note is a copy and a
+paste. Clicking anywhere else (or pressing `Escape`) dismisses the pill
+and annotates nothing; the dismissing click doesn't open an element
+composer either, so backing out costs nothing.
+
+**Comment** works as before: the note anchors to those exact words instead
+of their container. The other four are *suggested edits*, and the note
+body is each one's payload:
+
+| Action  | The body is…                          |
+| ------- | ------------------------------------- |
+| Delete  | an optional why-note — **saves immediately**, no composer |
+| Replace | the exact replacement text            |
+| Insert  | text to add *after* the selection     |
+| Reword  | guidance (“tighter”, “less formal”)   |
+
+Delete saving on the spot is the point of having it: "strike this" is a
+complete statement. A why-note can be added later from the panel's Edit.
 
 Saved text annotations tint the words they cover — one tint per line the
-quote wraps across — and their pin sits just past the last word rather
-than off the paragraph's corner.
+quote wraps across, in the kind's own hue, with a strike bar through
+deleted text and a caret wedge after an insertion point — and their pin
+sits just past the last word rather than off the paragraph's corner.
+
+Only *visible* text is tinted. Rendered pages park invisible content in
+the flow — a citation popover held at `opacity: 0` for hover still has
+layout, so `Range.getClientRects()` reports rects for it — and painting
+those would draw tint lines where the reader sees nothing. The overlay
+walks the selection's text nodes and asks `checkVisibility()` before a
+rect counts. The *anchor* deliberately still counts hidden text, so an
+annotation doesn't go stale when a popover happens to be open; the export
+tags any captured run whose element was invisible with
+`(hidden at capture)`.
 
 ## Export
 
@@ -95,6 +126,11 @@ secure context — it downloads `feedback.md` instead.
 
 This wording is ambiguous.
 ```
+
+A suggested edit leads its heading with the verb — `### 2. ✂ Delete · li ·
+…` — and its body is an explicit instruction (`Delete the marked text.`,
+`Replace the marked text with: “Get started”`), so an agent applies it
+rather than inferring an edit from prose.
 
 The lines are ordered by how well each survives the trip from rendered
 page back to source. `Section` and `Context` are verbatim page text, so

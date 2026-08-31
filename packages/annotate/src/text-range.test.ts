@@ -4,9 +4,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   buildTextRange,
   containerElementOf,
+  isElementVisible,
   quoteInContext,
   resolveTextRange,
   textZones,
+  visibleTextRects,
   type TextRangeSelector,
 } from './text-range.js';
 
@@ -330,5 +332,40 @@ describe('textZones', () => {
       'STRONG',
       'P',
     ]);
+  });
+});
+
+describe('isElementVisible', () => {
+  it('reports visible when the engine has no checkVisibility (jsdom)', () => {
+    expect(isElementVisible(document.createElement('span'))).toBe(true);
+  });
+
+  it('trusts checkVisibility and asks it about opacity and visibility', () => {
+    const el = document.createElement('span');
+    let asked: unknown;
+    Object.defineProperty(el, 'checkVisibility', {
+      value: (options?: unknown): boolean => {
+        asked = options;
+        return false;
+      },
+    });
+
+    expect(isElementVisible(el)).toBe(false);
+    expect(asked).toMatchObject({
+      opacityProperty: true,
+      visibilityProperty: true,
+    });
+  });
+});
+
+describe('visibleTextRects', () => {
+  // jsdom does no layout and implements no Range.getClientRects — the walker
+  // has to come back empty rather than throw, because the overlay mounts in
+  // this exact environment for every other test in this package.
+  it('survives an engine without Range.getClientRects', () => {
+    const root = html('<p>Ships in under a minute</p>');
+    const range = rangeOver(root, 'under a minute');
+
+    expect(visibleTextRects(range)).toEqual([]);
   });
 });

@@ -13,6 +13,7 @@
 import { readComponentInfo } from './component.js';
 import {
   buildTextRange,
+  isElementVisible,
   quoteInContext,
   type TextRangeSelector,
 } from './text-range.js';
@@ -91,6 +92,10 @@ export interface ElementAnchor {
    * a hashed CSS-module name still carries its module ("Text-module__Text"),
    * and a utility class appears literally in the JSX that emitted it. */
   classes?: string[];
+  /** True when the element was invisible at capture time — a selection swept
+   * across a parked popover captures text no reader saw, and an export that
+   * kept quiet about that would send an agent hunting for phantom prose. */
+  hidden?: boolean;
 }
 
 export function buildAnchor(element: Element): ElementAnchor {
@@ -103,6 +108,7 @@ export function buildAnchor(element: Element): ElementAnchor {
   };
   const classes = classesOf(element);
   if (classes.length) anchor.classes = classes;
+  if (!isElementVisible(element)) anchor.hidden = true;
   return anchor;
 }
 

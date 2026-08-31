@@ -27,6 +27,7 @@ function bundle(overrides: Partial<SelectorBundle> = {}): SelectorBundle {
 function annotation(overrides: Partial<Annotation> = {}): Annotation {
   return {
     id: 'a1',
+    kind: 'comment',
     comment: 'tighten this copy',
     createdAt: 1,
     updatedAt: 1,
@@ -335,5 +336,79 @@ describe('anchor reporting', () => {
     );
 
     expect(md).toContain('- Anchor: `main > p` (rendered DOM)');
+  });
+});
+
+describe('suggested-edit kinds', () => {
+  const pages = (a: Annotation) => [{ url: 'http://x/', annotations: [a] }];
+  const meta = { exportedAt: 'now' };
+
+  it('renders a bare delete as an explicit instruction', () => {
+    const md = annotationsToMarkdown(
+      pages(annotation({ kind: 'delete', comment: '' })),
+      meta
+    );
+
+    expect(md).toContain('### 1. ✂ Delete · ');
+    expect(md).toContain('Delete the marked text.');
+  });
+
+  it('keeps the why-note under a delete that has one', () => {
+    const md = annotationsToMarkdown(
+      pages(annotation({ kind: 'delete', comment: 'redundant with the intro' })),
+      meta
+    );
+
+    expect(md).toContain('Delete the marked text.');
+    expect(md).toContain('redundant with the intro');
+  });
+
+  it('renders replace, insert and reword as instructions carrying the body', () => {
+    const replace = annotationsToMarkdown(
+      pages(annotation({ kind: 'replace', comment: 'Get started' })),
+      meta
+    );
+    const insert = annotationsToMarkdown(
+      pages(annotation({ kind: 'insert', comment: ', free forever' })),
+      meta
+    );
+    const reword = annotationsToMarkdown(
+      pages(annotation({ kind: 'reword', comment: 'tighter' })),
+      meta
+    );
+
+    expect(replace).toContain('Replace the marked text with: “Get started”');
+    expect(insert).toContain('Insert after the marked text: “, free forever”');
+    expect(reword).toContain('Reword the marked text: tighter');
+  });
+
+  it('leaves a plain comment’s heading untagged', () => {
+    const md = annotationsToMarkdown(pages(annotation()), meta);
+
+    expect(md).toContain('### 1. p · ');
+    expect(md).not.toContain('Comment · ');
+  });
+
+  it('marks an anchor whose element was hidden at capture', () => {
+    const md = annotationsToMarkdown(
+      pages(
+        annotation({
+          selector: bundle({
+            anchors: [
+              {
+                css: 'main > p > cite',
+                xpath: '/html/body/main/p/cite',
+                tagName: 'cite',
+                unique: true,
+                hidden: true,
+              },
+            ],
+          }),
+        })
+      ),
+      meta
+    );
+
+    expect(md).toContain('(hidden at capture)');
   });
 });
