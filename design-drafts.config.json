@@ -1,0 +1,67 @@
+{
+  "$schema": "https://design-drafts.dev/schemas/draft-manifest.schema.json",
+  "name": "Artwork studio · canvas-first",
+  "description": "Approval checkpoint: one design across five editing states. Responsive and light/dark.",
+  "prompt": "references/brief.md",
+  "axes": [
+    {
+      "name": "selection",
+      "label": "Selection",
+      "choices": [
+        {
+          "name": "text",
+          "label": "Text"
+        },
+        {
+          "name": "image",
+          "label": "Image"
+        },
+        {
+          "name": "qr",
+          "label": "QR slot"
+        },
+        {
+          "name": "multi",
+          "label": "Multi-selection"
+        },
+        {
+          "name": "shape",
+          "label": "Shape"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "coordinates": {
+        "selection": "text"
+      },
+      "path": "pages/text/studio.html"
+    },
+    {
+      "coordinates": {
+        "selection": "image"
+      },
+      "path": "pages/image/studio.html"
+    },
+    {
+      "coordinates": {
+        "selection": "qr"
+      },
+      "path": "pages/qr/studio.html"
+    },
+    {
+      "coordinates": {
+        "selection": "multi"
+      },
+      "path": "pages/multi/studio.html"
+    },
+    {
+      "coordinates": {
+        "selection": "shape"
+      },
+      "path": "pages/shape/studio.html"
+    }
+  ],
+  "createdAt": "2026-09-18T20:23:24.603Z"
+}

@@ -1,0 +1,279 @@
+name: Deploy Preview
+
+on:
+  push:
+    branches:
+      - "drafts/**"
+      # The docs site and the index app are built from main, so main is the
+      # only ref that can republish them. No `paths:` filter: it would apply to
+      # the draft branches above too, whose content is arbitrary.
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+  delete:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to deploy a preview for"
+        required: true
+        type: string
+
+# The published layout, which every step below is arranged around:
+#
+#   /                  the docs site — how to use the tool (packages/docs)
+#   /d/                the index app listing every draft (packages/site)
+#   /d/<draft>/        one deployed draft
+#
+# Branch prefix used by the design-drafts CLI: only branches starting with it
+# are deployed as previews, and their directories drop the prefix (e.g.
+# drafts/foo -> /d/foo/). The literal "drafts/" appears in the `if:` filters
+# below because GitHub Actions does not expand `env` inside job-level `if:`
+# expressions.
+#
+# `d/` is declared to the CLI in design-drafts.config.json at the repo root,
+# which the CLI reads from this repo's main branch. That is how
+# `design-drafts push` knows the URL to print and the base path to bake into a
+# draft's search links. Change one, change the other.
+
+concurrency:
+  group: deploy-preview
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref_name, 'drafts/')) ||
+      (github.event_name == 'push' && github.ref_name == 'main') ||
+      (github.event_name == 'pull_request' && startsWith(github.head_ref, 'drafts/')) ||
+      github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+    env:
+      BRANCH_NAME: ${{ inputs.branch || github.head_ref || github.ref_name }}
+      DRAFT_BRANCH_PREFIX: drafts/
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Checkout gh-pages to staging
+        run: |
+          mkdir -p .gh-pages-staging
+          git fetch origin gh-pages:gh-pages 2>/dev/null && \
+            git worktree add .gh-pages-staging gh-pages || \
+            echo "gh-pages branch does not exist yet, starting fresh"
+
+      - name: Decide what this run publishes
+        run: |
+          # Every run rebuilds the docs and the index. A push to main is only
+          # ever that; anything else also stages the draft branch that fired it.
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$BRANCH_NAME" = "main" ]; then
+            echo "STAGE_DRAFT=false" >> "$GITHUB_ENV"
+          else
+            echo "STAGE_DRAFT=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Move a legacy root layout under d/
+        run: |
+          # Drafts used to publish straight to the site root; they live under
+          # d/ now so the root can carry the docs site. This relocates what
+          # earlier deploys left behind, exactly once: the marker it writes is
+          # what makes it a one-shot, and it is also the thing that would move
+          # the docs site into d/ if it ever ran a second time.
+          #
+          # Old URLs (/design-drafts/<draft>/) are not redirected — gh-pages
+          # serves static files and has nowhere to put a redirect rule.
+          #
+          # Safe to delete this step, and the marker, once every environment
+          # has deployed at least once.
+          STAGING=.gh-pages-staging
+          MARKER="$STAGING/.drafts-under-d"
+          if [ -f "$MARKER" ]; then
+            echo "already migrated"
+            exit 0
+          fi
+          mkdir -p "$STAGING/d"
+          # The old index app's own output is not a draft and is rebuilt below,
+          # so it is dropped rather than moved. Everything else at the root is
+          # a published draft.
+          rm -rf "$STAGING/index.html" "$STAGING/index.pageContext.json" \
+                 "$STAGING/assets" "$STAGING/compare"
+          # CNAME is excluded everywhere it could be swept up: it is what a
+          # custom Pages domain is, and moving or removing it takes the site
+          # off that domain. There is none on this host today.
+          find "$STAGING" -mindepth 1 -maxdepth 1 \
+            ! -name d ! -name .git ! -name .nojekyll ! -name CNAME \
+            -print0 | while IFS= read -r -d '' entry; do
+            mv "$entry" "$STAGING/d/"
+          done
+          # Stamp what we moved, so the index app can tell a draft from its own
+          # output. Drafts pushed from here on are stamped as they are staged.
+          find "$STAGING/d" -mindepth 1 -maxdepth 1 -type d \
+            -exec touch {}/.design-draft \;
+          touch "$MARKER"
+
+      - name: Shallow clone branch content
+        if: env.STAGE_DRAFT == 'true'
+        run: |
+          git clone --depth 1 --branch "$BRANCH_NAME" \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" \
+            /tmp/branch-content
+          rm -rf /tmp/branch-content/.git
+          # The CLI embeds this workflow on the draft branch so the push event
+          # can find it (push resolves workflows from the pushed ref). Strip it
+          # back out so it never ships into the published preview directory.
+          rm -rf /tmp/branch-content/.github
+
+      - name: Resolve preview directory name
+        if: env.STAGE_DRAFT == 'true'
+        run: |
+          # Strip the draft prefix so branch "drafts/my-site" is staged at
+          # "<staging>/d/my-site/" (preview URL /d/my-site/).
+          PREVIEW_DIR="${BRANCH_NAME#${DRAFT_BRANCH_PREFIX}}"
+          if [ -z "$PREVIEW_DIR" ] || [ "$PREVIEW_DIR" = "$BRANCH_NAME" ]; then
+            # workflow_dispatch can target a non-prefixed branch; fall back to
+            # the raw branch name in that case so manual deploys still work.
+            PREVIEW_DIR="$BRANCH_NAME"
+          fi
+          echo "PREVIEW_DIR=$PREVIEW_DIR" >> "$GITHUB_ENV"
+
+      - name: Replace branch directory in staging
+        if: env.STAGE_DRAFT == 'true'
+        run: |
+          rm -rf ".gh-pages-staging/d/${PREVIEW_DIR}"
+          mkdir -p ".gh-pages-staging/d/${PREVIEW_DIR}"
+          cp -a /tmp/branch-content/. ".gh-pages-staging/d/${PREVIEW_DIR}/"
+          # What tells the index app this directory is a draft and not part of
+          # its own output, which is deployed into the same d/.
+          touch ".gh-pages-staging/d/${PREVIEW_DIR}/.design-draft"
+
+      - name: Build docs site
+        run: |
+          # The docs sit at the Pages root, which for a project repo is
+          # /<repo>/. That segment is a deploy fact, not something the docs
+          # know, so it is supplied here rather than hardcoded in the
+          # package. Unset, the docs build resolves to "/", which is what a
+          # local static server wants — and, being explicit, never falls
+          # through to the CLI's --repo default, which would derive a draft's
+          # path rather than the site root.
+          # (A user pages repo would serve from "/"; the general rule lives in
+          # pagesBasePath. This workflow only ever runs for this repo.)
+          export DOCS_BASE="/${GITHUB_REPOSITORY#*/}/"
+          npx nx build docs
+
+      - name: Copy docs site into staging
+        run: |
+          # The docs own the site root, so the root is emptied of the previous
+          # build first — otherwise a renamed or deleted page would sit there
+          # looking current. d/ (the drafts and their index) is not the docs'
+          # to remove, and neither is the git worktree link.
+          find .gh-pages-staging -mindepth 1 -maxdepth 1 \
+            ! -name d ! -name .git ! -name .nojekyll ! -name .drafts-under-d \
+            ! -name CNAME \
+            -exec rm -rf {} +
+          cp -r packages/docs/dist/* .gh-pages-staging/
+          touch .gh-pages-staging/.nojekyll
+
+      - name: Build index site
+        run: npx nx build site
+        env:
+          # The drafts, and only the drafts: the index app is deployed into
+          # this same directory, and reads its own output back out otherwise.
+          PAGES_DIR: ${{ github.workspace }}/.gh-pages-staging/d
+          DESIGN_DRAFTS_PREFIX: drafts/
+          DESIGN_DRAFTS_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Copy index site into staging
+        run: |
+          mkdir -p .gh-pages-staging/d
+          cp -r packages/site/dist/client/* .gh-pages-staging/d/ 2>/dev/null || true
+
+      - name: Deploy to gh-pages
+        run: npx nx deploy site --directory=.gh-pages-staging
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  cleanup:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch' && startsWith(github.event.ref, 'drafts/')
+    permissions:
+      contents: write
+    env:
+      DRAFT_BRANCH_PREFIX: drafts/
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+
+      - name: Checkout gh-pages to staging
+        run: |
+          mkdir -p .gh-pages-staging
+          git fetch origin gh-pages:gh-pages 2>/dev/null || exit 0
+          git worktree add .gh-pages-staging gh-pages
+
+      - name: Remove deleted branch's directory
+        run: |
+          BRANCH_NAME="${{ github.event.ref }}"
+          # Mirror the staging logic: strip the draft prefix so we remove the
+          # un-prefixed preview directory, under the drafts sub-path.
+          PREVIEW_DIR="${BRANCH_NAME#${DRAFT_BRANCH_PREFIX}}"
+          rm -rf ".gh-pages-staging/d/${PREVIEW_DIR}"
+
+      - name: Rebuild index site
+        run: npx nx build site
+        env:
+          # The drafts, and only the drafts — see the deploy job.
+          PAGES_DIR: ${{ github.workspace }}/.gh-pages-staging/d
+          DESIGN_DRAFTS_PREFIX: drafts/
+          DESIGN_DRAFTS_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Copy index site into staging
+        run: |
+          mkdir -p .gh-pages-staging/d
+          cp -r packages/site/dist/client/* .gh-pages-staging/d/ 2>/dev/null || true
+          touch .gh-pages-staging/.nojekyll
+
+      - name: Deploy to gh-pages
+        run: npx nx deploy site --directory=.gh-pages-staging
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
