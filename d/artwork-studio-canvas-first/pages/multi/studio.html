@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="draftId" content="artwork-studio" />
+    <title>Artwork studio · multi review</title>
+    <link rel="icon" href="../../shared/assets/turnbuckle.png" />
+    <link rel="stylesheet" href="../../shared/styles/studio.css" />
+    <link rel="stylesheet" href="../../shared/styles/icons.css" />
+  </head>
+  <body data-state="multi" data-assets="../../shared/assets/">
+    <nav class="review-bar" aria-label="Mockup review controls">
+      <button
+        data-action="review-tools"
+        aria-label="Toggle review and annotation tools"
+        title="Toggle review and annotation tools"
+      >
+        Design review
+      </button>
+      <label class="sr-only" for="scenario">Review state</label
+      ><select id="scenario">
+        <option value="text">Text</option>
+        <option value="image">Image</option>
+        <option value="qr">QR slot</option>
+        <option value="multi">Multi-selection</option>
+        <option value="shape">Shape</option>
+      </select>
+      <span class="review-explanation muted"
+        >Interactive mockup · nothing is saved</span
+      ><span class="grow"></span>
+      <button data-action="theme">
+        <i class="icon i-Moon" aria-hidden="true"></i>Dark</button
+      ><button data-action="reset" title="Reset the in-memory review">
+        Reset
+      </button>
+    </nav>
+    <main
+      class="workspace"
+      id="workspace"
+      data-panel="properties"
+      data-expanded="false"
+    >
+      <header class="header" data-annotate-id="document-header">
+        <button
+          class="icon-button desktop-close"
+          data-action="close-editor"
+          aria-label="Close editor"
+        >
+          <i class="icon i-ArrowLeft" aria-hidden="true"></i>
+        </button>
+        <img
+          class="product-mark"
+          src="../../shared/assets/turnbuckle.png"
+          alt=""
+        />
+        <h1 class="document-title">
+          <button data-action="canvas">
+            <span class="truncate">CWA · Battle Royal 2026</span
+            ><i class="icon i-ChevronDown" aria-hidden="true"></i>
+          </button>
+        </h1>
+        <span class="status row"
+          ><i class="icon i-Check" aria-hidden="true"></i>Saved · sample
+          state</span
+        ><span class="header-spacer"></span>
+        <button
+          class="icon-button"
+          data-action="undo"
+          aria-label="Undo"
+          title="Undo · ⌘Z"
+        >
+          <i class="icon i-Undo2" aria-hidden="true"></i>
+        </button>
+        <button
+          class="icon-button redo"
+          data-action="redo"
+          aria-label="Redo"
+          title="Redo · ⇧⌘Z"
+        >
+          <i class="icon i-Redo2" aria-hidden="true"></i></button
+        ><span class="divider"></span>
+        <div class="save-group">
+          <button class="primary" data-action="save">
+            Save<span class="save-desktop">poster</span></button
+          ><button
+            class="primary"
+            data-action="save-menu"
+            aria-label="Save options"
+            aria-haspopup="menu"
+          >
+            <i class="icon i-ChevronDown" aria-hidden="true"></i>
+          </button>
+        </div>
+      </header>
+      <aside
+        class="left-panel"
+        aria-label="Assets and layers"
+        data-annotate-id="layers-panel"
+      >
+        <div class="panel-tabs">
+          <button data-action="left-layers" class="active">
+            <i class="icon i-Layers" aria-hidden="true"></i>Layers</button
+          ><button data-action="left-add">
+            <i class="icon i-Plus" aria-hidden="true"></i>Add
+          </button>
+        </div>
+        <div class="left-content" id="left-content"></div>
+        <div class="panel-foot">⌘ / Ctrl-click to add to selection</div>
+      </aside>
+      <section
+        class="stage"
+        aria-label="Artwork canvas"
+        data-annotate-id="canvas"
+      >
+        <div class="tool-bar" id="tool-bar"></div>
+        <div class="viewport">
+          <div class="poster" aria-label="Sample CWA Battle Royal poster">
+            <img
+              class="poster-photo art-object"
+              data-object="arena"
+              src="../../shared/assets/arena.png"
+              alt="Arena image layer"
+            />
+            <div class="poster-shade"></div>
+            <div class="art-brand art-object" data-object="brand">CWA</div>
+            <div class="art-present art-object" data-object="presents">
+              PRESENTS
+            </div>
+            <div
+              class="art-title art-object"
+              data-object="title"
+              aria-label="Battle Royal 2026 text layer"
+            >
+              BATTLE ROYAL<span>2026</span>
+            </div>
+            <div class="art-rule art-object" data-object="rule"></div>
+            <div class="art-date art-object" data-object="date">
+              OCTOBER 14, 2026
+            </div>
+            <div class="art-venue art-object" data-object="venue">
+              DOORS 6:30 PM &nbsp; / &nbsp; BELL 7:00 PM
+            </div>
+            <div class="art-tickets art-object" data-object="caption">
+              <strong>BE THERE. RINGSIDE.</strong><br />Scan for tickets &amp;
+              seating
+            </div>
+            <div class="qr-art art-object" data-object="tickets">
+              <img
+                src="../../shared/assets/sample-qr.png"
+                alt="Sample QR slot, example.com destination"
+              /><span class="art-qr-logo">CWA</span>
+            </div>
+            <div class="art-footer">
+              CWA LIVE WRESTLING &nbsp; · &nbsp; ALL AGES WELCOME
+            </div>
+            <div id="selection-outlines"></div>
+            <div id="crop-overlay" class="crop-grid" hidden></div>
+          </div>
+        </div>
+        <footer class="canvas-footer" data-annotate-id="view-controls">
+          <button data-action="canvas">
+            <i class="icon i-Lock" aria-hidden="true"></i
+            ><span>1200 × 1600</span
+            ><i class="icon i-ChevronDown" aria-hidden="true"></i>
+          </button>
+          <div class="row">
+            <button data-action="fit">Fit</button
+            ><button class="zoom-100" data-action="zoom-100">100%</button
+            ><input
+              id="zoom-range"
+              aria-label="Canvas zoom"
+              type="range"
+              min="25"
+              max="100"
+              value="50"
+            /><span id="zoom-value">50%</span>
+          </div>
+        </footer>
+      </section>
+      <aside
+        class="inspector"
+        aria-label="Layer properties"
+        data-annotate-id="inspector"
+      >
+        <button
+          class="sheet-handle"
+          data-action="sheet-expand"
+          aria-label="Expand properties"
+        ></button>
+        <div class="inspector-heading">
+          <div class="row grow">
+            <span id="selection-type"></span>
+            <h2 id="selection-heading" class="truncate"></h2>
+          </div>
+          <button
+            class="icon-button mobile-only"
+            data-action="panel-canvas"
+            aria-label="Hide properties"
+          >
+            <i class="icon i-ChevronDown" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="inspector-tabs" id="inspector-tabs"></div>
+        <div class="properties" id="properties"></div>
+      </aside>
+      <nav class="mobile-nav" aria-label="Workspace panels">
+        <button data-action="panel-add">
+          <i class="icon i-Plus" aria-hidden="true"></i>Add</button
+        ><button data-action="panel-layers">
+          <i class="icon i-Layers" aria-hidden="true"></i>Layers</button
+        ><button data-action="panel-properties" class="active">
+          <i class="icon i-SlidersHorizontal" aria-hidden="true"></i
+          >Properties</button
+        ><button data-action="panel-canvas">
+          <i class="icon i-Maximize2" aria-hidden="true"></i>Canvas
+        </button>
+      </nav>
+    </main>
+    <div class="popover" id="popover" hidden></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="../../shared/scripts/studio.js"></script>
+    <script
+      src="https://unpkg.com/@design-drafts/toolbar@0/dist/toolbar.js"
+      defer
+    ></script>
+    <script
+      src="https://unpkg.com/@design-drafts/annotate@0/dist/annotate.js"
+      defer
+    ></script>
+  </body>
+</html>
